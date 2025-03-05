@@ -79,6 +79,9 @@ const Dashboard = () => {
         localStorage.removeItem('character');
         localStorage.removeItem('userName');
         localStorage.removeItem('points');
+        localStorage.removeItem('coins');
+        localStorage.removeItem('streak');
+        localStorage.removeItem('lastWorkoutDate');
         setCharacter(null);
         navigate('/');
         setLoading(false);
@@ -100,6 +103,11 @@ const Dashboard = () => {
       localStorage.setItem('character', userData.character_type);
       localStorage.setItem('userName', userData.warrior_name);
       localStorage.setItem('points', userData.points.toString());
+      localStorage.setItem('coins', userData.coins.toString());
+      localStorage.setItem('streak', userData.streak.toString());
+      if (userData.last_workout_date) {
+        localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
+      }
     } catch (error) {
       console.error('Error checking auth:', error);
       toast({
@@ -111,6 +119,9 @@ const Dashboard = () => {
       localStorage.removeItem('character');
       localStorage.removeItem('userName');
       localStorage.removeItem('points');
+      localStorage.removeItem('coins');
+      localStorage.removeItem('streak');
+      localStorage.removeItem('lastWorkoutDate');
       navigate('/');
     } finally {
       setLoading(false);
@@ -203,7 +214,7 @@ const Dashboard = () => {
               character === 'jin-woo' ? 'jin-woo-gradient' : 
               ''
             }`}>
-              WORKOUT WARS
+              SOLO PROVE
             </h1>
             <p className="text-white/70 mt-1">Welcome back, {userName}</p>
           </div>

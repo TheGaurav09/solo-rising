@@ -33,6 +33,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [coins, setCoins] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Load from localStorage first for faster UI display
@@ -69,6 +70,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             setStreak(0);
             setLastWorkoutDate(null);
           }
+          setIsInitialized(true);
           return;
         }
         
@@ -82,6 +84,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           
         if (error) {
           console.error("Error fetching user data:", error);
+          setIsInitialized(true);
           throw error;
         }
         
@@ -105,11 +108,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           if (userData.last_workout_date) {
             localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
           }
+          
+          // Check for achievements after fetching user data
+          await checkForAchievements();
         } else {
           console.log("No user data found for ID:", authData.user.id);
         }
+        
+        setIsInitialized(true);
       } catch (error) {
         console.error("Error in fetchUserData:", error);
+        setIsInitialized(true);
       }
     };
     
@@ -203,14 +212,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const addPoints = async (amount: number) => {
     const newPoints = points + amount;
     setPoints(newPoints);
+    localStorage.setItem('points', String(newPoints));
     
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
+        // Use RPC function to atomically increment points
         const { error } = await supabase
-          .from('users')
-          .update({ points: newPoints })
-          .eq('id', authData.user.id);
+          .rpc('increment_points', { 
+            id_param: authData.user.id,
+            amount_param: amount 
+          });
           
         if (error) {
           console.error("Error updating points:", error);
@@ -220,11 +232,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             variant: "destructive",
           });
           setPoints(points);
+          localStorage.setItem('points', String(points));
           return;
         }
-        
-        // Update localStorage
-        localStorage.setItem('points', String(newPoints));
         
         // Add some coins for gaining points (1 coin per 10 points)
         if (amount > 0) {
@@ -233,14 +243,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             // Update coins
             const newCoins = coins + coinsToAdd;
             setCoins(newCoins);
+            localStorage.setItem('coins', String(newCoins));
             
             const { error: coinsError } = await supabase
-              .from('users')
-              .update({ coins: newCoins })
-              .eq('id', authData.user.id);
+              .rpc('increment_coins', {
+                id_param: authData.user.id,
+                amount_param: coinsToAdd
+              });
               
-            if (!coinsError) {
-              localStorage.setItem('coins', String(newCoins));
+            if (coinsError) {
+              console.error("Error updating coins:", coinsError);
+              setCoins(coins);
+              localStorage.setItem('coins', String(coins));
+            } else {
               toast({
                 title: "Coins Earned",
                 description: `You earned ${coinsToAdd} coins for your workout!`,
@@ -249,6 +264,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             }
           }
         }
+        
+        // Check for achievement unlocks
+        await checkForAchievements();
       }
     } catch (error) {
       console.error("Error in addPoints:", error);
@@ -261,13 +279,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const newCoins = coins - amount;
       setCoins(newCoins);
+      localStorage.setItem('coins', String(newCoins));
       
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
-          .from('users')
-          .update({ coins: newCoins })
-          .eq('id', authData.user.id);
+          .rpc('decrement_coins', {
+            id_param: authData.user.id,
+            amount_param: amount
+          });
           
         if (error) {
           console.error("Error updating coins:", error);
@@ -277,17 +297,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             variant: "destructive",
           });
           setCoins(coins);
+          localStorage.setItem('coins', String(coins));
           return false;
         }
-
-        // Update localStorage
-        localStorage.setItem('coins', String(newCoins));
 
         // Log the transaction for debugging
         console.log(`Successfully used ${amount} coins. New balance: ${newCoins}`);
         
         // Check for achievement unlocks based on spending coins
-        checkForAchievements();
+        await checkForAchievements();
       }
       
       return true;
@@ -310,53 +328,140 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       // Get all achievements
       const { data: achievements, error: achievementsError } = await supabase
         .from('achievements')
-        .select('*');
+        .select('*')
+        .order('points_required', { ascending: true });
         
       if (achievementsError) {
         console.error("Error fetching achievements:", achievementsError);
         return;
       }
       
-      // Check if user meets requirements for any achievements
-      for (const achievement of achievements) {
-        if (points >= achievement.points_required) {
-          // Check if achievement already unlocked
-          const { data: existingAchievement, error: checkError } = await supabase
-            .from('user_achievements')
-            .select('*')
-            .eq('user_id', authData.user.id)
-            .eq('achievement_id', achievement.id)
-            .maybeSingle();
-            
-          if (checkError) {
-            console.error("Error checking existing achievement:", checkError);
+      // Get currently unlocked achievements
+      const { data: existingAchievements, error: existingError } = await supabase
+        .from('user_achievements')
+        .select('achievement_id')
+        .eq('user_id', authData.user.id);
+      
+      if (existingError) {
+        console.error("Error fetching existing achievements:", existingError);
+        return;
+      }
+      
+      // Create a set of unlocked achievement IDs for faster lookup
+      const unlockedAchievementIds = new Set(
+        existingAchievements?.map(ua => ua.achievement_id) || []
+      );
+      
+      // Check for new achievements to unlock
+      const achievementsToUnlock = achievements?.filter(achievement => 
+        !unlockedAchievementIds.has(achievement.id) && 
+        points >= achievement.points_required
+      ) || [];
+      
+      // Unlock any newly qualified achievements
+      for (const achievement of achievementsToUnlock) {
+        const { error: unlockError } = await supabase
+          .from('user_achievements')
+          .insert({
+            user_id: authData.user.id,
+            achievement_id: achievement.id
+          });
+          
+        if (unlockError) {
+          console.error("Error unlocking achievement:", unlockError);
+          continue;
+        }
+        
+        // Notify user
+        toast({
+          title: "Achievement Unlocked!",
+          description: `${achievement.name}: ${achievement.description}`,
+          duration: 5000,
+        });
+        
+        // Log for debugging
+        console.log(`Achievement unlocked: ${achievement.name}`);
+      }
+      
+      // Now check for badges
+      // This is a simplified version - more complex criteria would be checked in a real app
+      const { data: workoutsCount, error: workoutsError } = await supabase
+        .from('workouts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', authData.user.id);
+      
+      if (workoutsError) {
+        console.error("Error fetching workouts count:", workoutsError);
+      }
+      
+      // Get existing badges
+      const { data: existingBadges, error: badgesError } = await supabase
+        .from('user_badges')
+        .select('badge_id')
+        .eq('user_id', authData.user.id);
+      
+      if (badgesError) {
+        console.error("Error fetching existing badges:", badgesError);
+      }
+      
+      const unlockedBadgeIds = new Set(
+        existingBadges?.map(ub => ub.badge_id) || []
+      );
+      
+      // Get all available badges
+      const { data: badges, error: allBadgesError } = await supabase
+        .from('badges')
+        .select('*');
+      
+      if (allBadgesError) {
+        console.error("Error fetching all badges:", allBadgesError);
+        return;
+      }
+      
+      // Check each badge's requirements
+      for (const badge of badges || []) {
+        if (unlockedBadgeIds.has(badge.id)) continue;
+        
+        let shouldUnlock = false;
+        
+        switch (badge.requirement_type) {
+          case 'workouts':
+            shouldUnlock = (workoutsCount?.count || 0) >= badge.requirement_value;
+            break;
+          case 'streak':
+            shouldUnlock = streak >= badge.requirement_value;
+            break;
+          case 'points':
+            shouldUnlock = points >= badge.requirement_value;
+            break;
+          case 'level':
+            const currentLevel = Math.floor(points / 100) + 1;
+            shouldUnlock = currentLevel >= badge.requirement_value;
+            break;
+        }
+        
+        if (shouldUnlock) {
+          const { error: unlockBadgeError } = await supabase
+            .from('user_badges')
+            .insert({
+              user_id: authData.user.id,
+              badge_id: badge.id
+            });
+          
+          if (unlockBadgeError) {
+            console.error("Error unlocking badge:", unlockBadgeError);
             continue;
           }
           
-          // If not already unlocked, add it
-          if (!existingAchievement) {
-            const { error: unlockError } = await supabase
-              .from('user_achievements')
-              .insert({
-                user_id: authData.user.id,
-                achievement_id: achievement.id
-              });
-              
-            if (unlockError) {
-              console.error("Error unlocking achievement:", unlockError);
-              continue;
-            }
-            
-            // Notify user
-            toast({
-              title: "Achievement Unlocked!",
-              description: `${achievement.name}: ${achievement.description}`,
-              duration: 5000,
-            });
-            
-            // Log for debugging
-            console.log(`Achievement unlocked: ${achievement.name}`);
-          }
+          // Notify user
+          toast({
+            title: "Badge Earned!",
+            description: `You've earned the ${badge.name} badge!`,
+            duration: 5000,
+          });
+          
+          // Give bonus points for earning a badge
+          await addPoints(50);
         }
       }
     } catch (error) {
@@ -413,6 +518,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
   };
+
+  // We need to make sure we don't show things too quickly before authentication
+  // is checked, which would cause flickering or inconsistent state
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <UserContext.Provider 

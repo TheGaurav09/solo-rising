@@ -35,6 +35,7 @@ const StorePage = () => {
         icon: 'zap',
         price: 50,
         item_type: 'boost',
+        image_path: '/images/store/double-points.png'
       },
       {
         id: '2',
@@ -43,6 +44,7 @@ const StorePage = () => {
         icon: 'shield',
         price: 75,
         item_type: 'consumable',
+        image_path: '/images/store/streak-saver.png'
       },
       {
         id: '3',
@@ -51,14 +53,16 @@ const StorePage = () => {
         icon: 'tag',
         price: 100,
         item_type: 'cosmetic',
+        image_path: '/images/store/custom-title.png'
       },
       {
         id: '4',
-        name: 'Extra life',
+        name: 'Extra Life',
         description: 'Continue workout even if you fail.',
         icon: 'heart',
         price: 120,
         item_type: 'powerup',
+        image_path: '/images/store/extra-life.png'
       },
       {
         id: '5',
@@ -67,6 +71,7 @@ const StorePage = () => {
         icon: 'trending-up',
         price: 90,
         item_type: 'boost',
+        image_path: '/images/store/xp-multiplier.png'
       },
       {
         id: '6',
@@ -75,6 +80,97 @@ const StorePage = () => {
         icon: 'image',
         price: 150,
         item_type: 'cosmetic',
+        image_path: '/images/store/profile-bg.png'
+      },
+      {
+        id: '7',
+        name: 'Energy Drink',
+        description: 'Instantly recover energy and continue your workout.',
+        icon: 'battery-charging',
+        price: 60,
+        item_type: 'consumable',
+        image_path: '/images/store/energy-drink.png'
+      },
+      {
+        id: '8',
+        name: 'Workout Skip',
+        description: 'Skip a workout while still earning points and maintaining streak.',
+        icon: 'skip-forward',
+        price: 200,
+        item_type: 'powerup',
+        image_path: '/images/store/workout-skip.png'
+      },
+      {
+        id: '9',
+        name: 'Power Gloves',
+        description: 'Increase strength for your next workout by 20%.',
+        icon: 'clipboard-list',
+        price: 80,
+        item_type: 'boost',
+        image_path: '/images/store/power-gloves.png'
+      },
+      {
+        id: '10',
+        name: 'Animated Avatar',
+        description: 'Add special animation effects to your profile avatar.',
+        icon: 'user',
+        price: 180,
+        item_type: 'cosmetic',
+        image_path: '/images/store/animated-avatar.png'
+      },
+      {
+        id: '11',
+        name: 'Mystery Box',
+        description: 'Contains a random item or bonus.',
+        icon: 'box',
+        price: 100,
+        item_type: 'consumable',
+        image_path: '/images/store/mystery-box.png'
+      },
+      {
+        id: '12',
+        name: 'Special Badge',
+        description: 'Exclusive badge to show off on your profile.',
+        icon: 'award',
+        price: 250,
+        item_type: 'cosmetic',
+        image_path: '/images/store/special-badge.png'
+      },
+      {
+        id: '13',
+        name: 'Super Protein',
+        description: 'Gives a 15% bonus to all points earned for 2 days.',
+        icon: 'activity',
+        price: 120,
+        item_type: 'boost',
+        image_path: '/images/store/super-protein.png'
+      },
+      {
+        id: '14',
+        name: 'Task Automator',
+        description: 'Automatically complete daily tasks for one day.',
+        icon: 'cpu',
+        price: 170,
+        item_type: 'powerup',
+        image_path: '/images/store/task-automator.png'
+      },
+      {
+        id: '15',
+        name: 'Training Program',
+        description: 'Unlock a specialized training program for optimal results.',
+        icon: 'calendar',
+        price: 300,
+        item_type: 'powerup',
+        image_path: '/images/store/training-program.png'
+      },
+      {
+        id: '16',
+        name: 'Friend Boost',
+        description: 'Increase points earned when working out with friends.',
+        icon: 'users',
+        price: 110,
+        item_type: 'boost',
+        image_path: '/images/store/friend-boost.png'
       },
     ];
     setItems(mockItems);
@@ -193,7 +289,7 @@ const StorePage = () => {
 
 const StoreItemsList = ({ items, onSelect, character }: { items: StoreItem[]; onSelect: (item: StoreItem) => void; character: string | null }) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
       {items.length === 0 ? (
         <div className="col-span-full text-center py-6 text-white/50">
           <p>No items found</p>
@@ -202,20 +298,20 @@ const StoreItemsList = ({ items, onSelect, character }: { items: StoreItem[]; on
         items.map((item) => (
           <div 
             key={item.id} 
-            className="bg-white/5 rounded-lg p-3 border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex flex-col"
+            className="bg-white/5 rounded-lg p-2 border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex flex-col"
             onClick={() => onSelect(item)}
           >
-            <div className="flex-1 flex items-center justify-center py-3">
-              <div className={`w-12 h-12 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
-                {getIconComponent(item.icon, 24)}
+            <div className="flex-1 flex items-center justify-center py-2">
+              <div className={`w-10 h-10 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
+                {getIconComponent(item.icon, 20)}
               </div>
             </div>
             
-            <div className="mt-2 text-center">
-              <h3 className="font-medium text-sm">{item.name}</h3>
+            <div className="mt-1 text-center">
+              <h3 className="font-medium text-xs truncate px-1">{item.name}</h3>
               <div className="flex items-center justify-center gap-1 mt-1">
-                <Coins size={14} className="text-yellow-500" />
-                <span className="font-bold text-sm">{item.price}</span>
+                <Coins size={12} className="text-yellow-500" />
+                <span className="font-bold text-xs">{item.price}</span>
               </div>
             </div>
           </div>

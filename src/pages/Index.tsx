@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import CharacterSelection from '@/components/CharacterSelection';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -22,9 +23,25 @@ const Index = () => {
           return;
         }
         
-        if (data.user && hasSelectedCharacter) {
-          // If user is logged in and has selected a character, redirect to workout page
-          navigate('/workout');
+        if (data.user) {
+          setCurrentUserId(data.user.id);
+          
+          // Check if this user has a record in the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('character_type')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          
+          if (userError) {
+            console.error("User data check error:", userError);
+            return;
+          }
+          
+          // If user exists in DB and has selected a character, redirect to workout page
+          if (userData && userData.character_type) {
+            navigate('/workout');
+          }
         }
       } catch (err) {
         console.error("Error checking authentication:", err);
@@ -36,8 +53,31 @@ const Index = () => {
     // Add listener for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event);
-      if (event === 'SIGNED_IN' && session && hasSelectedCharacter) {
-        navigate('/workout');
+      if (event === 'SIGNED_IN' && session) {
+        setCurrentUserId(session.user.id);
+        
+        // Check if the user has a character selected
+        const checkUserCharacter = async () => {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('character_type')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (userError) {
+            console.error("User data check error:", userError);
+            return;
+          }
+          
+          // If user exists in DB and has selected a character, redirect to workout page
+          if (userData && userData.character_type) {
+            navigate('/workout');
+          }
+        };
+        
+        checkUserCharacter();
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUserId(null);
       }
     });
     
@@ -61,6 +101,7 @@ const Index = () => {
       <CharacterSelection 
         onLoginClick={handleLoginClick}
         onSignupClick={handleSignupClick}
+        userId={currentUserId}
       />
       
       {showAuthModal && (

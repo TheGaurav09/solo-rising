@@ -13,7 +13,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-6 md:mb-0">
             <div className="flex items-center">
-              <span className="text-2xl font-bold text-gradient goku-gradient mr-2">WORKOUT WARS</span>
+              <span className="text-2xl font-bold text-gradient goku-gradient mr-2">SOLO PROVE</span>
             </div>
             <p className="text-white/60 text-sm mt-2">
               Train like your favorite anime character
@@ -26,7 +26,8 @@ const Footer = () => {
                 href="https://instagram.com/thegaurav.r" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/60 hover:text-[#E1306C] transition-colors"
+                aria-label="Instagram"
               >
                 <Instagram size={20} />
               </a>
@@ -34,7 +35,8 @@ const Footer = () => {
                 href="https://twitter.com/thegaurav.r" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/60 hover:text-[#1DA1F2] transition-colors"
+                aria-label="Twitter"
               >
                 <Twitter size={20} />
               </a>
@@ -43,6 +45,7 @@ const Footer = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-white/60 hover:text-white transition-colors"
+                aria-label="Github"
               >
                 <Github size={20} />
               </a>
@@ -50,14 +53,15 @@ const Footer = () => {
                 href="https://t.me/thegaurav.r" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/60 hover:text-[#0088cc] transition-colors"
+                aria-label="Telegram"
               >
                 <MessageCircle size={20} />
               </a>
             </div>
             
             <p className="text-white/60 text-sm text-center md:text-right">
-              © {currentYear} Workout Wars. All rights reserved.
+              © {currentYear} Solo Prove. All rights reserved.
             </p>
             <p className="text-white/40 text-xs mt-1 flex items-center">
               Made with <Heart size={12} className="mx-1 text-red-500" /> for anime and fitness fans
@@ -65,7 +69,7 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6">
           <div>
             <h4 className="font-semibold mb-3">Characters</h4>
             <ul className="space-y-2 text-sm text-white/60">

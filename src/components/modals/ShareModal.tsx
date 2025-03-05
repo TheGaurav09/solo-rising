@@ -12,7 +12,7 @@ interface ShareModalProps {
 
 const ShareModal = ({ onClose, character }: ShareModalProps) => {
   const appUrl = window.location.origin;
-  const shareText = "Join me on Workout Wars and transform your fitness journey with anime-inspired workouts! 💪";
+  const shareText = "Join me on Solo Prove and transform your fitness journey with anime-inspired workouts! 💪";
   
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`${appUrl}\n\n${shareText}`);
@@ -41,7 +41,7 @@ const ShareModal = ({ onClose, character }: ShareModalProps) => {
   const handleNativeShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'Workout Wars',
+        title: 'Solo Prove',
         text: shareText,
         url: appUrl,
       })
@@ -72,7 +72,7 @@ const ShareModal = ({ onClose, character }: ShareModalProps) => {
             </div>
           </div>
           
-          <h2 className="text-xl font-bold text-center mb-4">Share Workout Wars</h2>
+          <h2 className="text-xl font-bold text-center mb-4">Share Solo Prove</h2>
           
           <p className="text-center text-white/70 mb-6">
             Share this app with your friends and build a community of anime-inspired fitness warriors!

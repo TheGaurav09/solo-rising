@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -10,7 +9,7 @@ import { format } from 'date-fns';
 import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
 
 const WorkoutPage = () => {
-  const { character, userName, addPoints } = useUser();
+  const { character, userName, addPoints, streak, lastWorkoutDate } = useUser();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [duration, setDuration] = useState(30);
   const [reps, setReps] = useState(10);
@@ -102,6 +101,29 @@ const WorkoutPage = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastWorkoutDay = lastWorkoutDate ? new Date(lastWorkoutDate) : null;
+      
+      if (lastWorkoutDay) {
+        lastWorkoutDay.setHours(0, 0, 0, 0);
+      }
+      
+      let newStreak = streak;
+      const isNewDay = !lastWorkoutDay || today.getTime() > lastWorkoutDay.getTime();
+      
+      if (isNewDay) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (!lastWorkoutDay || 
+            lastWorkoutDay.getTime() === yesterday.getTime()) {
+          newStreak = streak + 1;
+        } else if (lastWorkoutDay.getTime() < yesterday.getTime()) {
+          newStreak = 1;
+        }
+      }
+
       const { data, error } = await supabase
         .from('workouts')
         .insert([
@@ -115,6 +137,17 @@ const WorkoutPage = () => {
         ]);
 
       if (error) throw error;
+      
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ 
+          streak: newStreak,
+          last_workout_date: new Date().toISOString(),
+          points: supabase.rpc('increment_points', { amount: pointsEarned })
+        })
+        .eq('id', user.user.id);
+      
+      if (userUpdateError) throw userUpdateError;
       
       addPoints(pointsEarned);
       
