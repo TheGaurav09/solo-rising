@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -20,6 +19,7 @@ interface UserContextType {
   addPoints: (points: number) => void;
   useCoins: (amount: number) => Promise<boolean>;
   checkForAchievements: () => Promise<void>;
+  updateUserProfile: (name: string) => Promise<boolean>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -192,7 +192,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Add this helper function to check for achievements
   const checkForAchievements = async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -255,6 +254,56 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUserProfile = async (name: string): Promise<boolean> => {
+    try {
+      if (!name.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid name",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return false;
+
+      const { error } = await supabase
+        .from('users')
+        .update({ warrior_name: name.trim() })
+        .eq('id', authData.user.id);
+
+      if (error) {
+        console.error("Error updating profile:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update profile. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      setUserName(name.trim());
+      localStorage.setItem('userName', name.trim());
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated",
+        duration: 3000,
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error in updateUserProfile:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating profile",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return (
     <UserContext.Provider 
       value={{
@@ -271,7 +320,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setCountry,
         addPoints,
         useCoins,
-        checkForAchievements
+        checkForAchievements,
+        updateUserProfile
       }}
     >
       {children}
