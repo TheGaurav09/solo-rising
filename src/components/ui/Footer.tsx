@@ -1,65 +1,50 @@
 
 import React from 'react';
-import { Instagram, Twitter, Youtube, MessageCircle, ExternalLink } from 'lucide-react';
+import { Instagram, Twitter, Youtube, DiscordLogo } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-black/30 backdrop-blur-md py-6 mt-8 border-t border-white/10">
+    <footer className="bg-black border-t border-white/10 py-6 mt-auto">
       <div className="container mx-auto px-4">
-        <div className="flex justify-center mb-6">
-          <div className="flex space-x-4">
+        <div className="flex flex-col items-center justify-center">
+          <div className="flex space-x-4 mb-4">
             <a 
               href="https://instagram.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/5 hover:bg-white/10 hover:scale-110 transition-all group"
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-110"
             >
-              <Instagram 
-                size={20} 
-                className="text-white/60 group-hover:text-pink-400 transition-colors" 
-              />
+              <Instagram size={20} className="text-pink-500" />
             </a>
             <a 
               href="https://twitter.com/thegaurav_r" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/5 hover:bg-white/10 hover:scale-110 transition-all group"
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-110"
             >
-              <Twitter 
-                size={20} 
-                className="text-white/60 group-hover:text-blue-400 transition-colors" 
-              />
+              <Twitter size={20} className="text-blue-400" />
             </a>
             <a 
               href="https://youtube.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/5 hover:bg-white/10 hover:scale-110 transition-all group"
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-110"
             >
-              <Youtube 
-                size={20} 
-                className="text-white/60 group-hover:text-red-500 transition-colors" 
-              />
+              <Youtube size={20} className="text-red-500" />
             </a>
             <a 
               href="https://discord.com/users/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/5 hover:bg-white/10 hover:scale-110 transition-all group"
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all hover:scale-110"
             >
-              <MessageCircle 
-                size={20} 
-                className="text-white/60 group-hover:text-indigo-400 transition-colors" 
-              />
+              <DiscordLogo size={20} className="text-indigo-400" />
             </a>
           </div>
-        </div>
-        
-        <div className="text-center text-white/40 text-sm">
-          <p>&copy; {new Date().getFullYear()} GokAI Workout. All rights reserved.</p>
-          <p className="mt-1 flex items-center justify-center">
-            Built with <span className="px-1">❤️</span> by thegaurav.r
-          </p>
+          <div className="text-white/60 text-sm">
+            <p>© 2023 Anime Workout. All rights reserved.</p>
+          </div>
         </div>
       </div>
     </footer>

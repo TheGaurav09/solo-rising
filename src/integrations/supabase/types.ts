@@ -33,6 +33,36 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          description: string
+          icon: string
+          id: string
+          image_path: string
+          name: string
+          requirement_type: string
+          requirement_value: number
+        }
+        Insert: {
+          description: string
+          icon: string
+          id?: string
+          image_path: string
+          name: string
+          requirement_type: string
+          requirement_value: number
+        }
+        Update: {
+          description?: string
+          icon?: string
+          id?: string
+          image_path?: string
+          name?: string
+          requirement_type?: string
+          requirement_value?: number
+        }
+        Relationships: []
+      }
       character_counts: {
         Row: {
           character_type: string
@@ -120,6 +150,35 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_items: {
         Row: {
           id: string
@@ -159,29 +218,38 @@ export type Database = {
       users: {
         Row: {
           character_type: string
+          coins: number | null
           created_at: string
           email: string
           id: string
+          last_workout_date: string | null
           password: string
           points: number
+          streak: number | null
           warrior_name: string
         }
         Insert: {
           character_type: string
+          coins?: number | null
           created_at?: string
           email: string
           id?: string
+          last_workout_date?: string | null
           password: string
           points?: number
+          streak?: number | null
           warrior_name: string
         }
         Update: {
           character_type?: string
+          coins?: number | null
           created_at?: string
           email?: string
           id?: string
+          last_workout_date?: string | null
           password?: string
           points?: number
+          streak?: number | null
           warrior_name?: string
         }
         Relationships: []
