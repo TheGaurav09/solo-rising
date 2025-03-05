@@ -1,267 +1,367 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Input } from '@/components/ui/input';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Music, Volume2, VolumeX, Repeat, Pause, Play, Save, UserCircle } from 'lucide-react';
+import { Music, Volume2, VolumeX, Palette, UserIcon, MessageSquare, Bell, LogOut } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import CollapsibleSection from '@/components/ui/CollapsibleSection';
+import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
+import { useNavigate } from 'react-router-dom';
 
-interface MusicPreferences {
-  playMusic: boolean;
-  loop: boolean;
-  volume: number;
-}
+const profileSchema = z.object({
+  warrior_name: z.string().min(2, 'Name must be at least 2 characters').max(30, 'Name must be 30 characters or less'),
+});
 
 const SettingsPage = () => {
-  const { userName, character, updateUserName } = useUser();
-  const [newUserName, setNewUserName] = useState(userName || '');
-  const [isSaving, setSaving] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [musicPrefs, setMusicPrefs] = useState<MusicPreferences>({
-    playMusic: false,
-    loop: true,
-    volume: 50
+  const { user, character, updateUser } = useUser();
+  const [loading, setLoading] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(50);
+  const [loopMusic, setLoopMusic] = useState(true);
+  const [enableNotifications, setEnableNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+  const [autoSaveWorkouts, setAutoSaveWorkouts] = useState(true);
+  const [aiAssistToggle, setAiAssistToggle] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const navigate = useNavigate();
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      warrior_name: user?.warrior_name || '',
+    },
   });
 
-  // Load preferences from localStorage
   useEffect(() => {
-    const savedPrefs = localStorage.getItem('musicPreferences');
-    if (savedPrefs) {
-      try {
-        const prefs = JSON.parse(savedPrefs);
-        setMusicPrefs(prefs);
-      } catch (err) {
-        console.error("Error loading music preferences", err);
-      }
+    // Create audio element
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/background-music.mp3');
+      audioRef.current.volume = musicVolume / 100;
+      audioRef.current.loop = loopMusic;
     }
-  }, []);
 
-  // Initialize audio
-  useEffect(() => {
-    const audioElement = new Audio('/background-music.mp3');
-    setAudio(audioElement);
-    
+    // Load settings from localStorage
+    const loadSettings = () => {
+      const settings = localStorage.getItem('settings');
+      if (settings) {
+        const parsedSettings = JSON.parse(settings);
+        setMusicVolume(parsedSettings.musicVolume || 50);
+        setLoopMusic(parsedSettings.loopMusic !== undefined ? parsedSettings.loopMusic : true);
+        setEnableNotifications(parsedSettings.enableNotifications !== undefined ? parsedSettings.enableNotifications : true);
+        setDarkMode(parsedSettings.darkMode !== undefined ? parsedSettings.darkMode : true);
+        setAutoSaveWorkouts(parsedSettings.autoSaveWorkouts !== undefined ? parsedSettings.autoSaveWorkouts : true);
+        setAiAssistToggle(parsedSettings.aiAssistToggle !== undefined ? parsedSettings.aiAssistToggle : true);
+        setIsMusicPlaying(parsedSettings.isMusicPlaying || false);
+      }
+    };
+
+    loadSettings();
+
     return () => {
-      audioElement.pause();
-      audioElement.src = '';
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     };
   }, []);
 
-  // Apply preferences to audio
   useEffect(() => {
-    if (audio) {
-      audio.loop = musicPrefs.loop;
-      audio.volume = musicPrefs.volume / 100;
+    if (audioRef.current) {
+      audioRef.current.volume = musicVolume / 100;
+      audioRef.current.loop = loopMusic;
       
-      if (musicPrefs.playMusic && !isPlaying) {
-        audio.play().then(() => {
-          setIsPlaying(true);
-        }).catch(err => {
-          console.error("Error playing audio:", err);
-        });
-      } else if (!musicPrefs.playMusic && isPlaying) {
-        audio.pause();
-        setIsPlaying(false);
+      if (isMusicPlaying) {
+        audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      } else {
+        audioRef.current.pause();
       }
     }
     
-    // Save preferences to localStorage
-    localStorage.setItem('musicPreferences', JSON.stringify(musicPrefs));
-  }, [audio, musicPrefs, isPlaying]);
+    // Save settings to localStorage
+    const settings = {
+      musicVolume,
+      loopMusic,
+      enableNotifications,
+      darkMode,
+      autoSaveWorkouts,
+      aiAssistToggle,
+      isMusicPlaying,
+    };
+    
+    localStorage.setItem('settings', JSON.stringify(settings));
+  }, [musicVolume, loopMusic, isMusicPlaying, enableNotifications, darkMode, autoSaveWorkouts, aiAssistToggle]);
 
-  const handleSaveProfile = async () => {
-    if (!newUserName.trim()) {
-      toast({
-        title: "Error",
-        description: "Username cannot be empty",
-        variant: "destructive",
-      });
-      return;
-    }
+  const toggleMusic = () => {
+    setIsMusicPlaying(!isMusicPlaying);
+  };
 
-    setSaving(true);
+  const onSubmit = async (data: any) => {
     try {
+      setLoading(true);
+      
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
-        throw new Error("User not authenticated");
+        throw new Error('User not authenticated');
       }
-
+      
       const { error } = await supabase
         .from('users')
-        .update({ warrior_name: newUserName })
+        .update({ warrior_name: data.warrior_name })
         .eq('id', userData.user.id);
-
+      
       if (error) throw error;
-
-      // Update context
-      updateUserName(newUserName);
-
+      
+      updateUser({ warrior_name: data.warrior_name });
+      
       toast({
-        title: "Success",
-        description: "Profile updated successfully",
+        title: 'Profile Updated',
+        description: 'Your profile has been updated successfully.',
+        duration: 3000,
       });
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
+    } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
-        variant: "destructive",
+        title: 'Update Failed',
+        description: 'There was an error updating your profile.',
+        variant: 'destructive',
       });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const togglePlayMusic = () => {
-    setMusicPrefs({
-      ...musicPrefs,
-      playMusic: !musicPrefs.playMusic
-    });
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/');
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: 'Logout Failed',
+        description: 'There was an error logging out. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const toggleLoopMusic = () => {
-    setMusicPrefs({
-      ...musicPrefs,
-      loop: !musicPrefs.loop
-    });
+  const getAccentColor = () => {
+    switch (character) {
+      case 'goku': return 'text-goku-primary';
+      case 'saitama': return 'text-saitama-primary';
+      case 'jin-woo': return 'text-jin-woo-primary';
+      default: return 'text-primary';
+    }
   };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const volume = parseInt(e.target.value);
-    setMusicPrefs({
-      ...musicPrefs,
-      volume
-    });
+  const getButtonColor = () => {
+    switch (character) {
+      case 'goku': return 'bg-goku-primary hover:bg-goku-primary/90 text-black';
+      case 'saitama': return 'bg-saitama-primary hover:bg-saitama-primary/90 text-black';
+      case 'jin-woo': return 'bg-jin-woo-primary hover:bg-jin-woo-primary/90';
+      default: return 'bg-primary hover:bg-primary/90';
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <CollapsibleSection title="Profile Settings" defaultOpen={true}>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${character ? `bg-${character}-primary/30` : 'bg-primary/30'}`}>
-                  <UserCircle className={character ? `text-${character}-primary` : 'text-primary'} size={24} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">{userName}</h2>
-                  <p className="text-white/70">Edit your profile details below</p>
-                </div>
+      
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-3 md:grid-cols-none">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <UserIcon size={16} />
+            <span className="hidden md:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="audio" className="flex items-center gap-2">
+            <Music size={16} />
+            <span className="hidden md:inline">Audio</span>
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <Palette size={16} />
+            <span className="hidden md:inline">Preferences</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="profile">
+          <AnimatedCard className="p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <UserIcon size={20} />
+              <span>Profile Settings</span>
+            </h2>
+            
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <Label htmlFor="warrior_name">Warrior Name</Label>
+                <Input
+                  id="warrior_name"
+                  {...register('warrior_name')}
+                  className="bg-white/5"
+                />
+                {errors.warrior_name && (
+                  <p className="text-red-500 text-sm mt-1">{errors.warrior_name.message as string}</p>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="userName">Warrior Name</Label>
-                <div className="flex gap-2">
-                  <input
-                    id="userName"
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-white/20 bg-white/5 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Enter your warrior name"
-                  />
-                </div>
-              </div>
-
-              <AnimatedButton
-                onClick={handleSaveProfile}
-                disabled={isSaving || !newUserName.trim() || newUserName === userName}
-                character={character || undefined}
-                className="mt-4"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? 'Saving...' : 'Save Profile'}
-              </AnimatedButton>
-            </div>
-          </CollapsibleSection>
-        </div>
-
-        <div>
-          <CollapsibleSection title="Music Settings" defaultOpen={true}>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Music size={20} />
-                  <span>Background Music</span>
-                </div>
+              
+              <div className="pt-4">
                 <AnimatedButton
-                  variant="outline"
-                  onClick={togglePlayMusic}
-                  character={character || undefined}
-                  size="sm"
+                  type="submit"
+                  className={getButtonColor()}
+                  disabled={loading}
                 >
-                  {musicPrefs.playMusic ? (
-                    <>
-                      <Pause className="mr-2 h-4 w-4" />
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Play
-                    </>
-                  )}
+                  {loading ? 'Updating...' : 'Save Profile'}
                 </AnimatedButton>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="volume">Volume</Label>
-                  <div className="flex items-center gap-2">
-                    {musicPrefs.volume > 0 ? (
-                      <Volume2 size={18} className="text-white/70" />
-                    ) : (
-                      <VolumeX size={18} className="text-white/70" />
-                    )}
-                    <span className="text-sm text-white/70">{musicPrefs.volume}%</span>
-                  </div>
+            </form>
+            
+            <Separator className="my-6" />
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Account Actions</h3>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </AnimatedCard>
+        </TabsContent>
+        
+        <TabsContent value="audio">
+          <AnimatedCard className="p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Music size={20} />
+              <span>Audio Settings</span>
+            </h2>
+            
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Background Music</Label>
+                  <button
+                    onClick={toggleMusic}
+                    className={`px-3 py-1 rounded-full flex items-center gap-2 text-sm ${
+                      isMusicPlaying 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-red-500/20 text-red-400'
+                    }`}
+                  >
+                    {isMusicPlaying ? 'Playing' : 'Paused'}
+                  </button>
                 </div>
-                <input
-                  id="volume"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={musicPrefs.volume}
-                  onChange={handleVolumeChange}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={toggleMusic}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    {isMusicPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                  </button>
+                  
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={musicVolume}
+                    onChange={(e) => setMusicVolume(parseInt(e.target.value))}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                  />
+                  
+                  <span className="text-sm text-white/70">{musicVolume}%</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Loop Music</Label>
+                  <p className="text-sm text-white/60">Repeat background music when it ends</p>
+                </div>
+                <Switch 
+                  checked={loopMusic} 
+                  onCheckedChange={setLoopMusic}
                 />
               </div>
-
+            </div>
+          </AnimatedCard>
+        </TabsContent>
+        
+        <TabsContent value="preferences">
+          <AnimatedCard className="p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Palette size={20} />
+              <span>App Preferences</span>
+            </h2>
+            
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Repeat size={20} />
-                  <span>Loop Music</span>
+                <div className="space-y-1">
+                  <Label>Notifications</Label>
+                  <p className="text-sm text-white/60">Enable push notifications</p>
                 </div>
-                <div 
-                  onClick={toggleLoopMusic}
-                  className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
-                    musicPrefs.loop 
-                      ? character ? `bg-${character}-primary` : 'bg-primary'
-                      : 'bg-white/10'
-                  }`}
-                >
-                  <div 
-                    className={`bg-white h-4 w-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                      musicPrefs.loop ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </div>
+                <Switch 
+                  checked={enableNotifications} 
+                  onCheckedChange={setEnableNotifications}
+                />
               </div>
-
-              <div className="text-sm text-white/70 mt-4">
-                <p>Music settings are automatically saved and will be applied when you visit the site again.</p>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Dark Mode</Label>
+                  <p className="text-sm text-white/60">Use dark theme for the app</p>
+                </div>
+                <Switch 
+                  checked={darkMode} 
+                  onCheckedChange={setDarkMode}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>Auto-Save Workouts</Label>
+                  <p className="text-sm text-white/60">Automatically save workout progress</p>
+                </div>
+                <Switch 
+                  checked={autoSaveWorkouts} 
+                  onCheckedChange={setAutoSaveWorkouts}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label>AI Assistant</Label>
+                  <p className="text-sm text-white/60">Enable AI workout suggestions</p>
+                </div>
+                <Switch 
+                  checked={aiAssistToggle} 
+                  onCheckedChange={setAiAssistToggle}
+                />
               </div>
             </div>
-          </CollapsibleSection>
-        </div>
-      </div>
+          </AnimatedCard>
+        </TabsContent>
+      </Tabs>
+      
+      {showLogoutModal && (
+        <LogoutConfirmModal 
+          onConfirm={handleLogout} 
+          onCancel={() => setShowLogoutModal(false)}
+          character={character}
+        />
+      )}
     </div>
   );
 };

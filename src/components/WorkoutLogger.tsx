@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
-import { Dumbbell, Timer, Repeat, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dumbbell, Timer, Repeat, CheckCircle2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -48,7 +47,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
   const visibleExercises = showAllExercises ? exercises : exercises.slice(0, 6);
 
   useEffect(() => {
-    // Check if there's a cooldown remaining
     const checkInitialCooldown = async () => {
       const lastWorkout = localStorage.getItem('lastWorkoutTime');
       
@@ -60,7 +58,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         if (diffInMinutes < 30) {
           setCooldownRemaining(30 - diffInMinutes);
           
-          // Set up interval to update remaining time
           const interval = setInterval(() => {
             setCooldownRemaining(prev => {
               if (prev <= 1) {
@@ -69,7 +66,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
               }
               return prev - 1;
             });
-          }, 60000); // Update every minute
+          }, 60000);
           
           return () => clearInterval(interval);
         }
@@ -146,15 +143,12 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         }
       }
       
-      // Store the last workout time in localStorage
       const now = new Date();
       localStorage.setItem('lastWorkoutTime', now.toISOString());
       await setLastWorkoutTime(now.toISOString());
       
-      // Set cooldown
       setCooldownRemaining(30);
       
-      // Start cooldown timer
       const interval = setInterval(() => {
         setCooldownRemaining(prev => {
           if (prev <= 1) {
@@ -163,7 +157,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
           }
           return prev - 1;
         });
-      }, 60000); // Update every minute
+      }, 60000);
       
       addPoints(pointsEarned);
       
@@ -188,6 +182,51 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const WorkoutButton = ({ onClick, isDisabled, isLogging, character }) => {
+    const getButtonClasses = () => {
+      let baseClasses = "w-full py-3 mt-4 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all hover:scale-105 hover-lift";
+      
+      if (isDisabled) {
+        return `${baseClasses} bg-gray-700 text-gray-400 cursor-not-allowed`;
+      }
+      
+      if (character) {
+        switch (character) {
+          case 'goku':
+            return `${baseClasses} bg-goku-primary text-black hover:bg-goku-primary/90`;
+          case 'saitama':
+            return `${baseClasses} bg-saitama-primary text-black hover:bg-saitama-primary/90`;
+          case 'jin-woo':
+            return `${baseClasses} bg-jin-woo-primary hover:bg-jin-woo-primary/90`;
+          default:
+            return `${baseClasses} bg-primary hover:bg-primary/90`;
+        }
+      }
+      
+      return `${baseClasses} bg-primary hover:bg-primary/90`;
+    };
+    
+    return (
+      <button
+        onClick={onClick}
+        disabled={isDisabled || isLogging}
+        className={getButtonClasses()}
+      >
+        {isLogging ? (
+          <>
+            <Loader2 className="animate-spin" size={20} />
+            <span>Logging Workout...</span>
+          </>
+        ) : (
+          <>
+            <Dumbbell size={20} />
+            <span>Log Workout</span>
+          </>
+        )}
+      </button>
+    );
   };
 
   return (
@@ -310,14 +349,12 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
             </div>
           </div>
           
-          <AnimatedButton
-            onClick={handleLogWorkout}
-            disabled={!selectedExercise || loading || cooldownRemaining > 0}
-            character={character || undefined}
-            className="w-full"
-          >
-            {loading ? 'Logging...' : cooldownRemaining > 0 ? `Cooldown (${cooldownRemaining}m)` : 'Log Workout'}
-          </AnimatedButton>
+          <WorkoutButton 
+            onClick={handleLogWorkout} 
+            isDisabled={!selectedExercise || loading || cooldownRemaining > 0} 
+            isLogging={loading} 
+            character={character}
+          />
         </>
       )}
     </AnimatedCard>

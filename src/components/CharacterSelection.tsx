@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -30,7 +29,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
   useEffect(() => {
     const fetchCharacterCounts = async () => {
       try {
-        // Count users by character type
         const { data: gokuCount, error: gokuError } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
@@ -212,7 +210,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           <div className="mt-4 text-center">
             <button 
               onClick={onLoginClick} 
-              className="text-white/70 hover:text-white transition-colors"
+              className="text-white/70 hover:text-white transition-colors underline"
             >
               Already have an account? Login
             </button>
