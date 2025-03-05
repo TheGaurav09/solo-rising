@@ -130,7 +130,7 @@ const Navbar = () => {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="ml-2 flex items-center gap-1">
+                <Button variant="outline" size="sm" className="ml-2 flex items-center gap-1">
                   {userName}
                 </Button>
               </DropdownMenuTrigger>
