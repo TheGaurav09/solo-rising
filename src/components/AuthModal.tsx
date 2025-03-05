@@ -4,8 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
-import { Mail, Lock, User, X } from 'lucide-react';
+import { Mail, Lock, User, X, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// List of countries
+const countries = [
+  "Global", "United States", "Canada", "United Kingdom", "Australia", "Germany", 
+  "France", "Japan", "China", "India", "Brazil", "Mexico", "South Africa", 
+  "Russia", "Italy", "Spain", "South Korea", "Netherlands", "Sweden", "Norway"
+];
 
 interface AuthModalProps {
   character: 'goku' | 'saitama' | 'jin-woo';
@@ -18,6 +25,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [warriorName, setWarriorName] = useState('');
+  const [country, setCountry] = useState('Global');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -54,7 +62,8 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
           options: {
             data: {
               warrior_name: warriorName,
-              character_type: character
+              character_type: character,
+              country: country
             }
           }
         });
@@ -74,7 +83,8 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                   warrior_name: warriorName,
                   character_type: character,
                   password: 'hashed-by-supabase', // We don't store actual passwords
-                  points: 0
+                  points: 0,
+                  country: country
                 },
               ]);
 
@@ -93,6 +103,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
               localStorage.setItem('character', character);
               localStorage.setItem('userName', warriorName);
               localStorage.setItem('points', '0');
+              localStorage.setItem('country', country);
             }
             
             // Wait a bit longer before success to ensure database operations complete
@@ -221,6 +232,29 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                     className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 hover:border-white/20 focus:outline-none transition-colors"
                     placeholder="Choose a warrior name"
                   />
+                </div>
+              </div>
+            )}
+            
+            {!isLogin && (
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium mb-2 text-white/80">
+                  Country
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Globe className="h-5 w-5 text-white/40" />
+                  </div>
+                  <select
+                    id="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 hover:border-white/20 focus:outline-none transition-colors"
+                  >
+                    {countries.map((countryOption) => (
+                      <option key={countryOption} value={countryOption}>{countryOption}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             )}

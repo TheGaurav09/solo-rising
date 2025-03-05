@@ -57,6 +57,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             setCoins(data.coins || 0);
             setStreak(data.streak || 0);
             setLastWorkoutDate(data.last_workout_date || null);
+            // Handle country field with a fallback to 'Global'
             setCountry(data.country || 'Global');
             setHasSelectedCharacter(true);
           } else if (error) {
@@ -135,6 +136,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCoins(data.coins || 0); 
           setStreak(data.streak || 0);
           setLastWorkoutDate(data.last_workout_date || null);
+          // Handle country field with a fallback to 'Global'
           setCountry(data.country || 'Global');
           setHasSelectedCharacter(true);
         }

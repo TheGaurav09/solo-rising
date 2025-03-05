@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';

@@ -4,42 +4,165 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { ShoppingBag, Info, Sparkles, Medal, Dumbbell } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
 import { getIconComponent } from '@/lib/iconUtils';
+import { toast } from '@/components/ui/use-toast';
+import { ShoppingBag, Info, ArrowUp } from 'lucide-react';
 import ItemDetailModal from '@/components/modals/ItemDetailModal';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 
-interface StoreItem {
+type StoreItem = {
   id: string;
   name: string;
   description: string;
   price: number;
   icon: string;
   item_type: string;
-}
+};
 
-const StorePage = () => {
-  const { coins, useCoins, character } = useUser();
-  const [items, setItems] = useState<StoreItem[]>([]);
-  const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [itemTypeFilter, setItemTypeFilter] = useState<string | null>(null);
+const StoreItemCard = ({ 
+  item, 
+  onSelect, 
+  owned,
+  character 
+}: { 
+  item: StoreItem; 
+  onSelect: (item: StoreItem) => void; 
+  owned: boolean;
+  character: 'goku' | 'saitama' | 'jin-woo' | null;
+}) => {
+  const icon = getIconComponent(item.icon, 24);
+  
+  return (
+    <div 
+      className={`p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 
+      transition-all duration-300 cursor-pointer hover:scale-[1.02] group 
+      ${owned ? 'bg-gradient-to-br from-white/10 to-transparent' : ''}`}
+      onClick={() => onSelect(item)}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`rounded-full p-3 ${
+          character ? `bg-${character}-primary/20` : 'bg-primary/20'
+        }`}>
+          {icon}
+        </div>
+        
+        <div className="flex-1">
+          <h3 className="font-medium text-white group-hover:text-white/90">{item.name}</h3>
+          <p className="text-sm text-white/60 mt-1 line-clamp-2">{item.description}</p>
+          
+          <div className="flex justify-between items-center mt-3">
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full 
+              ${character ? `bg-${character}-primary/20 text-${character}-primary` : 'bg-primary/20 text-primary'}`}
+            >
+              <ShoppingBag size={14} />
+              <span>{item.price}</span>
+            </div>
+            
+            {owned && (
+              <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full">
+                Owned
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StoreFilters = ({ 
+  selectedType, 
+  setSelectedType,
+  character 
+}: { 
+  selectedType: string;
+  setSelectedType: React.Dispatch<React.SetStateAction<string>>;
+  character: 'goku' | 'saitama' | 'jin-woo' | null;
+}) => {
+  const types = [
+    { id: 'all', label: 'All Items' },
+    { id: 'badge', label: 'Badges' },
+    { id: 'power', label: 'Powers' },
+    { id: 'cosmetic', label: 'Cosmetics' }
+  ];
+  
+  return (
+    <div className="flex flex-wrap gap-2 mb-6">
+      {types.map(type => (
+        <button
+          key={type.id}
+          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            selectedType === type.id
+              ? character 
+                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                : 'bg-primary/20 text-primary border border-primary/40'
+              : 'bg-white/5 hover:bg-white/10 border border-white/10'
+          }`}
+          onClick={() => setSelectedType(type.id)}
+        >
+          {type.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const ScrollToTopButton = () => {
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    fetchStoreItems();
-    fetchPurchasedItems();
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', toggleVisibility);
+    return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 
-  const fetchStoreItems = async () => {
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  return (
+    <button
+      onClick={scrollToTop}
+      className={`fixed bottom-6 right-6 p-3 rounded-full bg-white/10 hover:bg-white/20 
+        transition-all duration-300 shadow-lg z-10 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+    >
+      <ArrowUp size={20} />
+    </button>
+  );
+};
+
+const StorePage = () => {
+  const { character, coins, useCoins } = useUser();
+  const [items, setItems] = useState<StoreItem[]>([]);
+  const [ownedItems, setOwnedItems] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [selectedType, setSelectedType] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDetail, setShowDetail] = useState(false);
+
+  useEffect(() => {
+    fetchItems();
+    fetchOwnedItems();
+  }, []);
+
+  const fetchItems = async () => {
     try {
       const { data, error } = await supabase
         .from('store_items')
         .select('*')
         .order('price', { ascending: true });
-
+        
       if (error) throw error;
       setItems(data || []);
     } catch (error) {
@@ -54,7 +177,7 @@ const StorePage = () => {
     }
   };
 
-  const fetchPurchasedItems = async () => {
+  const fetchOwnedItems = async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) return;
@@ -63,249 +186,182 @@ const StorePage = () => {
         .from('user_items')
         .select('item_id')
         .eq('user_id', authData.user.id);
-
+        
       if (error) throw error;
       
-      // Extract just the item_ids into an array
-      const itemIds = data.map(item => item.item_id);
-      setPurchasedItems(itemIds);
+      const ownedIds = data.map(item => item.item_id);
+      setOwnedItems(ownedIds);
     } catch (error) {
-      console.error('Error fetching purchased items:', error);
+      console.error('Error fetching owned items:', error);
     }
   };
 
-  const purchaseItem = async (item: StoreItem) => {
+  const handlePurchase = async () => {
+    if (!selectedItem) return;
+    
     try {
-      // First check if user already purchased this item
-      if (purchasedItems.includes(item.id)) {
+      // Check if already owned
+      if (ownedItems.includes(selectedItem.id)) {
         toast({
-          title: 'Already Purchased',
+          title: 'Already Owned',
           description: 'You already own this item',
         });
         return;
       }
-
-      // Check if user has enough coins
-      if (coins < item.price) {
+      
+      // Check if enough coins
+      if (coins < selectedItem.price) {
         toast({
           title: 'Not Enough Coins',
-          description: 'You don\'t have enough coins to purchase this item',
+          description: `You need ${selectedItem.price - coins} more coins to purchase this item`,
           variant: 'destructive',
         });
         return;
       }
-
-      // Use UserContext to spend coins
-      const success = await useCoins(item.price);
       
-      if (!success) {
-        toast({
-          title: 'Purchase Failed',
-          description: 'Failed to purchase the item',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Record the purchase in the database
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) {
-        toast({
-          title: 'Authentication Error',
-          description: 'Please log in to purchase items',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const { error } = await supabase
-        .from('user_items')
-        .insert({
-          user_id: authData.user.id,
-          item_id: item.id
-        });
-
-      if (error) throw error;
-
-      // Update the local state
-      setPurchasedItems([...purchasedItems, item.id]);
+      // Use coins and add to inventory
+      const success = await useCoins(selectedItem.price);
       
-      toast({
-        title: 'Purchase Successful',
-        description: `You have purchased ${item.name}`,
-      });
+      if (success) {
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData.user) return;
+        
+        const { error } = await supabase
+          .from('user_items')
+          .insert([
+            { 
+              user_id: authData.user.id,
+              item_id: selectedItem.id
+            }
+          ]);
+          
+        if (error) throw error;
+        
+        // Update local state
+        setOwnedItems([...ownedItems, selectedItem.id]);
+        
+        toast({
+          title: 'Purchase Successful',
+          description: `You have successfully purchased ${selectedItem.name}!`,
+        });
+        
+        setShowDetail(false);
+      }
     } catch (error) {
       console.error('Error purchasing item:', error);
       toast({
         title: 'Purchase Failed',
-        description: 'An error occurred while purchasing the item',
+        description: 'There was an error completing your purchase',
         variant: 'destructive',
       });
     }
   };
 
-  const handleOpenModal = (item: StoreItem) => {
-    setSelectedItem(item);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedItem(null);
-  };
-
-  const renderItemIcon = (item: StoreItem) => {
-    switch (item.item_type) {
-      case 'badge':
-        return <Medal size={24} className="text-yellow-500" />;
-      case 'equipment':
-        return <Dumbbell size={24} className="text-blue-500" />;
-      case 'power':
-        return <Sparkles size={24} className="text-purple-500" />;
-      default:
-        return getIconComponent(item.icon, 24);
-    }
-  };
-
-  const getItemTypeFilterButtons = () => {
-    const itemTypes = Array.from(new Set(items.map(item => item.item_type)));
+  const filteredItems = items.filter(item => {
+    const matchesType = selectedType === 'all' || item.item_type === selectedType;
+    const matchesSearch = searchQuery === '' || 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return (
-      <div className="flex flex-wrap gap-2 mb-6">
-        <button
-          className={`px-3 py-1 rounded-full text-sm ${
-            itemTypeFilter === null 
-              ? character 
-                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
-                : 'bg-primary/20 text-primary border border-primary/40'
-              : 'bg-white/10 hover:bg-white/20 border border-white/10'
-          }`}
-          onClick={() => setItemTypeFilter(null)}
-        >
-          All Items
-        </button>
-        
-        {itemTypes.map(type => (
-          <button
-            key={type}
-            className={`px-3 py-1 rounded-full text-sm capitalize ${
-              itemTypeFilter === type 
-                ? character 
-                  ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
-                  : 'bg-primary/20 text-primary border border-primary/40'
-                : 'bg-white/10 hover:bg-white/20 border border-white/10'
-            }`}
-            onClick={() => setItemTypeFilter(type)}
-          >
-            {type}
-          </button>
-        ))}
-      </div>
-    );
+    return matchesType && matchesSearch;
+  });
+
+  const handleSelectItem = (item: StoreItem) => {
+    setSelectedItem(item);
+    setShowDetail(true);
   };
 
-  const filteredItems = itemTypeFilter 
-    ? items.filter(item => item.item_type === itemTypeFilter)
-    : items;
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <ShoppingBag className="text-white/80" />
-          Store
-          <InfoTooltip 
-            content="Purchase items with coins you earn from workouts to customize your profile and unlock special features."
-            position="right"
-          />
-        </h1>
+      <ScrollToTopButton />
+      
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Store
+            <InfoTooltip 
+              content="Purchase items using the coins you earn from workouts. Collect badges, power-ups, and cosmetic enhancements for your character."
+              position="right"
+            />
+          </h1>
+          
+          <div className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            character ? `bg-${character}-primary/20` : 'bg-primary/20'
+          }`}>
+            <ShoppingBag size={18} />
+            <span className="font-medium">{coins} coins</span>
+          </div>
+        </div>
         
-        <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 flex items-center gap-2">
-          <span className="text-yellow-400">💰</span>
-          <span className="font-medium">{coins}</span>
-          <span className="text-sm text-white/60">coins</span>
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+          <StoreFilters 
+            selectedType={selectedType} 
+            setSelectedType={setSelectedType} 
+            character={character}
+          />
+          
+          <div className="w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 outline-none transition-colors"
+            />
+          </div>
         </div>
       </div>
-
-      {getItemTypeFilterButtons()}
       
-      {filteredItems.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[300px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-12">
-          <ShoppingBag size={48} className="mx-auto mb-4 text-white/30" />
-          <p className="text-white/60">No items available in this category</p>
+          <AnimatedCard className="mx-auto max-w-md p-6">
+            <Info size={48} className="mx-auto mb-4 opacity-50" />
+            <h3 className="text-xl font-medium mb-2">No Items Found</h3>
+            <p className="text-white/60 mb-4">
+              {searchQuery 
+                ? `No items matching "${searchQuery}" in the ${selectedType === 'all' ? 'store' : selectedType + ' category'}.` 
+                : `No items available in the ${selectedType === 'all' ? 'store' : selectedType + ' category'} right now.`}
+            </p>
+            <AnimatedButton 
+              character={character}
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedType('all');
+              }}
+            >
+              Clear Filters
+            </AnimatedButton>
+          </AnimatedCard>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item) => (
-            <AnimatedCard key={item.id} className="overflow-hidden">
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                      {renderItemIcon(item)}
-                    </div>
-                    <div>
-                      <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-xs text-white/60 capitalize">{item.item_type}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-full text-sm">
-                    <span className="text-yellow-400">💰</span>
-                    <span>{item.price}</span>
-                  </div>
-                </div>
-                
-                <p className="text-sm text-white/80 mb-4 line-clamp-2">
-                  {item.description}
-                </p>
-                
-                <div className="flex justify-between">
-                  <button 
-                    className="text-sm text-white/60 hover:text-white"
-                    onClick={() => handleOpenModal(item)}
-                  >
-                    View Details
-                  </button>
-                  
-                  {purchasedItems.includes(item.id) ? (
-                    <div className="px-2 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">
-                      Owned
-                    </div>
-                  ) : (
-                    <AnimatedButton
-                      character={character}
-                      disabled={coins < item.price}
-                      className="text-sm px-3 py-1"
-                      onClick={() => purchaseItem(item)}
-                    >
-                      Purchase
-                    </AnimatedButton>
-                  )}
-                </div>
-              </div>
-            </AnimatedCard>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredItems.map(item => (
+            <StoreItemCard 
+              key={item.id} 
+              item={item}
+              onSelect={handleSelectItem}
+              owned={ownedItems.includes(item.id)}
+              character={character}
+            />
           ))}
         </div>
       )}
       
-      {showModal && selectedItem && (
+      {showDetail && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          onClose={closeModal}
-          onPurchase={purchasedItems.includes(selectedItem.id) 
-            ? undefined 
-            : () => purchaseItem(selectedItem)
-          }
-          isOwned={purchasedItems.includes(selectedItem.id)}
-          character={character || undefined}
+          onClose={handleCloseDetail}
+          onPurchase={handlePurchase}
+          isOwned={ownedItems.includes(selectedItem.id)}
+          character={character}
         />
       )}
     </div>
