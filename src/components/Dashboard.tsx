@@ -1,13 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from '@/components/ui/sidebar';
+import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
 import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
 import CoinDisplay from './ui/CoinDisplay';
 
@@ -220,7 +218,6 @@ const Dashboard = () => {
     }
   };
   
-  // Close sidebar when clicking outside of it
   const handleClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
     if (
       !sidebarHidden && 
@@ -232,79 +229,103 @@ const Dashboard = () => {
     }
   };
   
+  const sidebarVariants = {
+    open: { 
+      x: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30 
+      } 
+    },
+    closed: { 
+      x: "-100%",
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30 
+      } 
+    }
+  };
+  
   return (
     <div 
       className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}
       onClick={handleClickOutside}
     >
       <div className="flex flex-1 overflow-hidden">
-        {!sidebarHidden && (
-          <div className="sidebar fixed h-full z-10 w-64 bg-black/60 backdrop-blur-md border-r border-white/10 transition-all duration-300">
-            <div className="h-full flex flex-col py-6">
-              <div className="px-5 flex items-center justify-between">
-                <div className={`${getBrandIconStyle()} mb-6 text-2xl font-bold flex items-center gap-2`}>
-                  {getIconComponent('dumbbell', 24)}
-                  <span>Solo Rising</span>
-                </div>
-                <button 
-                  onClick={toggleSidebar}
-                  className="text-white/80 hover:text-white mb-6"
-                >
-                  <X size={20} />
-                </button>
+        <motion.div 
+          className="sidebar fixed h-full z-10 w-64 bg-black/60 backdrop-blur-md border-r border-white/10"
+          initial={sidebarHidden ? "closed" : "open"}
+          animate={sidebarHidden ? "closed" : "open"}
+          variants={sidebarVariants}
+        >
+          <div className="h-full flex flex-col py-6">
+            <div className="px-5 flex items-center justify-between">
+              <div className={`${getBrandIconStyle()} mb-6 text-2xl font-bold flex items-center gap-2`}>
+                {getIconComponent('dumbbell', 24)}
+                <span>Solo Rising</span>
               </div>
+              <button 
+                onClick={toggleSidebar}
+                className="text-white/80 hover:text-white mb-6"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              <nav className="flex-1 space-y-1 px-3">
-                {navigationItems.map((item) => (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center px-3 py-3 rounded-lg transition-colors ${
-                      location.pathname.split('/')[1] === item.href.split('/')[1]
-                        ? getSidebarAccentColor()
-                        : 'hover:bg-white/5 text-white/80'
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="ml-2">{item.label}</span>
-                  </a>
-                ))}
-              </nav>
+            <nav className="flex-1 space-y-1 px-3">
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={`flex items-center px-3 py-3 rounded-lg transition-colors ${
+                    location.pathname.split('/')[1] === item.href.split('/')[1]
+                      ? getSidebarAccentColor()
+                      : 'hover:bg-white/5 text-white/80'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="ml-2">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
 
-              <div className="pt-6 px-3 space-y-1">
+            <div className="pt-6 px-3 space-y-1">
+              <button
+                onClick={handleShareClick}
+                className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
+              >
+                <Menu size={20} />
+                <span className="ml-2">Share Profile</span>
+              </button>
+              
+              {primaryActions?.map((action, index) => (
                 <button
-                  onClick={handleShareClick}
+                  key={index}
+                  onClick={action.onClick}
                   className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
                 >
-                  <Menu size={20} />
-                  <span className="ml-2">Share Profile</span>
+                  {action.icon}
+                  <span className="ml-2">{action.label}</span>
                 </button>
-                
-                {primaryActions?.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={action.onClick}
-                    className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
-                  >
-                    {action.icon}
-                    <span className="ml-2">{action.label}</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
-        )}
+        </motion.div>
         
-        <button 
+        <motion.button 
           onClick={toggleSidebar}
           className="sidebar-toggle fixed z-20 top-4 left-4 bg-black/30 hover:bg-black/50 transition-all p-2 rounded-md"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
           {sidebarHidden ? (
             <Menu size={20} className="text-white/80" />
           ) : (
             <X size={20} className="text-white/80" />
           )}
-        </button>
+        </motion.button>
         
         <main className="flex-1 overflow-y-auto pb-0 relative w-full transition-all">
           <div className="min-h-screen pt-4 px-4">

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
@@ -10,10 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Music, VolumeX, Volume1, Volume2, Play, Pause } from 'lucide-react';
+import { Music, VolumeX, Volume1, Volume2, Play, Pause, LogOut } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Footer from '@/components/ui/Footer';
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
   const { userName, character, updateUserProfile } = useUser();
   const { isPlaying, volume, isLooping, togglePlay, setVolume, toggleLoop } = useAudio();
   
@@ -45,6 +48,24 @@ const SettingsPage = () => {
     }
   };
   
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout Failed",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   const VolumeIcon = () => {
     if (volume === 0) return <VolumeX size={20} />;
     if (volume < 0.5) return <Volume1 size={20} />;
@@ -56,7 +77,7 @@ const SettingsPage = () => {
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 h-auto">
           <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
           
           <div className="space-y-4">
@@ -80,7 +101,7 @@ const SettingsPage = () => {
           </div>
         </AnimatedCard>
         
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Music size={20} />
             Music Settings
@@ -134,6 +155,45 @@ const SettingsPage = () => {
                 onCheckedChange={toggleLoop}
               />
             </div>
+          </div>
+        </AnimatedCard>
+        
+        <AnimatedCard className="p-6 h-auto col-span-1 lg:col-span-2">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
+            <LogOut size={20} />
+            Account Settings
+          </h2>
+          
+          <div className="space-y-4">
+            <p className="text-white/70">Manage your account settings and session.</p>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <AnimatedButton
+                  variant="outline"
+                  className="bg-red-950/20 border-red-800/30 hover:bg-red-900/30 text-red-400"
+                >
+                  <div className="flex items-center gap-2">
+                    <LogOut size={16} />
+                    Logout
+                  </div>
+                </AnimatedButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will need to login again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700">
+                    Logout
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </AnimatedCard>
       </div>

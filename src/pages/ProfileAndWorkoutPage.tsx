@@ -5,8 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Calendar } from "@/components/ui/calendar"
@@ -15,23 +13,13 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Footer from '@/components/ui/Footer';
-import { CharacterType } from '@/context/UserContext';
-import { Slider } from "@/components/ui/slider";
-import WorkoutLogger from '@/components/WorkoutLogger';
 import { Button } from '@/components/ui/button';
+import WorkoutLogger from '@/components/WorkoutLogger';
 
 const ProfileAndWorkoutPage = () => {
-  const { userName, character, xp, level, coins, updateUserProfile, updateCharacter, points, streak } = useUser();
-  const [newName, setNewName] = useState(userName);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterType>(character);
-  const [isCharacterUpdating, setIsCharacterUpdating] = useState(false);
+  const { userName, character, points, streak, coins, level, xp } = useUser();
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [duration, setDuration] = useState(30);
-  const [intensity, setIntensity] = useState(5);
-  const [exercise, setExercise] = useState("");
   const [workoutHistory, setWorkoutHistory] = useState([]);
-  const [showProfileSettings, setShowProfileSettings] = useState(false);
 
   // Weekly schedule
   const weeklySchedule = [
@@ -43,69 +31,6 @@ const ProfileAndWorkoutPage = () => {
     { day: "Saturday", workout: "Flexible Training", completed: false },
     { day: "Sunday", workout: "Rest Day", completed: true }
   ];
-
-  useEffect(() => {
-    if (userName) {
-      setNewName(userName);
-    }
-  }, [userName]);
-
-  useEffect(() => {
-    if (character) {
-      setSelectedCharacter(character);
-    }
-  }, [character]);
-
-  const handleUpdateName = async () => {
-    if (!newName.trim() || newName === userName) return;
-
-    setIsUpdating(true);
-
-    try {
-      const success = await updateUserProfile(newName);
-      if (success) {
-        toast({
-          title: "Profile Updated",
-          description: "Your warrior name has been updated successfully.",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update your profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleCharacterSelect = async (newCharacter: CharacterType) => {
-    if (!newCharacter) return;
-    
-    setSelectedCharacter(newCharacter);
-    setIsCharacterUpdating(true);
-
-    try {
-      const success = await updateCharacter(newCharacter);
-      if (success) {
-        toast({
-          title: "Character Updated",
-          description: `Your character has been updated to ${newCharacter}.`,
-        });
-      }
-    } catch (error) {
-      console.error("Error updating character:", error);
-      toast({
-        title: "Character Update Failed",
-        description: "Failed to update your character. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCharacterUpdating(false);
-    }
-  };
 
   const characterImages: Record<string, string> = {
     'goku': 'https://avatars.akamai.steamstatic.com/fef49e7fa7e1997a76c7d1039373b5a62359ca63_full.jpg',
@@ -170,7 +95,7 @@ const ProfileAndWorkoutPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
-        <AnimatedCard className="p-6 col-span-1">
+        <AnimatedCard className="p-6 col-span-1 h-auto">
           <div className="flex flex-col items-center">
             <Avatar className={`w-24 h-24 border-4 ${getCharacterColor()} mb-4`}>
               <AvatarImage src={characterImages[character || ''] || ''} alt={character || ''} />
@@ -183,7 +108,7 @@ const ProfileAndWorkoutPage = () => {
             <div className="w-full mt-4">
               <div className="flex justify-between items-center mb-1">
                 <p className="text-sm font-medium">Level {level}</p>
-                <p className="text-sm">{points} / {(level + 1) * 100} XP</p>
+                <p className="text-sm">{xp} / {(level + 1) * 100} XP</p>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
@@ -202,66 +127,11 @@ const ProfileAndWorkoutPage = () => {
                 <p className="text-xs opacity-70">Coins</p>
               </div>
             </div>
-            
-            <div className="w-full mt-6">
-              <AnimatedButton 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={() => setShowProfileSettings(!showProfileSettings)}
-                character={character}
-              >
-                {showProfileSettings ? 'Hide Settings' : 'Edit Profile'}
-                {showProfileSettings ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </AnimatedButton>
-            </div>
-            
-            {showProfileSettings && (
-              <div className="space-y-4 w-full mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="warriorName">Warrior Name</Label>
-                  <Input
-                    id="warriorName"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    className="bg-white/5 border-white/10"
-                  />
-                  <AnimatedButton
-                    onClick={handleUpdateName}
-                    disabled={isUpdating || !newName.trim() || newName === userName}
-                    character={character}
-                    className="w-full mt-2"
-                  >
-                    {isUpdating ? 'Updating...' : 'Update Name'}
-                  </AnimatedButton>
-                </div>
-                
-                <div>
-                  <Label className="block mb-2">Character</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {Object.keys(characterImages).map((char) => {
-                      return (
-                        <button
-                          key={char}
-                          onClick={() => handleCharacterSelect(char as CharacterType)}
-                          disabled={isCharacterUpdating || char === selectedCharacter}
-                          className={`p-2 rounded-lg transition-all ${
-                            char === selectedCharacter 
-                              ? 'ring-2 ring-white bg-white/10' 
-                              : 'hover:bg-white/5'
-                          }`}
-                        >
-                          <span className="text-sm capitalize">{char}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </AnimatedCard>
 
         {/* Workout Logger */}
-        <AnimatedCard className="p-6 col-span-1 lg:col-span-2">
+        <AnimatedCard className="p-6 col-span-1 lg:col-span-2 h-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Dumbbell size={20} />
@@ -282,7 +152,7 @@ const ProfileAndWorkoutPage = () => {
         </AnimatedCard>
 
         {/* Workout History */}
-        <AnimatedCard className="p-6 col-span-1">
+        <AnimatedCard className="p-6 col-span-1 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <History size={20} />
             Workout History
@@ -316,7 +186,7 @@ const ProfileAndWorkoutPage = () => {
         </AnimatedCard>
 
         {/* Training Schedule */}
-        <AnimatedCard className="p-6 col-span-1">
+        <AnimatedCard className="p-6 col-span-1 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <CalendarIcon size={20} />
             Training Schedule
@@ -347,7 +217,7 @@ const ProfileAndWorkoutPage = () => {
         </AnimatedCard>
 
         {/* Achievements */}
-        <AnimatedCard className="p-6 col-span-1">
+        <AnimatedCard className="p-6 col-span-1 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Award size={20} />
             Achievements

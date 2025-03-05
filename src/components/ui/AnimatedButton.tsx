@@ -80,6 +80,7 @@ const AnimatedButton = ({
         'transition-all duration-300 ease-out transform-gpu',
         'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
         'active:scale-[0.98] hover:border hover:border-white/20',
+        'max-w-full break-words whitespace-normal', // Fixes the text wrapping issue
         getVariantClasses(),
         getSizeClasses(),
         disabled && 'opacity-50 cursor-not-allowed',
@@ -87,7 +88,7 @@ const AnimatedButton = ({
       )}
       {...props}
     >
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 flex items-center justify-center">{children}</span>
     </button>
   );
 };
