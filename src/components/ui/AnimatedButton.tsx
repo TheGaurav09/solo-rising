@@ -10,6 +10,7 @@ interface AnimatedButtonProps {
   size?: 'sm' | 'md' | 'lg';
   character?: 'goku' | 'saitama' | 'jin-woo' | null;
   disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 const AnimatedButton = ({ 
@@ -19,7 +20,8 @@ const AnimatedButton = ({
   variant = 'primary',
   size = 'md',
   character = null,
-  disabled = false
+  disabled = false,
+  type = 'button'
 }: AnimatedButtonProps) => {
   const getCharacterGradient = () => {
     switch (character) {
@@ -68,6 +70,7 @@ const AnimatedButton = ({
     <button
       onClick={onClick}
       disabled={disabled}
+      type={type}
       className={cn(
         'relative rounded-lg font-medium',
         'transition-all duration-300 ease-out transform-gpu',
