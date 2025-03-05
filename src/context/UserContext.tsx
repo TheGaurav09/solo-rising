@@ -21,6 +21,9 @@ interface UserContextType {
   resetStreak: () => void;
   lastWorkoutDate: string | null;
   updateLastWorkoutDate: () => void;
+  country: string;
+  setCountry: (country: string) => void;
+  updateUserProfile: (name: string) => Promise<boolean>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -33,6 +36,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [hasSelectedCharacter, setHasSelectedCharacter] = useState<boolean>(false);
   const [streak, setStreak] = useState<number>(0);
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
+  const [country, setCountry] = useState<string>('Global');
 
   // Load user data from Supabase on initial render
   useEffect(() => {
@@ -53,6 +57,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             setCoins(data.coins || 0);
             setStreak(data.streak || 0);
             setLastWorkoutDate(data.last_workout_date || null);
+            setCountry(data.country || 'Global');
             setHasSelectedCharacter(true);
           } else if (error) {
             console.error("Error fetching user data:", error);
@@ -70,6 +75,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           const storedCoins = localStorage.getItem('coins');
           const storedStreak = localStorage.getItem('streak');
           const storedLastWorkoutDate = localStorage.getItem('lastWorkoutDate');
+          const storedCountry = localStorage.getItem('country');
           
           if (storedCharacter) {
             setCharacter(storedCharacter as CharacterType);
@@ -94,6 +100,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
           if (storedLastWorkoutDate) {
             setLastWorkoutDate(storedLastWorkoutDate);
+          }
+          
+          if (storedCountry) {
+            setCountry(storedCountry);
           }
         }
       } catch (error) {
@@ -125,6 +135,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCoins(data.coins || 0); 
           setStreak(data.streak || 0);
           setLastWorkoutDate(data.last_workout_date || null);
+          setCountry(data.country || 'Global');
           setHasSelectedCharacter(true);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -135,6 +146,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setCoins(0);
         setStreak(0);
         setLastWorkoutDate(null);
+        setCountry('Global');
         setHasSelectedCharacter(false);
       }
     });
@@ -174,6 +186,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('points', points.toString());
       localStorage.setItem('coins', coins.toString());
       localStorage.setItem('streak', streak.toString());
+      localStorage.setItem('country', country);
       if (lastWorkoutDate) {
         localStorage.setItem('lastWorkoutDate', lastWorkoutDate);
       }
@@ -190,7 +203,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               points,
               coins,
               streak,
-              last_workout_date: lastWorkoutDate
+              last_workout_date: lastWorkoutDate,
+              country
             })
             .eq('id', authData.user.id);
             
@@ -214,7 +228,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
 
     updateUserData();
-  }, [character, userName, points, coins, streak, lastWorkoutDate]);
+  }, [character, userName, points, coins, streak, lastWorkoutDate, country]);
 
   const addPoints = async (amount: number) => {
     try {
@@ -433,6 +447,56 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUserProfile = async (newName: string): Promise<boolean> => {
+    try {
+      if (!newName.trim()) {
+        toast({
+          title: "Error",
+          description: "Name cannot be empty",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      setUserName(newName);
+      
+      // Update name in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ warrior_name: newName })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating name:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update name. Please try again.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been updated successfully",
+        });
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error in updateUserProfile:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating your profile.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return (
     <UserContext.Provider 
       value={{ 
@@ -450,7 +514,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         incrementStreak,
         resetStreak,
         lastWorkoutDate,
-        updateLastWorkoutDate
+        updateLastWorkoutDate,
+        country,
+        setCountry,
+        updateUserProfile
       }}
     >
       {children}

@@ -4,7 +4,8 @@ import {
   Award, Star, Zap, Shield, Sparkles, Diamond, Trophy, 
   TrendingUp, Heart, Flame, BookOpen, Book, Coffee, 
   Ghost, Dumbbell, Info, Timer, MessageCircle, Tag,
-  User, CheckCircle, Clock, Calendar, ShoppingBag
+  User, CheckCircle, Clock, Calendar, ShoppingBag,
+  Edit, MoreVertical, LogOut, ArrowUp, Globe, MapPin
 } from 'lucide-react';
 
 export const getIconComponent = (iconName: string, size = 18) => {
@@ -33,6 +34,12 @@ export const getIconComponent = (iconName: string, size = 18) => {
     case 'clock': return <Clock size={size} />;
     case 'calendar': return <Calendar size={size} />;
     case 'shopping-bag': return <ShoppingBag size={size} />;
+    case 'edit': return <Edit size={size} />;
+    case 'more-vertical': return <MoreVertical size={size} />;
+    case 'logout': return <LogOut size={size} />;
+    case 'arrow-up': return <ArrowUp size={size} />;
+    case 'globe': return <Globe size={size} />;
+    case 'map-pin': return <MapPin size={size} />;
     default: return <Award size={size} />;
   }
 };

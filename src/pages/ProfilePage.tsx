@@ -4,14 +4,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
 import InfoTooltip from '@/components/ui/InfoTooltip';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
+
+// List of countries
+const countries = [
+  "Global", "United States", "Canada", "United Kingdom", "Australia", "Germany", 
+  "France", "Japan", "China", "India", "Brazil", "Mexico", "South Africa", 
+  "Russia", "Italy", "Spain", "South Korea", "Netherlands", "Sweden", "Norway"
+];
 
 const ProfilePage = () => {
-  const { userName, character, points } = useUser();
+  const { userName, character, points, streak, country, updateUserProfile } = useUser();
   const [userData, setUserData] = useState<any>(null);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [workouts, setWorkouts] = useState<any[]>([]);
@@ -21,12 +29,17 @@ const ProfilePage = () => {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAllLeaderboard, setShowAllLeaderboard] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [leaderboardType, setLeaderboardType] = useState<'global' | 'regional' | 'character'>('global');
+  const [selectedRegion, setSelectedRegion] = useState<string>(country || 'Global');
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   
   useEffect(() => {
     fetchData();
-  }, [userId]);
+  }, [userId, leaderboardType, selectedRegion]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,6 +60,7 @@ const ProfilePage = () => {
 
       if (userError) throw userError;
       setUserData(userData);
+      setNewName(userData.warrior_name);
 
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
@@ -68,11 +82,20 @@ const ProfilePage = () => {
       if (achievementsError) throw achievementsError;
       setAchievements(userAchievements || []);
 
-      const { data: leaderboard, error: leaderboardError } = await supabase
+      // Fetch leaderboard data based on type
+      let query = supabase
         .from('users')
-        .select('id, warrior_name, character_type, points')
+        .select('id, warrior_name, character_type, points, streak, country')
         .order('points', { ascending: false })
         .limit(50);
+      
+      if (leaderboardType === 'regional' && selectedRegion !== 'Global') {
+        query = query.eq('country', selectedRegion);
+      } else if (leaderboardType === 'character' && userData?.character_type) {
+        query = query.eq('character_type', userData.character_type);
+      }
+      
+      const { data: leaderboard, error: leaderboardError } = await query;
 
       if (leaderboardError) throw leaderboardError;
       
@@ -162,6 +185,92 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     setShowLogoutConfirm(true);
+    setMenuOpen(false);
+  };
+
+  const handleEditProfile = () => {
+    setEditMode(true);
+    setMenuOpen(false);
+  };
+
+  const handleSaveProfile = async () => {
+    const success = await updateUserProfile(newName);
+    if (success) {
+      setEditMode(false);
+      fetchData(); // Reload data
+    }
+  };
+
+  const renderLeaderboardTypeSelector = () => {
+    return (
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          className={`px-3 py-1 rounded-full text-sm ${
+            leaderboardType === 'global' 
+              ? character 
+                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                : 'bg-primary/20 text-primary border border-primary/40'
+              : 'bg-white/10 hover:bg-white/20 border border-white/10'
+          }`}
+          onClick={() => setLeaderboardType('global')}
+        >
+          <div className="flex items-center gap-1">
+            <Globe size={12} />
+            <span>Global</span>
+          </div>
+        </button>
+        
+        <button
+          className={`px-3 py-1 rounded-full text-sm ${
+            leaderboardType === 'regional' 
+              ? character 
+                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                : 'bg-primary/20 text-primary border border-primary/40'
+              : 'bg-white/10 hover:bg-white/20 border border-white/10'
+          }`}
+          onClick={() => setLeaderboardType('regional')}
+        >
+          <div className="flex items-center gap-1">
+            <MapPin size={12} />
+            <span>Regional</span>
+          </div>
+        </button>
+        
+        <button
+          className={`px-3 py-1 rounded-full text-sm ${
+            leaderboardType === 'character' 
+              ? character 
+                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                : 'bg-primary/20 text-primary border border-primary/40'
+              : 'bg-white/10 hover:bg-white/20 border border-white/10'
+          }`}
+          onClick={() => setLeaderboardType('character')}
+        >
+          <div className="flex items-center gap-1">
+            <User size={12} />
+            <span>Character</span>
+          </div>
+        </button>
+      </div>
+    );
+  };
+
+  const renderRegionSelector = () => {
+    if (leaderboardType !== 'regional') return null;
+    
+    return (
+      <div className="mb-4">
+        <select
+          className="w-full p-2 rounded-lg bg-white/10 border border-white/20 text-white"
+          value={selectedRegion}
+          onChange={e => setSelectedRegion(e.target.value)}
+        >
+          {countries.map((country) => (
+            <option key={country} value={country}>{country}</option>
+          ))}
+        </select>
+      </div>
+    );
   };
 
   const isOwnProfile = userId === 'me' || userId === userData?.id;
@@ -199,27 +308,91 @@ const ProfilePage = () => {
               </div>
               
               <div className="flex-1">
-                <h2 className={`text-xl font-bold ${userData?.character_type ? `text-${userData.character_type}-primary` : 'text-white'}`}>
-                  {userData?.warrior_name}
-                </h2>
+                {editMode && isOwnProfile ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white"
+                    />
+                    <button 
+                      onClick={handleSaveProfile}
+                      className={`p-1 rounded-full ${character ? `bg-${character}-primary/20 text-${character}-primary` : 'bg-primary/20 text-primary'}`}
+                    >
+                      <CheckCircle size={18} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setEditMode(false);
+                        setNewName(userData?.warrior_name || '');
+                      }}
+                      className="p-1 rounded-full bg-white/10 text-white/60"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <h2 className={`text-xl font-bold ${userData?.character_type ? `text-${userData.character_type}-primary` : 'text-white'}`}>
+                    {userData?.warrior_name}
+                  </h2>
+                )}
                 <p className="text-white/70">{getCharacterTitle(userData?.character_type)}</p>
+                <div className="flex items-center gap-2 text-white/70 text-sm mt-1">
+                  <MapPin size={14} />
+                  <span>{userData?.country || 'Global'}</span>
+                </div>
               </div>
               
-              <div className="text-right flex items-center gap-2">
-                <div>
-                  <div className="text-lg font-bold">{userData?.points || 0}</div>
-                  <div className="text-sm text-white/70">total points</div>
+              <div className="text-right flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="text-lg font-bold">{userData?.points || 0}</div>
+                    <div className="text-sm text-white/70">total points</div>
+                  </div>
+                  
+                  {isOwnProfile && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        title="Menu"
+                      >
+                        <MoreVertical size={20} className="text-white/70" />
+                      </button>
+                      
+                      {menuOpen && (
+                        <div className="absolute right-0 mt-2 w-36 rounded-lg overflow-hidden bg-black/90 border border-white/10 shadow-lg z-10">
+                          <button
+                            onClick={handleEditProfile}
+                            className="w-full text-left px-4 py-2 hover:bg-white/10 flex items-center gap-2"
+                          >
+                            <Edit size={16} className="text-white/70" />
+                            <span>Edit Profile</span>
+                          </button>
+                          
+                          <button
+                            onClick={handleLogout}
+                            className="w-full text-left px-4 py-2 hover:bg-white/10 flex items-center gap-2 text-red-400"
+                          >
+                            <LogOut size={16} />
+                            <span>Logout</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
-                {isOwnProfile && (
-                  <button
-                    onClick={handleLogout}
-                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut size={20} className="text-white/70" />
-                  </button>
-                )}
+                <div className={`flex items-center gap-1 px-3 py-1 rounded-lg 
+                  ${userData?.character_type ? `bg-${userData.character_type}-primary/20` : 'bg-primary/20'}`}
+                >
+                  <Flame size={16} className={`
+                    ${userData?.character_type ? `text-${userData.character_type}-primary` : 'text-primary'} 
+                    ${userData?.streak > 0 ? 'animate-pulse' : ''}`} 
+                  />
+                  <span className="font-medium">{userData?.streak || 0} day streak</span>
+                </div>
               </div>
             </div>
             
@@ -236,15 +409,11 @@ const ProfilePage = () => {
               </div>
             </div>
             
-            <div className="mt-8">
-              <h3 className="text-lg font-bold mb-4 flex items-center">
-                Recent Workouts
-                <InfoTooltip 
-                  content="Your most recent workouts are shown here. Complete more workouts to see them listed."
-                  position="right"
-                />
-              </h3>
-              
+            <CollapsibleSection 
+              title="Recent Workouts" 
+              defaultOpen={true}
+              className="mt-8"
+            >
               {workouts.length === 0 ? (
                 <div className="text-center py-6 text-white/50">
                   <p>No workouts logged yet</p>
@@ -267,17 +436,13 @@ const ProfilePage = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </CollapsibleSection>
             
-            <div className="mt-8">
-              <h3 className="text-lg font-bold mb-4 flex items-center">
-                Achievements
-                <InfoTooltip 
-                  content="Achievements you've unlocked by gaining points and completing workouts."
-                  position="right"
-                />
-              </h3>
-              
+            <CollapsibleSection 
+              title="Achievements" 
+              defaultOpen={true}
+              className="mt-4"
+            >
               {achievements.length === 0 ? (
                 <div className="text-center py-6 text-white/50">
                   <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -298,7 +463,7 @@ const ProfilePage = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </CollapsibleSection>
           </AnimatedCard>
         </div>
         
@@ -306,7 +471,7 @@ const ProfilePage = () => {
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center">
-                Global Leaderboard
+                Leaderboard
                 <InfoTooltip 
                   content="See how you rank against other warriors based on total points earned."
                   position="right"
@@ -329,78 +494,100 @@ const ProfilePage = () => {
               </div>
             </div>
             
-            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-              {visibleLeaderboard.map((entry, index) => (
-                <div key={index}>
-                  <div 
-                    className={`flex items-center p-3 rounded-lg transition-colors cursor-pointer ${
-                      entry.id === (userId === 'me' ? userData?.id : userId)
-                        ? `bg-${userData?.character_type}-primary/20 border border-${userData?.character_type}-primary/40` 
-                        : 'bg-white/5 border border-white/10'
-                    }`}
-                    onClick={() => toggleUserExpand(entry.id)}
-                  >
-                    <div className="w-8 h-8 flex items-center justify-center mr-3 bg-white/10 rounded-full">
-                      {getRankIcon(entry.rank)}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${getCharacterColor(entry.character_type)}`}>
-                          {entry.warrior_name}
-                        </span>
-                        {entry.id === userData?.id && (
-                          <span className="px-2 py-0.5 text-xs bg-white/10 rounded-full">You</span>
+            {renderLeaderboardTypeSelector()}
+            {renderRegionSelector()}
+            
+            {leaderboardData.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No users found in this leaderboard</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                {visibleLeaderboard.map((entry, index) => (
+                  <div key={index}>
+                    <div 
+                      className={`flex items-center p-3 rounded-lg transition-colors cursor-pointer ${
+                        entry.id === (userId === 'me' ? userData?.id : userId)
+                          ? `bg-${userData?.character_type}-primary/20 border border-${userData?.character_type}-primary/40` 
+                          : 'bg-white/5 border border-white/10'
+                      }`}
+                      onClick={() => toggleUserExpand(entry.id)}
+                    >
+                      <div className="w-8 h-8 flex items-center justify-center mr-3 bg-white/10 rounded-full">
+                        {getRankIcon(entry.rank)}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${getCharacterColor(entry.character_type)}`}>
+                            {entry.warrior_name}
+                          </span>
+                          {entry.id === userData?.id && (
+                            <span className="px-2 py-0.5 text-xs bg-white/10 rounded-full">You</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-white/60 mt-0.5">
+                          {getCharacterTitle(entry.character_type)}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="font-medium">{entry.points || 0}</div>
+                          <div className="text-xs text-white/60">points</div>
+                        </div>
+                        <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${entry.character_type ? `bg-${entry.character_type}-primary/20` : 'bg-primary/20'}`}>
+                          <Flame size={10} className={entry.character_type ? `text-${entry.character_type}-primary` : 'text-primary'} />
+                          <span>{entry.streak || 0}</span>
+                        </div>
+                        <Link to={`/profile/${entry.id}`} className="text-white/60 hover:text-white">
+                          <ExternalLink size={16} />
+                        </Link>
+                        {expandedUser === entry.id ? (
+                          <ChevronUp size={16} className="text-white/60" />
+                        ) : (
+                          <ChevronDown size={16} className="text-white/60" />
                         )}
                       </div>
-                      <div className="text-xs text-white/60 mt-0.5">
-                        {getCharacterTitle(entry.character_type)}
-                      </div>
                     </div>
                     
-                    <div className="text-right flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="font-medium">{entry.points || 0}</div>
-                        <div className="text-xs text-white/60">points</div>
+                    {expandedUser === entry.id && (
+                      <div className="bg-white/5 p-3 -mt-1 rounded-b-lg border-t-0 border border-white/10">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/60">Rank:</span>
+                          <span className="font-medium">{entry.rank}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/60">Character:</span>
+                          <span className="font-medium">{getCharacterTitle(entry.character_type)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/60">Level:</span>
+                          <span className="font-medium">{getLevel(entry.points || 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/60">Country:</span>
+                          <span className="font-medium">{entry.country || 'Global'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/60">Streak:</span>
+                          <span className="font-medium">{entry.streak || 0} days</span>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
+                          <Link 
+                            to={`/profile/${entry.id}`}
+                            className={`text-xs px-2 py-1 rounded ${entry.character_type ? `bg-${entry.character_type}-primary/20 text-${entry.character_type}-primary` : 'bg-primary/20 text-primary'}`}
+                          >
+                            View Profile
+                          </Link>
+                        </div>
                       </div>
-                      <Link to={`/profile/${entry.id}`} className="text-white/60 hover:text-white">
-                        <ExternalLink size={16} />
-                      </Link>
-                      {expandedUser === entry.id ? (
-                        <ChevronUp size={16} className="text-white/60" />
-                      ) : (
-                        <ChevronDown size={16} className="text-white/60" />
-                      )}
-                    </div>
+                    )}
                   </div>
-                  
-                  {expandedUser === entry.id && (
-                    <div className="bg-white/5 p-3 -mt-1 rounded-b-lg border-t-0 border border-white/10">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Rank:</span>
-                        <span className="font-medium">{entry.rank}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Character:</span>
-                        <span className="font-medium">{getCharacterTitle(entry.character_type)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/60">Level:</span>
-                        <span className="font-medium">{getLevel(entry.points || 0)}</span>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
-                        <Link 
-                          to={`/profile/${entry.id}`}
-                          className={`text-xs px-2 py-1 rounded ${entry.character_type ? `bg-${entry.character_type}-primary/20 text-${entry.character_type}-primary` : 'bg-primary/20 text-primary'}`}
-                        >
-                          View Profile
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </AnimatedCard>
         </div>
       </div>

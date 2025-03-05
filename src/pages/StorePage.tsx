@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { ShoppingBag, Info, Tag, Search, Sparkles, Heart, Flame, Star, Award, Shield, Book, Dumbbell, Filter, EyeOff, Eye } from 'lucide-react';
+import { ShoppingBag, Info, Sparkles, Medal, Dumbbell } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { getIconComponent } from '@/lib/iconUtils';
 import ItemDetailModal from '@/components/modals/ItemDetailModal';
+import InfoTooltip from '@/components/ui/InfoTooltip';
 
 interface StoreItem {
   id: string;
@@ -19,30 +20,28 @@ interface StoreItem {
 }
 
 const StorePage = () => {
-  const { character, coins, useCoins } = useUser();
-  const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
-  const [userItems, setUserItems] = useState<string[]>([]);
-  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const { coins, useCoins, character } = useUser();
+  const [items, setItems] = useState<StoreItem[]>([]);
+  const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showPurchased, setShowPurchased] = useState(true);
-  
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [itemTypeFilter, setItemTypeFilter] = useState<string | null>(null);
+
   useEffect(() => {
     fetchStoreItems();
-    fetchUserItems();
+    fetchPurchasedItems();
   }, []);
-  
+
   const fetchStoreItems = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('store_items')
         .select('*')
         .order('price', { ascending: true });
-        
+
       if (error) throw error;
-      setStoreItems(data || []);
+      setItems(data || []);
     } catch (error) {
       console.error('Error fetching store items:', error);
       toast({
@@ -54,304 +53,261 @@ const StorePage = () => {
       setLoading(false);
     }
   };
-  
-  const fetchUserItems = async () => {
+
+  const fetchPurchasedItems = async () => {
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
-      
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+
       const { data, error } = await supabase
         .from('user_items')
         .select('item_id')
-        .eq('user_id', user.user.id);
-        
+        .eq('user_id', authData.user.id);
+
       if (error) throw error;
       
-      // Extract item IDs into array
-      const itemIds = data?.map(item => item.item_id) || [];
-      setUserItems(itemIds);
+      // Extract just the item_ids into an array
+      const itemIds = data.map(item => item.item_id);
+      setPurchasedItems(itemIds);
     } catch (error) {
-      console.error('Error fetching user items:', error);
+      console.error('Error fetching purchased items:', error);
     }
   };
-  
-  const handlePurchase = async (item: StoreItem) => {
+
+  const purchaseItem = async (item: StoreItem) => {
     try {
-      // First check if user has enough coins
+      // First check if user already purchased this item
+      if (purchasedItems.includes(item.id)) {
+        toast({
+          title: 'Already Purchased',
+          description: 'You already own this item',
+        });
+        return;
+      }
+
+      // Check if user has enough coins
       if (coins < item.price) {
         toast({
-          title: 'Not enough coins',
-          description: `You need ${item.price - coins} more coins to purchase this item.`,
+          title: 'Not Enough Coins',
+          description: 'You don\'t have enough coins to purchase this item',
           variant: 'destructive',
         });
         return;
       }
-      
-      // Try to use coins from the user's balance
+
+      // Use UserContext to spend coins
       const success = await useCoins(item.price);
       
       if (!success) {
         toast({
-          title: 'Purchase failed',
-          description: 'Unable to process the purchase. Please try again.',
+          title: 'Purchase Failed',
+          description: 'Failed to purchase the item',
           variant: 'destructive',
         });
         return;
       }
-      
-      // Get the user ID
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        toast({
-          title: 'Authentication error',
-          description: 'You must be logged in to make purchases.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
+
       // Record the purchase in the database
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) {
+        toast({
+          title: 'Authentication Error',
+          description: 'Please log in to purchase items',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('user_items')
         .insert({
-          user_id: userData.user.id,
+          user_id: authData.user.id,
           item_id: item.id
         });
-        
+
       if (error) throw error;
-      
-      // Update the local list of user items
-      setUserItems([...userItems, item.id]);
+
+      // Update the local state
+      setPurchasedItems([...purchasedItems, item.id]);
       
       toast({
-        title: 'Purchase successful!',
-        description: `You've purchased ${item.name}.`,
-        duration: 3000,
+        title: 'Purchase Successful',
+        description: `You have purchased ${item.name}`,
       });
     } catch (error) {
       console.error('Error purchasing item:', error);
       toast({
-        title: 'Purchase failed',
-        description: 'An error occurred while purchasing the item.',
+        title: 'Purchase Failed',
+        description: 'An error occurred while purchasing the item',
         variant: 'destructive',
       });
     }
   };
-  
-  const getItemTypeLabel = (type: string) => {
-    switch(type) {
-      case 'boost': return 'Power Boost';
-      case 'recovery': return 'Recovery Item';
-      case 'cosmetic': return 'Cosmetic';
-      case 'training': return 'Training';
-      case 'equipment': return 'Equipment';
-      default: return type.charAt(0).toUpperCase() + type.slice(1);
+
+  const handleOpenModal = (item: StoreItem) => {
+    setSelectedItem(item);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedItem(null);
+  };
+
+  const renderItemIcon = (item: StoreItem) => {
+    switch (item.item_type) {
+      case 'badge':
+        return <Medal size={24} className="text-yellow-500" />;
+      case 'equipment':
+        return <Dumbbell size={24} className="text-blue-500" />;
+      case 'power':
+        return <Sparkles size={24} className="text-purple-500" />;
+      default:
+        return getIconComponent(item.icon, 24);
     }
   };
-  
-  const getTypeColor = (type: string) => {
-    switch(type) {
-      case 'boost': return 'text-yellow-400';
-      case 'recovery': return 'text-green-400';
-      case 'cosmetic': return 'text-purple-400';
-      case 'training': return 'text-blue-400';
-      case 'equipment': return 'text-orange-400';
-      default: return 'text-white';
-    }
+
+  const getItemTypeFilterButtons = () => {
+    const itemTypes = Array.from(new Set(items.map(item => item.item_type)));
+    
+    return (
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          className={`px-3 py-1 rounded-full text-sm ${
+            itemTypeFilter === null 
+              ? character 
+                ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                : 'bg-primary/20 text-primary border border-primary/40'
+              : 'bg-white/10 hover:bg-white/20 border border-white/10'
+          }`}
+          onClick={() => setItemTypeFilter(null)}
+        >
+          All Items
+        </button>
+        
+        {itemTypes.map(type => (
+          <button
+            key={type}
+            className={`px-3 py-1 rounded-full text-sm capitalize ${
+              itemTypeFilter === type 
+                ? character 
+                  ? `bg-${character}-primary/20 text-${character}-primary border border-${character}-primary/40` 
+                  : 'bg-primary/20 text-primary border border-primary/40'
+                : 'bg-white/10 hover:bg-white/20 border border-white/10'
+            }`}
+            onClick={() => setItemTypeFilter(type)}
+          >
+            {type}
+          </button>
+        ))}
+      </div>
+    );
   };
-  
-  const filteredItems = storeItems.filter(item => {
-    // Apply type filter
-    if (filter && item.item_type !== filter) return false;
-    
-    // Apply search query filter
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    
-    // Apply purchased filter
-    if (!showPurchased && userItems.includes(item.id)) return false;
-    
-    return true;
-  });
-  
+
+  const filteredItems = itemTypeFilter 
+    ? items.filter(item => item.item_type === itemTypeFilter)
+    : items;
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Store</h1>
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 bg-white/5 rounded-lg border border-white/10 flex items-center gap-2">
-            <ShoppingBag size={18} className="text-yellow-400" />
-            <span className="font-medium">{coins}</span>
-            <span className="text-white/60">coins</span>
-          </div>
-          <div 
-            className="p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10"
-            onClick={() => setShowPurchased(!showPurchased)}
-            title={showPurchased ? "Hide purchased items" : "Show purchased items"}
-          >
-            {showPurchased ? <EyeOff size={18} /> : <Eye size={18} />}
-          </div>
-        </div>
-      </div>
-      
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <ShoppingBag className="text-white/80" />
+          Store
+          <InfoTooltip 
+            content="Purchase items with coins you earn from workouts to customize your profile and unlock special features."
+            position="right"
           />
-          <Search className="absolute left-3 top-2.5 text-white/60" size={18} />
-        </div>
+        </h1>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 md:justify-end">
-          <button
-            onClick={() => setFilter(null)}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === null ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Filter size={14} className="inline mr-1" /> All
-          </button>
-          <button
-            onClick={() => setFilter('boost')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === 'boost' ? 'bg-yellow-400/20 text-yellow-400' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Sparkles size={14} className="inline mr-1" /> Boost
-          </button>
-          <button
-            onClick={() => setFilter('recovery')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === 'recovery' ? 'bg-green-400/20 text-green-400' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Heart size={14} className="inline mr-1" /> Recovery
-          </button>
-          <button
-            onClick={() => setFilter('cosmetic')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === 'cosmetic' ? 'bg-purple-400/20 text-purple-400' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Sparkles size={14} className="inline mr-1" /> Cosmetic
-          </button>
-          <button
-            onClick={() => setFilter('training')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === 'training' ? 'bg-blue-400/20 text-blue-400' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Book size={14} className="inline mr-1" /> Training
-          </button>
-          <button
-            onClick={() => setFilter('equipment')}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap ${
-              filter === 'equipment' ? 'bg-orange-400/20 text-orange-400' : 'bg-white/5 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            <Dumbbell size={14} className="inline mr-1" /> Equipment
-          </button>
+        <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 flex items-center gap-2">
+          <span className="text-yellow-400">💰</span>
+          <span className="font-medium">{coins}</span>
+          <span className="text-sm text-white/60">coins</span>
         </div>
       </div>
+
+      {getItemTypeFilterButtons()}
       
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <div className="text-center py-20 text-white/60">
-          <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-40" />
-          <p className="text-lg">No items found</p>
-          <p className="text-sm mt-2">Try adjusting your filters or search query</p>
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-12">
+          <ShoppingBag size={48} className="mx-auto mb-4 text-white/30" />
+          <p className="text-white/60">No items available in this category</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => (
-            <AnimatedCard 
-              key={item.id} 
-              className="p-4 cursor-pointer hover:border-white/30 transition-colors relative overflow-hidden"
-              onClick={() => setSelectedItem(item)}
-            >
-              {userItems.includes(item.id) && (
-                <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded-bl-lg">
-                  Owned
-                </div>
-              )}
-              
-              <div className="flex items-center justify-center h-16 mb-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  character ? `bg-${character}-primary/20` : 'bg-primary/20'
-                }`}>
-                  {getIconComponent(item.icon, 24)}
-                </div>
-              </div>
-              
-              <h3 className="text-center font-bold mb-2">{item.name}</h3>
-              
-              <p className="text-sm text-white/70 text-center mb-3 line-clamp-2 h-10">
-                {item.description}
-              </p>
-              
-              <div className="flex items-center justify-between mb-3">
-                <div className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${getTypeColor(item.item_type)}`}>
-                  <Tag size={10} />
-                  <span>{getItemTypeLabel(item.item_type)}</span>
+            <AnimatedCard key={item.id} className="overflow-hidden">
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      {renderItemIcon(item)}
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{item.name}</h3>
+                      <p className="text-xs text-white/60 capitalize">{item.item_type}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-full text-sm">
+                    <span className="text-yellow-400">💰</span>
+                    <span>{item.price}</span>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-1 text-yellow-400">
-                  <span className="font-bold">{item.price}</span>
-                  <ShoppingBag size={12} />
+                <p className="text-sm text-white/80 mb-4 line-clamp-2">
+                  {item.description}
+                </p>
+                
+                <div className="flex justify-between">
+                  <button 
+                    className="text-sm text-white/60 hover:text-white"
+                    onClick={() => handleOpenModal(item)}
+                  >
+                    View Details
+                  </button>
+                  
+                  {purchasedItems.includes(item.id) ? (
+                    <div className="px-2 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">
+                      Owned
+                    </div>
+                  ) : (
+                    <AnimatedButton
+                      character={character}
+                      disabled={coins < item.price}
+                      className="text-sm px-3 py-1"
+                      onClick={() => purchaseItem(item)}
+                    >
+                      Purchase
+                    </AnimatedButton>
+                  )}
                 </div>
               </div>
-              
-              {userItems.includes(item.id) ? (
-                <button
-                  className="w-full py-1.5 rounded-lg bg-green-500/20 text-green-400 cursor-default"
-                >
-                  Purchased
-                </button>
-              ) : (
-                <AnimatedButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePurchase(item);
-                  }}
-                  character={character || undefined}
-                  className="w-full py-1.5"
-                  disabled={coins < item.price}
-                >
-                  {coins < item.price 
-                    ? `Need ${item.price - coins} more coins` 
-                    : `Purchase - ${item.price} coins`}
-                </AnimatedButton>
-              )}
             </AnimatedCard>
           ))}
         </div>
       )}
       
-      {selectedItem && (
+      {showModal && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onPurchase={handlePurchase}
-          isOwned={userItems.includes(selectedItem.id)}
+          onClose={closeModal}
+          onPurchase={purchasedItems.includes(selectedItem.id) 
+            ? undefined 
+            : () => purchaseItem(selectedItem)
+          }
+          isOwned={purchasedItems.includes(selectedItem.id)}
           character={character || undefined}
         />
       )}
-      
-      <div className="fixed bottom-6 right-6 z-10">
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="p-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors shadow-lg hover:scale-110 transform duration-150"
-          aria-label="Scroll to top"
-        >
-          <Sparkles size={20} className="text-white" />
-        </button>
-      </div>
     </div>
   );
 };

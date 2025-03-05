@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import { 
   Dumbbell, Trophy, User, LogOut, Award, 
-  ShoppingBag, ChevronLeft, ChevronRight, Flame, Info 
+  ShoppingBag, ChevronLeft, ChevronRight, Flame, Info, 
+  ArrowUp
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
@@ -264,7 +265,7 @@ const Dashboard = () => {
           className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors shadow-lg hover:scale-110 transform duration-150"
           aria-label="Scroll to top"
         >
-          <ChevronRight size={20} className="text-white rotate-270 transform -rotate-90" />
+          <ArrowUp size={20} className="text-white" />
         </button>
       </div>
 
