@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -21,7 +22,7 @@ const profileSchema = z.object({
 });
 
 const SettingsPage = () => {
-  const { character, userName, updateUserProfile } = useUser();
+  const { user, character, updateUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
@@ -37,13 +38,9 @@ const SettingsPage = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      warrior_name: userName || '',
+      warrior_name: user?.warrior_name || '',
     },
   });
-
-  useEffect(() => {
-    reset({ warrior_name: userName || '' });
-  }, [userName, reset]);
 
   useEffect(() => {
     // Create audio element
@@ -111,11 +108,19 @@ const SettingsPage = () => {
     try {
       setLoading(true);
       
-      const success = await updateUserProfile(data.warrior_name);
-      
-      if (!success) {
-        throw new Error("Failed to update profile");
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('User not authenticated');
       }
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ warrior_name: data.warrior_name })
+        .eq('id', userData.user.id);
+      
+      if (error) throw error;
+      
+      updateUser({ warrior_name: data.warrior_name });
       
       toast({
         title: 'Profile Updated',

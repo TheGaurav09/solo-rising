@@ -8,7 +8,7 @@ import LogoutConfirmModal from './modals/LogoutConfirmModal';
 import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
-  const { character, userName, points } = useUser();
+  const { character, userName, points, removeUser } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
@@ -18,8 +18,7 @@ const Dashboard = () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Instead of using removeUser which doesn't exist, we'll navigate to home
-      // The auth state change listener in UserContext will clear the user data
+      removeUser();
       navigate('/');
       
       toast({
