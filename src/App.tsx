@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/integrations/supabase/client";
+import { UserProvider } from "@/context/UserContext";
 
 import Index from "@/pages/Index";
 import CharacterSelectionPage from "@/pages/CharacterSelectionPage";
@@ -115,7 +116,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <UserProvider>
+      <RouterProvider router={router} />
+    </UserProvider>
+  );
 }
 
 export default App;
