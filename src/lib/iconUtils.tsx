@@ -1,10 +1,14 @@
+
 import React from 'react';
 import { 
   Award, Star, Zap, Shield, Sparkles, Diamond, Trophy, 
   TrendingUp, Heart, Flame, BookOpen, Book, Coffee, 
   Ghost, Dumbbell, Info, Timer, MessageCircle, Tag,
   User, CheckCircle, Clock, Calendar, ShoppingBag,
-  Edit, MoreVertical, LogOut, ArrowUp, Globe, MapPin
+  Edit, MoreVertical, LogOut, ArrowUp, Globe, MapPin,
+  Brain, Target, Rocket, BarChart, Crown, Gift, Medal,
+  Music, Smile, Zap as Lightning, Lightbulb, Briefcase,
+  Coffee as CoffeeIcon, Watch, Hexagon, Infinity
 } from 'lucide-react';
 
 export const getIconComponent = (iconName: string, size = 18) => {
@@ -39,7 +43,23 @@ export const getIconComponent = (iconName: string, size = 18) => {
     case 'arrow-up': return <ArrowUp size={size} />;
     case 'globe': return <Globe size={size} />;
     case 'map-pin': return <MapPin size={size} />;
-    case 'discord': return <MessageCircle size={size} />;
+    case 'discord': return <DiscordIcon size={size} />;
+    case 'brain': return <Brain size={size} />;
+    case 'target': return <Target size={size} />;
+    case 'rocket': return <Rocket size={size} />;
+    case 'bar-chart': return <BarChart size={size} />;
+    case 'crown': return <Crown size={size} />;
+    case 'gift': return <Gift size={size} />;
+    case 'medal-icon': return <Medal size={size} />;
+    case 'music': return <Music size={size} />;
+    case 'smile': return <Smile size={size} />;
+    case 'lightning': return <Lightning size={size} />;
+    case 'lightbulb': return <Lightbulb size={size} />;
+    case 'briefcase': return <Briefcase size={size} />;
+    case 'coffee-icon': return <CoffeeIcon size={size} />;
+    case 'watch': return <Watch size={size} />;
+    case 'hexagon': return <Hexagon size={size} />;
+    case 'infinity': return <Infinity size={size} />;
     default: return <Award size={size} />;
   }
 };

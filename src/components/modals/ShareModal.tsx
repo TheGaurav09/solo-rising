@@ -1,85 +1,139 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Share, Copy, Check, Twitter, Facebook, Linkedin, Mail, QrCode, Globe, Download } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
 
-export interface ShareModalProps {
+import React, { useState } from 'react';
+import { X, Share, Link as LinkIcon, Copy, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+interface ShareModalProps {
   onClose: () => void;
-  character?: 'goku' | 'saitama' | 'jin-woo';
+  character?: string;
 }
 
-const ShareModal: React.FC<ShareModalProps> = ({ onClose, character }) => {
-  const [isCopied, setIsCopied] = useState(false);
-  const shareUrl = `${window.location.origin}?ref=${character}`;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setIsCopied(true);
-    toast({
-      title: "Copied to clipboard!",
-      description: "Share this link with your friends.",
-    });
-    setTimeout(() => setIsCopied(false), 2000);
+const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) => {
+  const [copied, setCopied] = useState(false);
+  
+  // Get theme colors based on character
+  const getThemeColor = () => {
+    switch(character) {
+      case 'goku': return 'bg-goku-primary text-white';
+      case 'saitama': return 'bg-saitama-primary text-white';
+      case 'jin-woo': return 'bg-jin-woo-primary text-white';
+      default: return 'bg-primary text-white';
+    }
   };
-
-  const shareOnTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=Join%20me%20on%20SoloProve%20and%20let's%20conquer%20our%20fitness%20goals%20together!`, '_blank');
+  
+  const getBgColor = () => {
+    switch(character) {
+      case 'goku': return 'bg-goku-primary/10';
+      case 'saitama': return 'bg-saitama-primary/10';
+      case 'jin-woo': return 'bg-jin-woo-primary/10';
+      default: return 'bg-primary/10';
+    }
   };
-
-  const shareOnFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+  
+  const getTextColor = () => {
+    switch(character) {
+      case 'goku': return 'text-goku-primary';
+      case 'saitama': return 'text-saitama-primary';
+      case 'jin-woo': return 'text-jin-woo-primary';
+      default: return 'text-primary';
+    }
   };
-
-  const shareOnLinkedIn = () => {
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+  
+  // Function to copy link to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
-
-  const sendEmail = () => {
-    window.location.href = `mailto:?subject=Join me on SoloProve!&body=Hey,%20I'm using SoloProve to track my workouts and level up my fitness. Join me and let's conquer our goals together!%0D%0A%0D%0A${shareUrl}`;
+  
+  // Share via native share API if available
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Solo Prove',
+          text: 'Check out my progress on Solo Prove!',
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      copyToClipboard();
+    }
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Share SoloProve</DialogTitle>
-          <DialogDescription>
-            Share your referral link with friends.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Input type="text" value={shareUrl} readOnly className="cursor-pointer" onClick={copyToClipboard} />
-            <Button variant="outline" size="sm" onClick={copyToClipboard} disabled={isCopied}>
-              {isCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-              {isCopied ? "Copied!" : "Copy"}
-            </Button>
+    <motion.div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-black/70 backdrop-blur-md border border-white/10 rounded-xl p-6 w-full max-w-md"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Share Solo Prove</h2>
+          <button 
+            className="p-1 rounded-full hover:bg-white/10"
+            onClick={onClose}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="space-y-6">
+          {/* Share button */}
+          <button
+            className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${getThemeColor()} transition-transform hover:scale-105`}
+            onClick={handleShare}
+          >
+            <Share size={20} />
+            <span className="font-medium">Share with friends</span>
+          </button>
+          
+          {/* Copy link section */}
+          <div className="space-y-2">
+            <label className="text-sm text-white/70">Or copy this link:</label>
+            <div className="flex items-center gap-2">
+              <div className={`flex-1 rounded-lg ${getBgColor()} border border-white/10 p-3 flex items-center gap-2 overflow-hidden`}>
+                <LinkIcon size={16} className="text-white/60 flex-shrink-0" />
+                <span className="truncate text-white/80">{window.location.href}</span>
+              </div>
+              <button
+                className={`p-3 rounded-lg ${copied ? 'bg-green-500/20' : 'bg-white/10'} hover:bg-white/20 transition-colors`}
+                onClick={copyToClipboard}
+                title="Copy to clipboard"
+              >
+                {copied ? <Check size={20} className="text-green-500" /> : <Copy size={20} />}
+              </button>
+            </div>
+          </div>
+          
+          {/* Install app suggestion */}
+          <div className={`rounded-lg ${getBgColor()} border border-white/20 p-4 mt-4`}>
+            <h3 className={`font-medium ${getTextColor()} mb-2`}>Install Solo Prove App</h3>
+            <p className="text-sm text-white/70 mb-3">Install the app for quick access to your workouts and progress tracking.</p>
+            <button 
+              className={`text-sm px-4 py-2 rounded-lg ${getThemeColor()} w-full`}
+              onClick={onClose}
+            >
+              Install Now
+            </button>
           </div>
         </div>
-        <DialogFooter>
-          <div className="grid grid-cols-3 gap-2 w-full">
-            <Button variant="secondary" className="justify-center" onClick={shareOnTwitter}>
-              <Twitter className="mr-2 h-4 w-4" />
-              Twitter
-            </Button>
-            <Button variant="secondary" className="justify-center" onClick={shareOnFacebook}>
-              <Facebook className="mr-2 h-4 w-4" />
-              Facebook
-            </Button>
-            <Button variant="secondary" className="justify-center" onClick={shareOnLinkedIn}>
-              <Linkedin className="mr-2 h-4 w-4" />
-              LinkedIn
-            </Button>
-            <Button variant="secondary" className="justify-center col-span-3" onClick={sendEmail}>
-              <Mail className="mr-2 h-4 w-4" />
-              Email
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -17,11 +17,16 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
+  const toggleSection = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
-    <div className={`border border-white/10 rounded-lg overflow-hidden ${className}`}>
-      <div 
-        className="flex justify-between items-center p-4 cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
+    <div className={`border border-white/10 rounded-lg overflow-hidden animated-border ${className}`}>
+      <button 
+        className="flex justify-between items-center p-4 w-full text-left cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"
+        onClick={toggleSection}
+        type="button"
       >
         <h3 className="font-medium">{title}</h3>
         <div>
@@ -31,7 +36,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             <ChevronDown size={18} className="text-white/60" />
           )}
         </div>
-      </div>
+      </button>
       
       <div 
         className={`transition-all duration-300 ease-in-out overflow-hidden ${

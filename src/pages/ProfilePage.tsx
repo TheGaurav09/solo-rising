@@ -268,7 +268,23 @@ const ProfilePage = () => {
     );
   };
 
-  const isOwnProfile = userId === 'me' || userId === userData?.id;
+  // Check if this is the user's own profile
+  const isOwnProfile = () => {
+    // Get current user ID from supabase session
+    const getCurrentUserId = async () => {
+      const { data } = await supabase.auth.getUser();
+      return data?.user?.id;
+    };
+
+    // Compare with profile being viewed
+    if (userId === 'me') return true;
+    
+    if (userData) {
+      return getCurrentUserId().then(currentId => currentId === userData.id);
+    }
+    
+    return false;
+  };
   
   const visibleLeaderboard = showAllLeaderboard ? leaderboardData : leaderboardData.slice(0, 20);
 
@@ -284,7 +300,7 @@ const ProfilePage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <AnimatedCard className="p-6">
+          <AnimatedCard className="p-6 w-full sm:min-w-[350px] md:min-w-[450px]">
             <div className="flex items-center gap-4">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden ${userData?.character_type ? `bg-${userData.character_type}-primary/30` : 'bg-primary/30'}`}>
                 {userData?.warrior_name ? (
@@ -302,7 +318,7 @@ const ProfilePage = () => {
               </div>
               
               <div className="flex-1">
-                {editMode && isOwnProfile ? (
+                {editMode && userId === 'me' ? (
                   <div className="flex items-center gap-2">
                     <input 
                       type="text" 
@@ -347,7 +363,7 @@ const ProfilePage = () => {
                     <div className="text-sm text-white/70">total points</div>
                   </div>
                   
-                  {isOwnProfile && (
+                  {userId === 'me' && (
                     <div className="relative">
                       <button
                         onClick={() => setMenuOpen(!menuOpen)}
@@ -417,7 +433,7 @@ const ProfilePage = () => {
               ) : (
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                   {workouts.slice(0, 5).map((workout, index) => (
-                    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    <div key={index} className="bg-white/5 rounded-lg p-3 border border-white/10 hover-border animated-border">
                       <div className="flex justify-between mb-1">
                         <div className="font-medium">{workout.exercise_type}</div>
                         <div className={`px-2 py-0.5 text-xs rounded-full ${userData?.character_type ? `bg-${userData.character_type}-primary/20 text-${userData.character_type}-primary` : 'bg-primary/20 text-primary'}`}>
@@ -447,7 +463,7 @@ const ProfilePage = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {achievements.map((achievement, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+                    <div key={index} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover-border animated-border">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${userData?.character_type ? `bg-${userData.character_type}-primary/20` : 'bg-primary/20'}`}>
                         <Award size={18} />
                       </div>
@@ -464,7 +480,7 @@ const ProfilePage = () => {
         </div>
         
         <div>
-          <AnimatedCard className="p-6">
+          <AnimatedCard className="p-6 w-full sm:min-w-[350px]">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold flex items-center">
                 Leaderboard
@@ -503,7 +519,7 @@ const ProfilePage = () => {
                 {visibleLeaderboard.map((entry, index) => (
                   <div key={index}>
                     <div 
-                      className={`flex items-center p-3 rounded-lg transition-colors cursor-pointer ${
+                      className={`flex items-center p-3 rounded-lg transition-colors cursor-pointer hover-border animated-border ${
                         entry.id === (userId === 'me' ? userData?.id : userId)
                           ? `bg-${userData?.character_type}-primary/20 border border-${userData?.character_type}-primary/40` 
                           : 'bg-white/5 border border-white/10'

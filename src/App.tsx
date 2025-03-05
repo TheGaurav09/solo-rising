@@ -13,6 +13,7 @@ import WorkoutPage from "./pages/WorkoutPage";
 import ProfilePage from "./pages/ProfilePage";
 import AchievementsPage from "./pages/AchievementsPage";
 import StorePage from "./pages/StorePage";
+import AIChatPage from "./pages/AIChatPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +60,7 @@ const App = () => {
                 <Route path="profile/:userId" element={<ProfilePage />} />
                 <Route path="achievements" element={<AchievementsPage />} />
                 <Route path="store" element={<StorePage />} />
+                <Route path="ai-chat" element={<AIChatPage />} />
                 {/* Redirect missing paths to workout */}
                 <Route path="*" element={<Navigate to="/workout" replace />} />
               </Route>
