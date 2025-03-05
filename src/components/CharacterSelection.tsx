@@ -6,6 +6,7 @@ import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
 import AuthModal from './AuthModal';
 import { Award, User, Users } from 'lucide-react';
+import UsersList from './UsersList';
 
 const CharacterSelection = () => {
   const { setCharacter, setUserName } = useUser();
@@ -16,6 +17,7 @@ const CharacterSelection = () => {
     saitama: 0,
     'jin-woo': 0
   });
+  const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
 
   useEffect(() => {
     // Fetch character selection counts from the database
@@ -54,6 +56,19 @@ const CharacterSelection = () => {
     }
   };
 
+  const getCharacterLabel = (character: 'goku' | 'saitama' | 'jin-woo') => {
+    switch (character) {
+      case 'goku': return 'Saiyans';
+      case 'saitama': return 'Heroes';
+      case 'jin-woo': return 'Hunters';
+      default: return '';
+    }
+  };
+
+  const handleWarriorCountClick = (character: 'goku' | 'saitama' | 'jin-woo') => {
+    setShowUsersList(character);
+  };
+
   return (
     <div className="container max-w-6xl mx-auto px-4 py-10 min-h-screen flex flex-col justify-center">
       <div className="text-center mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -66,34 +81,40 @@ const CharacterSelection = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <CharacterCard
           name="Goku"
+          label="Saiyans"
           description="Train like a Saiyan with incredible strength and endurance. Perfect for high-intensity workouts."
           character="goku"
           selected={selectedCharacter === 'goku'}
           onClick={() => handleCharacterClick('goku')}
           animationDelay="0.2s"
           count={characterCounts.goku}
-          imagePath="/saitama.jpg"
+          onCountClick={() => handleWarriorCountClick('goku')}
+          imagePath="/goku.jpeg"
         />
         
         <CharacterCard
           name="Saitama"
+          label="Heroes"
           description="Follow the One Punch Man routine to achieve overwhelming power through consistent training."
           character="saitama"
           selected={selectedCharacter === 'saitama'}
           onClick={() => handleCharacterClick('saitama')}
           animationDelay="0.3s"
           count={characterCounts.saitama}
-          imagePath="/goku.jpeg"
+          onCountClick={() => handleWarriorCountClick('saitama')}
+          imagePath="/saitama.jpg"
         />
         
         <CharacterCard
           name="Sung Jin-Woo"
+          label="Hunters"
           description="Level up methodically like the Shadow Monarch, constantly pushing your limits to evolve."
           character="jin-woo"
           selected={selectedCharacter === 'jin-woo'}
           onClick={() => handleCharacterClick('jin-woo')}
           animationDelay="0.4s"
           count={characterCounts['jin-woo']}
+          onCountClick={() => handleWarriorCountClick('jin-woo')}
           imagePath="/jin-woo.png"
         />
       </div>
@@ -116,29 +137,41 @@ const CharacterSelection = () => {
           onSuccess={handleAuthSuccess}
         />
       )}
+
+      {showUsersList && (
+        <UsersList 
+          character={showUsersList} 
+          onClose={() => setShowUsersList(null)}
+          label={getCharacterLabel(showUsersList)}
+        />
+      )}
     </div>
   );
 };
 
 interface CharacterCardProps {
   name: string;
+  label: string;
   description: string;
   character: 'goku' | 'saitama' | 'jin-woo';
   selected: boolean;
   onClick: () => void;
   animationDelay: string;
   count: number;
+  onCountClick: () => void;
   imagePath: string;
 }
 
 const CharacterCard = ({
   name,
+  label,
   description,
   character,
   selected,
   onClick,
   animationDelay,
   count,
+  onCountClick,
   imagePath
 }: CharacterCardProps) => {
   const gradientClass = `${character}-gradient`;
@@ -149,13 +182,13 @@ const CharacterCard = ({
         active={selected}
         onClick={onClick}
         hoverEffect="glow"
-        className={`h-full ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+        className={`h-full transition-all duration-300 ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
       >
         <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
           <img 
             src={imagePath} 
             alt={name} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <div className={`text-6xl font-bold text-gradient ${gradientClass}`}>
@@ -166,9 +199,15 @@ const CharacterCard = ({
         <div className="p-6">
           <div className="flex justify-between items-center mb-2">
             <h3 className={`text-xl font-bold text-gradient ${gradientClass}`}>{name}</h3>
-            <div className="flex items-center text-sm">
+            <div 
+              className="flex items-center text-sm cursor-pointer hover:text-white transition-colors duration-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCountClick();
+              }}
+            >
               <Users size={16} className="mr-1 text-white/60" />
-              <span>{count} warriors</span>
+              <span>{count} {label}</span>
             </div>
           </div>
           <p className="text-white/70 text-sm">{description}</p>
@@ -176,22 +215,22 @@ const CharacterCard = ({
           <div className="mt-4 flex gap-2 flex-wrap">
             {character === 'goku' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary">Strength</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary">Endurance</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary transition-colors duration-300 hover:bg-goku-primary/30">Strength</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary transition-colors duration-300 hover:bg-goku-secondary/30">Endurance</span>
               </>
             )}
             
             {character === 'saitama' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary">Consistency</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary">Power</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary transition-colors duration-300 hover:bg-saitama-primary/30">Consistency</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary transition-colors duration-300 hover:bg-saitama-secondary/30">Power</span>
               </>
             )}
             
             {character === 'jin-woo' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary">Leveling</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent">Progression</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary transition-colors duration-300 hover:bg-jin-woo-primary/30">Leveling</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent transition-colors duration-300 hover:bg-jin-woo-secondary/30">Progression</span>
               </>
             )}
           </div>

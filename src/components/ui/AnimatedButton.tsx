@@ -47,7 +47,7 @@ const AnimatedButton = ({
       case 'secondary':
         return 'bg-secondary text-secondary-foreground hover:bg-secondary/90';
       case 'outline':
-        return 'border border-white/20 bg-transparent hover:bg-white/5';
+        return 'border border-white/20 bg-transparent hover:bg-white/5 hover:border-white/40';
       default:
         return '';
     }

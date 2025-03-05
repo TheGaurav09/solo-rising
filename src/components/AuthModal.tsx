@@ -44,24 +44,35 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              warrior_name: warriorName,
+              character_type: character
+            }
+          }
         });
 
         if (authError) throw authError;
 
-        // Insert user info into our users table
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            { 
-              id: authData.user?.id,
-              email,
-              password: 'hashed-by-supabase', // We don't store actual passwords
-              warrior_name: warriorName,
-              character_type: character
-            },
-          ]);
+        // Create user record with ID matching auth.users
+        if (authData.user) {
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert([
+              { 
+                id: authData.user.id,
+                email,
+                warrior_name: warriorName,
+                character_type: character,
+                password: 'hashed-by-supabase' // We don't store actual passwords
+              },
+            ]);
 
-        if (insertError) throw insertError;
+          if (insertError) {
+            console.error("Error inserting user data:", insertError);
+            throw new Error("Failed to create user profile");
+          }
+        }
 
         toast({
           title: 'Sign up successful',
@@ -90,19 +101,28 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
     }
   };
 
+  const getCharacterLabel = () => {
+    switch (character) {
+      case 'goku': return 'Saiyan';
+      case 'saitama': return 'Hero';
+      case 'jin-woo': return 'Hunter';
+      default: return 'Warrior';
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <AnimatedCard className="w-full max-w-md relative">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/60 hover:text-white"
+          className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors duration-300"
         >
           <X size={20} />
         </button>
         
         <div className="p-6">
           <h2 className={`text-2xl font-bold mb-6 text-center text-gradient ${getGradientClass()}`}>
-            {isLogin ? 'Login to Continue' : 'Join Workout Wars'}
+            {isLogin ? 'Login to Continue' : `Join as a ${getCharacterLabel()}`}
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,7 +208,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-white/60 hover:text-white text-sm"
+                className="text-white/60 hover:text-white text-sm transition-colors duration-300"
               >
                 {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login"}
               </button>

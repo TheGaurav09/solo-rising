@@ -23,7 +23,7 @@ const Index = () => {
   }, [hasSelectedCharacter, navigate]);
 
   return (
-    <div>
+    <div className="animated-grid min-h-screen">
       <CharacterSelection />
     </div>
   );
