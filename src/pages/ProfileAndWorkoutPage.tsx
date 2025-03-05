@@ -8,7 +8,6 @@ import WorkoutLogger from '@/components/WorkoutLogger';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Dumbbell, History, Calendar, Trophy } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 const ProfileAndWorkoutPage = () => {
   const { userId } = useParams();
@@ -150,88 +149,58 @@ const ProfileAndWorkoutPage = () => {
           </div>
           
           <div>
-            <CollapsibleSection 
-              title="Workout History"
-              defaultOpen={true}
-              className="mb-6"
-            >
-              <div className="space-y-3">
-                {workouts.length === 0 ? (
-                  <p className="text-white/70">No workouts logged yet.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {workouts.map((workout) => (
-                      <div key={workout.id} className="bg-white/5 p-3 rounded-lg border border-white/10">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-bold">{workout.exercise_type}</h3>
-                            <p className="text-sm text-white/60">
-                              {new Date(workout.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-lg">{workout.points}</span> points
-                          </div>
+            <AnimatedCard className="p-6">
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                <History size={20} />
+                Workout History
+              </h2>
+              
+              {workouts.length === 0 ? (
+                <p className="text-white/70">No workouts logged yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {workouts.map((workout) => (
+                    <div key={workout.id} className="bg-white/5 p-3 rounded-lg border border-white/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-bold">{workout.exercise_type}</h3>
+                          <p className="text-sm text-white/60">
+                            {new Date(workout.created_at).toLocaleDateString()}
+                          </p>
                         </div>
-                        <div className="flex justify-between text-sm text-white/50 mt-2">
-                          <span>Duration: {workout.duration} min</span>
-                          <span>Reps: {workout.reps}</span>
+                        <div className="text-right">
+                          <span className="font-bold text-lg">{workout.points}</span> points
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CollapsibleSection>
+                      <div className="flex justify-between text-sm text-white/50 mt-2">
+                        <span>Duration: {workout.duration} min</span>
+                        <span>Reps: {workout.reps}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AnimatedCard>
             
-            <CollapsibleSection
-              title="Training Schedule"
-              defaultOpen={false}
-              className="mb-6"
-            >
+            <AnimatedCard className="p-6 mt-6">
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                <Calendar size={20} />
+                Training Schedule
+              </h2>
               <p className="text-white/70">
                 Stay consistent with your workouts to maximize your gains.
               </p>
-              <div className="mt-4 space-y-2">
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Monday</span>
-                  <span className="text-sm">Upper Body</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Tuesday</span>
-                  <span className="text-sm">Cardio</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Wednesday</span>
-                  <span className="text-sm">Rest Day</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Thursday</span>
-                  <span className="text-sm">Lower Body</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Friday</span>
-                  <span className="text-sm">Full Body</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Saturday</span>
-                  <span className="text-sm">Cardio</span>
-                </div>
-                <div className="p-2 bg-white/5 rounded flex justify-between items-center">
-                  <span>Sunday</span>
-                  <span className="text-sm">Rest Day</span>
-                </div>
-              </div>
-            </CollapsibleSection>
+            </AnimatedCard>
             
-            <CollapsibleSection
-              title="Achievements"
-              defaultOpen={false}
-            >
+            <AnimatedCard className="p-6 mt-6">
+              <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                <Trophy size={20} />
+                Achievements
+              </h2>
               <p className="text-white/70">
                 Unlock achievements by reaching milestones in your fitness journey.
               </p>
-            </CollapsibleSection>
+            </AnimatedCard>
           </div>
         </div>
       )}

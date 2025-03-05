@@ -87,33 +87,6 @@ export type Database = {
         }
         Relationships: []
       }
-      scheduled_tasks: {
-        Row: {
-          completed: boolean
-          created_at: string
-          id: string
-          scheduled_for: string
-          task: string
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean
-          created_at?: string
-          id?: string
-          scheduled_for: string
-          task: string
-          user_id: string
-        }
-        Update: {
-          completed?: boolean
-          created_at?: string
-          id?: string
-          scheduled_for?: string
-          task?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       store_items: {
         Row: {
           description: string
@@ -241,30 +214,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_showcase: {
-        Row: {
-          created_at: string
-          id: string
-          items: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       users: {
         Row: {
