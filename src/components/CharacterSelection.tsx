@@ -1,31 +1,57 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
+import AuthModal from './AuthModal';
+import { Award, User, Users } from 'lucide-react';
 
 const CharacterSelection = () => {
   const { setCharacter, setUserName } = useUser();
   const [selectedCharacter, setSelectedCharacter] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
-  const [name, setName] = useState('');
-  const [isNameError, setIsNameError] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [characterCounts, setCharacterCounts] = useState<{[key: string]: number}>({
+    goku: 0,
+    saitama: 0,
+    'jin-woo': 0
+  });
+
+  useEffect(() => {
+    // Fetch character selection counts from the database
+    const fetchCharacterCounts = async () => {
+      const { data, error } = await supabase
+        .from('character_selection_counts')
+        .select('*');
+      
+      if (data && !error) {
+        const counts: {[key: string]: number} = {
+          goku: 0,
+          saitama: 0,
+          'jin-woo': 0
+        };
+        
+        data.forEach((item) => {
+          counts[item.character_type] = item.count;
+        });
+        
+        setCharacterCounts(counts);
+      }
+    };
+    
+    fetchCharacterCounts();
+  }, []);
 
   const handleCharacterClick = (character: 'goku' | 'saitama' | 'jin-woo') => {
     setSelectedCharacter(character);
   };
 
-  const handleSubmit = () => {
-    if (!name.trim()) {
-      setIsNameError(true);
-      return;
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    if (selectedCharacter) {
+      setCharacter(selectedCharacter);
+      // UserName will be set by the user context after login
     }
-
-    if (!selectedCharacter) {
-      return;
-    }
-
-    setUserName(name);
-    setCharacter(selectedCharacter);
   };
 
   return (
@@ -45,6 +71,8 @@ const CharacterSelection = () => {
           selected={selectedCharacter === 'goku'}
           onClick={() => handleCharacterClick('goku')}
           animationDelay="0.2s"
+          count={characterCounts.goku}
+          imagePath="/saitama.jpg"
         />
         
         <CharacterCard
@@ -54,6 +82,8 @@ const CharacterSelection = () => {
           selected={selectedCharacter === 'saitama'}
           onClick={() => handleCharacterClick('saitama')}
           animationDelay="0.3s"
+          count={characterCounts.saitama}
+          imagePath="/goku.jpeg"
         />
         
         <CharacterCard
@@ -63,34 +93,14 @@ const CharacterSelection = () => {
           selected={selectedCharacter === 'jin-woo'}
           onClick={() => handleCharacterClick('jin-woo')}
           animationDelay="0.4s"
+          count={characterCounts['jin-woo']}
+          imagePath="/jin-woo.png"
         />
       </div>
 
       <div className="max-w-md mx-auto w-full animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-        <div className="mb-6">
-          <label htmlFor="name" className="block text-sm font-medium mb-2 text-white/80">
-            Enter Your Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setIsNameError(false);
-            }}
-            className={`w-full px-4 py-3 rounded-lg bg-white/5 border ${
-              isNameError ? 'border-red-500' : 'border-white/10'
-            } focus:border-white/30 focus:outline-none transition-colors`}
-            placeholder="Your warrior name"
-          />
-          {isNameError && (
-            <p className="mt-1 text-sm text-red-500">Please enter your name</p>
-          )}
-        </div>
-
         <AnimatedButton
-          onClick={handleSubmit}
+          onClick={() => setShowAuthModal(true)}
           disabled={!selectedCharacter}
           character={selectedCharacter}
           className="w-full py-3"
@@ -98,6 +108,14 @@ const CharacterSelection = () => {
           Begin Your Journey
         </AnimatedButton>
       </div>
+
+      {showAuthModal && selectedCharacter && (
+        <AuthModal 
+          character={selectedCharacter} 
+          onClose={() => setShowAuthModal(false)} 
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   );
 };
@@ -109,6 +127,8 @@ interface CharacterCardProps {
   selected: boolean;
   onClick: () => void;
   animationDelay: string;
+  count: number;
+  imagePath: string;
 }
 
 const CharacterCard = ({
@@ -117,10 +137,11 @@ const CharacterCard = ({
   character,
   selected,
   onClick,
-  animationDelay
+  animationDelay,
+  count,
+  imagePath
 }: CharacterCardProps) => {
   const gradientClass = `${character}-gradient`;
-  const backgroundClass = `bg-${character}`;
 
   return (
     <div className="animate-fade-in-up" style={{ animationDelay }}>
@@ -130,13 +151,26 @@ const CharacterCard = ({
         hoverEffect="glow"
         className={`h-full ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
       >
-        <div className={`h-48 rounded-t-xl ${backgroundClass} animated-grid flex items-center justify-center`}>
-          <div className={`text-6xl font-bold text-gradient ${gradientClass}`}>
-            {name.charAt(0)}
+        <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
+          <img 
+            src={imagePath} 
+            alt={name} 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className={`text-6xl font-bold text-gradient ${gradientClass}`}>
+              {name.charAt(0)}
+            </div>
           </div>
         </div>
         <div className="p-6">
-          <h3 className={`text-xl font-bold mb-2 text-gradient ${gradientClass}`}>{name}</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className={`text-xl font-bold text-gradient ${gradientClass}`}>{name}</h3>
+            <div className="flex items-center text-sm">
+              <Users size={16} className="mr-1 text-white/60" />
+              <span>{count} warriors</span>
+            </div>
+          </div>
           <p className="text-white/70 text-sm">{description}</p>
           
           <div className="mt-4 flex gap-2 flex-wrap">

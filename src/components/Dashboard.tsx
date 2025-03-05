@@ -1,23 +1,58 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
+import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
-import WorkoutLogger from './WorkoutLogger';
-import Leaderboard from './Leaderboard';
-import Profile from './Profile';
-import { Dumbbell, Trophy, User, LayoutDashboard, LogOut } from 'lucide-react';
+import { Dumbbell, Trophy, User, LayoutDashboard, LogOut, Award, ShoppingBag } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { character, userName } = useUser();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { character, userName, setCharacter, setUserName } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
 
-  const handleWorkoutLogged = (points: number) => {
-    toast({
-      title: "Workout Logged!",
-      description: `You earned ${points} points for this workout.`,
-      duration: 3000,
-    });
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        // User is not logged in, clear local storage and redirect
+        localStorage.removeItem('character');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('points');
+        setCharacter(null);
+        navigate('/');
+        return;
+      }
+
+      // Get user data from our database
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (error) throw error;
+
+      // Set user data in context
+      setCharacter(userData.character_type as 'goku' | 'saitama' | 'jin-woo');
+      setUserName(userData.warrior_name);
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load user data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getBackgroundClass = () => {
@@ -38,15 +73,48 @@ const Dashboard = () => {
     }
   };
 
-  const getNavItemClass = (tab: string) => {
+  const getNavItemClass = (path: string) => {
+    const isActive = location.pathname === path;
     return `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-      activeTab === tab 
+      isActive 
         ? character 
           ? `bg-${character}-primary/20 text-${character}-primary` 
           : 'bg-primary/20 text-primary' 
         : 'hover:bg-white/5'
     }`;
   };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      // Clear local storage
+      localStorage.removeItem('character');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('points');
+      setCharacter(null);
+      navigate('/');
+      
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out',
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        title: 'Logout Failed',
+        description: 'There was an error logging out',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${getBackgroundClass()} animated-grid pb-20`}>
@@ -63,43 +131,29 @@ const Dashboard = () => {
           <AnimatedCard className="p-2">
             <nav className="space-y-1">
               <div 
-                className={getNavItemClass('dashboard')}
-                onClick={() => setActiveTab('dashboard')}
-              >
-                <LayoutDashboard size={20} />
-                <span>Dashboard</span>
-              </div>
-              <div 
-                className={getNavItemClass('workout')}
-                onClick={() => setActiveTab('workout')}
+                className={getNavItemClass('/workout')}
+                onClick={() => navigate('/workout')}
               >
                 <Dumbbell size={20} />
-                <span>Log Workout</span>
+                <span>Workouts</span>
               </div>
               <div 
-                className={getNavItemClass('leaderboard')}
-                onClick={() => setActiveTab('leaderboard')}
-              >
-                <Trophy size={20} />
-                <span>Leaderboard</span>
-              </div>
-              <div 
-                className={getNavItemClass('profile')}
-                onClick={() => setActiveTab('profile')}
+                className={getNavItemClass('/profile/me')}
+                onClick={() => navigate('/profile/me')}
               >
                 <User size={20} />
-                <span>Profile</span>
+                <span>Profile & Leaderboard</span>
+              </div>
+              <div 
+                className={getNavItemClass('/achievements')}
+                onClick={() => navigate('/achievements')}
+              >
+                <Award size={20} />
+                <span>Achievements & Store</span>
               </div>
               <div 
                 className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors text-white/60 hover:bg-white/5 mt-4 border-t border-white/10 pt-4"
-                onClick={() => {
-                  // This would normally log out the user
-                  toast({
-                    title: "Logout",
-                    description: "This would log you out in a real app.",
-                    duration: 3000,
-                  });
-                }}
+                onClick={handleLogout}
               >
                 <LogOut size={20} />
                 <span>Logout</span>
@@ -110,32 +164,7 @@ const Dashboard = () => {
         
         {/* Main Content Area */}
         <div className="flex-1">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <WorkoutLogger onWorkoutLogged={handleWorkoutLogged} />
-                </div>
-                <div>
-                  <Leaderboard />
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {activeTab === 'workout' && (
-            <div className="max-w-md mx-auto">
-              <WorkoutLogger onWorkoutLogged={handleWorkoutLogged} />
-            </div>
-          )}
-          
-          {activeTab === 'leaderboard' && (
-            <Leaderboard />
-          )}
-          
-          {activeTab === 'profile' && (
-            <Profile />
-          )}
+          <Outlet />
         </div>
       </main>
     </div>

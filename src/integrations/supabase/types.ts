@@ -9,10 +9,203 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          description: string
+          icon: string
+          id: string
+          name: string
+          points_required: number
+        }
+        Insert: {
+          description: string
+          icon: string
+          id?: string
+          name: string
+          points_required: number
+        }
+        Update: {
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points_required?: number
+        }
+        Relationships: []
+      }
+      store_items: {
+        Row: {
+          description: string
+          icon: string
+          id: string
+          item_type: string
+          name: string
+          price: number
+        }
+        Insert: {
+          description: string
+          icon: string
+          id?: string
+          item_type: string
+          name: string
+          price: number
+        }
+        Update: {
+          description?: string
+          icon?: string
+          id?: string
+          item_type?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_items: {
+        Row: {
+          id: string
+          item_id: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "store_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          character_type: string
+          created_at: string
+          email: string
+          id: string
+          password: string
+          warrior_name: string
+        }
+        Insert: {
+          character_type: string
+          created_at?: string
+          email: string
+          id?: string
+          password: string
+          warrior_name: string
+        }
+        Update: {
+          character_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          password?: string
+          warrior_name?: string
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          duration: number
+          exercise_type: string
+          id: string
+          points: number
+          reps: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          exercise_type: string
+          id?: string
+          points: number
+          reps: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          exercise_type?: string
+          id?: string
+          points?: number
+          reps?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      character_selection_counts: {
+        Row: {
+          character_type: string | null
+          count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
