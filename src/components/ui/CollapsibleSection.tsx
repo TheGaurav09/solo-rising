@@ -4,49 +4,44 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CollapsibleSectionProps {
   title: string;
-  defaultOpen?: boolean;
   children: React.ReactNode;
+  defaultOpen?: boolean;
   className?: string;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
-  title, 
-  defaultOpen = true, 
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+  title,
   children,
-  className = ""
+  defaultOpen = false,
+  className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const toggleSection = () => {
+  // Handle toggle with a single click
+  const handleToggle = () => {
     setIsOpen(!isOpen);
   };
 
   return (
-    <div className={`border border-white/10 rounded-lg overflow-hidden animated-border ${className}`}>
-      <button 
-        className="flex justify-between items-center p-4 w-full text-left cursor-pointer bg-white/5 hover:bg-white/10 transition-colors"
-        onClick={toggleSection}
-        type="button"
+    <div className={`border border-white/10 rounded-lg overflow-hidden ${className}`}>
+      <button
+        className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 text-left"
+        onClick={handleToggle}
+        aria-expanded={isOpen}
       >
-        <h3 className="font-medium">{title}</h3>
-        <div>
-          {isOpen ? (
-            <ChevronUp size={18} className="text-white/60" />
-          ) : (
-            <ChevronDown size={18} className="text-white/60" />
-          )}
-        </div>
+        <h3 className="font-medium text-lg">{title}</h3>
+        {isOpen ? (
+          <ChevronUp className="text-white/60" />
+        ) : (
+          <ChevronDown className="text-white/60" />
+        )}
       </button>
       
-      <div 
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="p-4">
+      {isOpen && (
+        <div className="p-4 bg-black/20">
           {children}
         </div>
-      </div>
+      )}
     </div>
   );
 };

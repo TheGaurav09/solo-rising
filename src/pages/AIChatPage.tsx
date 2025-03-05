@@ -27,6 +27,20 @@ const AIChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
   
+  // Request fullscreen on component mount
+  useEffect(() => {
+    // Use a slight delay to ensure the DOM is ready
+    const timer = setTimeout(() => {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Generate welcome message based on character
   useEffect(() => {
     const welcomeMessage = {
@@ -72,27 +86,57 @@ const AIChatPage: React.FC = () => {
     setInput('');
     setLoading(true);
     
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "That's a great question! Based on your training history, I'd recommend focusing on progressive overload - gradually increasing the weight or reps in your workouts.",
-        "Interesting point! For optimal results, try to maintain proper form throughout your exercises. Quality always beats quantity when it comes to effective workouts.",
-        `As your AI training partner, I'd suggest incorporating more ${character === 'goku' ? 'explosive movements' : character === 'saitama' ? 'endurance training' : 'technique refinement'} into your routine.`,
-        "Remember to balance your training with adequate rest. Recovery is when your muscles actually grow stronger!",
-        "Looking at your progress, you're making excellent gains! Keep up the consistency and you'll reach your goals in no time.",
-        "Have you considered adding some high-intensity interval training (HIIT)? It could really complement your current workout plan."
-      ];
+    try {
+      // Call the Supabase Edge Function that uses Gemini API
+      const response = await fetch('https://xppaofqmxtaikkacvvzt.supabase.co/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: input,
+          character: character,
+          previousMessages: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('AI response failed');
+      }
+      
+      const data = await response.json();
       
       const aiMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: data.message || "I'm sorry, I couldn't process that request right now. Please try again.",
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error calling AI:', error);
+      toast({
+        title: 'AI Error',
+        description: 'There was an error communicating with the AI. Please try again.',
+        variant: 'destructive'
+      });
+      
+      // Fallback response
+      const fallbackMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "I'm having trouble connecting right now. Please check your connection and try again.",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -144,9 +188,9 @@ const AIChatPage: React.FC = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <AnimatedCard className="relative min-h-[70vh] p-0 overflow-hidden">
+    <div className="container mx-auto px-4 py-8 w-full">
+      <div className="max-w-5xl mx-auto w-full">
+        <AnimatedCard className="relative min-h-[80vh] p-0 overflow-hidden w-full">
           {/* Header */}
           <div className={`p-4 border-b border-white/10 ${character === 'goku' ? 'bg-goku-primary/10' : character === 'saitama' ? 'bg-saitama-primary/10' : character === 'jin-woo' ? 'bg-jin-woo-primary/10' : 'bg-primary/10'}`}>
             <div className="flex items-center justify-between">
@@ -166,7 +210,7 @@ const AIChatPage: React.FC = () => {
           </div>
           
           {/* Messages area */}
-          <div className="p-4 overflow-y-auto max-h-[calc(70vh-140px)]" style={{ scrollBehavior: 'smooth' }}>
+          <div className="p-4 overflow-y-auto max-h-[calc(80vh-140px)]" style={{ scrollBehavior: 'smooth' }}>
             {messages.map((message) => (
               <div 
                 key={message.id} 

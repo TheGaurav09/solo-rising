@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -35,10 +34,22 @@ const ProfilePage = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>(country || 'Global');
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   
   useEffect(() => {
-    fetchData();
-  }, [userId, leaderboardType, selectedRegion]);
+    checkIfOwnProfile();
+  }, [userId]);
+  
+  const checkIfOwnProfile = async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const isOwn = (userId === 'me' || data.user?.id === userId);
+      setIsOwnProfile(isOwn);
+    } catch (error) {
+      console.error('Error checking profile ownership:', error);
+      setIsOwnProfile(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -184,8 +195,16 @@ const ProfilePage = () => {
   };
 
   const handleEditProfile = () => {
-    setEditMode(true);
-    setMenuOpen(false);
+    if (isOwnProfile) {
+      setEditMode(true);
+      setMenuOpen(false);
+    } else {
+      toast({
+        title: 'Permission Denied',
+        description: 'You can only edit your own profile',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -268,24 +287,6 @@ const ProfilePage = () => {
     );
   };
 
-  // Check if this is the user's own profile
-  const isOwnProfile = () => {
-    // Get current user ID from supabase session
-    const getCurrentUserId = async () => {
-      const { data } = await supabase.auth.getUser();
-      return data?.user?.id;
-    };
-
-    // Compare with profile being viewed
-    if (userId === 'me') return true;
-    
-    if (userData) {
-      return getCurrentUserId().then(currentId => currentId === userData.id);
-    }
-    
-    return false;
-  };
-  
   const visibleLeaderboard = showAllLeaderboard ? leaderboardData : leaderboardData.slice(0, 20);
 
   if (loading) {
@@ -363,7 +364,7 @@ const ProfilePage = () => {
                     <div className="text-sm text-white/70">total points</div>
                   </div>
                   
-                  {userId === 'me' && (
+                  {isOwnProfile && (
                     <div className="relative">
                       <button
                         onClick={() => setMenuOpen(!menuOpen)}

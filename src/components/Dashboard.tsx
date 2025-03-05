@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle } from 'lucide-react';
+import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle, Maximize, ArrowLeft } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils'; // Fix: Import from iconUtils instead of utils
 import { useMediaQuery } from '@/hooks/use-mobile';
 // Add framer-motion import
@@ -21,7 +21,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Check if the current route is AI Chat
+  const isAIChat = location.pathname.includes('/ai-chat');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -99,6 +103,39 @@ const Dashboard = () => {
     setShowShareModal(true);
   };
   
+  // Toggle fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+  
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+  
+  // Navigate back from AI Chat
+  const handleBackFromAIChat = () => {
+    navigate('/workout');
+  };
+  
   // Define navigation items
   const navigationItems = [
     {
@@ -130,6 +167,11 @@ const Dashboard = () => {
   
   // Primary actions (shown at the bottom of the sidebar)
   const primaryActions = [
+    {
+      icon: <Maximize size={20} />,
+      label: 'Fullscreen',
+      onClick: toggleFullscreen
+    },
     {
       icon: <LogOut size={20} />,
       label: 'Logout',
@@ -195,6 +237,24 @@ const Dashboard = () => {
   
   return (
     <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
+      {/* AI Chat Back Button (only shown on AI Chat page) */}
+      {isAIChat && (
+        <div className={`fixed top-4 left-4 z-50 ${isMobile ? '' : 'md:left-[17rem]'}`}>
+          <button 
+            onClick={handleBackFromAIChat}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+              character === 'goku' ? 'bg-goku-primary' : 
+              character === 'saitama' ? 'bg-saitama-primary' : 
+              character === 'jin-woo' ? 'bg-jin-woo-primary' : 
+              'bg-white'
+            } text-white`}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        </div>
+      )}
+      
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           navigationItems={navigationItems}
@@ -206,8 +266,8 @@ const Dashboard = () => {
         />
         
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <div className="min-h-screen">
+        <main className={`flex-1 overflow-y-auto pb-20 md:pb-0 ${isAIChat ? 'pt-16' : ''}`}>
+          <div className={`min-h-screen ${isAIChat ? 'pt-4' : ''}`}>
             <Outlet />
           </div>
         </main>
