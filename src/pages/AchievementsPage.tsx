@@ -3,11 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { Award, ShoppingBag, Coins, Lock, Check, Star, Shield, Zap, Sparkles, Diamond } from 'lucide-react';
+import { Award, ShoppingBag, Coins, Lock, Check, LogOut } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import ItemDetailModal from '@/components/modals/ItemDetailModal';
+import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
+import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
+import { getIconComponent } from '@/lib/iconUtils';
+import { useNavigate } from 'react-router-dom';
 
 const AchievementsPage = () => {
   const { character, points } = useUser();
+  const navigate = useNavigate();
   const [achievements, setAchievements] = useState<any[]>([]);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
   const [storeItems, setStoreItems] = useState<any[]>([]);
@@ -15,6 +21,9 @@ const AchievementsPage = () => {
   const [loading, setLoading] = useState(true);
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
   const [coins, setCoins] = useState(0);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedAchievement, setSelectedAchievement] = useState<any | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -26,7 +35,6 @@ const AchievementsPage = () => {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) return;
 
-      // Fetch user's points/coins
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('points')
@@ -36,7 +44,6 @@ const AchievementsPage = () => {
       if (userError) throw userError;
       setCoins(userData?.points || 0);
 
-      // Fetch all achievements
       const { data: achievementsData, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
@@ -45,7 +52,6 @@ const AchievementsPage = () => {
       if (achievementsError) throw achievementsError;
       setAchievements(achievementsData || []);
 
-      // Fetch user's unlocked achievements
       const { data: userAchievementsData, error: userAchievementsError } = await supabase
         .from('user_achievements')
         .select('*')
@@ -54,7 +60,6 @@ const AchievementsPage = () => {
       if (userAchievementsError) throw userAchievementsError;
       setUserAchievements(userAchievementsData || []);
 
-      // Fetch store items
       const { data: storeItemsData, error: storeItemsError } = await supabase
         .from('store_items')
         .select('*')
@@ -63,7 +68,6 @@ const AchievementsPage = () => {
       if (storeItemsError) throw storeItemsError;
       setStoreItems(storeItemsData || []);
 
-      // Fetch user's purchased items
       const { data: userItemsData, error: userItemsError } = await supabase
         .from('user_items')
         .select('*')
@@ -114,7 +118,6 @@ const AchievementsPage = () => {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) throw new Error('User not authenticated');
 
-      // Add item to user's inventory
       const { error: purchaseError } = await supabase
         .from('user_items')
         .insert([
@@ -126,7 +129,6 @@ const AchievementsPage = () => {
 
       if (purchaseError) throw purchaseError;
 
-      // Update user's coins
       const { error: updateError } = await supabase
         .from('users')
         .update({ points: coins - item.price })
@@ -134,7 +136,6 @@ const AchievementsPage = () => {
 
       if (updateError) throw updateError;
 
-      // Update local state
       setCoins(coins - item.price);
       setUserItems([...userItems, { user_id: currentUser.user.id, item_id: item.id }]);
 
@@ -153,17 +154,23 @@ const AchievementsPage = () => {
     }
   };
 
-  const getIconComponent = (iconName: string, size = 18) => {
-    switch(iconName) {
-      case 'award': return <Award size={size} />;
-      case 'star': return <Star size={size} />;
-      case 'medal': return <Award size={size} />;
-      case 'trending-up': return <Award size={size} />;
-      case 'zap': return <Zap size={size} />;
-      case 'sparkles': return <Sparkles size={size} />;
-      case 'shield': return <Shield size={size} />;
-      case 'diamond': return <Diamond size={size} />;
-      default: return <Award size={size} />;
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: 'Logged out successfully',
+        description: 'Come back soon to continue your training!',
+      });
+      
+      navigate('/');
+    } catch (error: any) {
+      toast({
+        title: 'Error logging out',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -179,9 +186,18 @@ const AchievementsPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Achievements & Store</h1>
-        <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-lg">
-          <Coins className="text-yellow-400" size={18} />
-          <span className="font-medium">{coins} coins</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-lg">
+            <Coins className="text-yellow-400" size={18} />
+            <span className="font-medium">{coins} coins</span>
+          </div>
+          <button 
+            onClick={() => setShowLogoutConfirm(true)}
+            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
       
@@ -201,11 +217,16 @@ const AchievementsPage = () => {
                 return (
                   <div 
                     key={achievement.id} 
-                    className={`rounded-lg p-4 transition-colors ${
+                    className={`rounded-lg p-4 transition-colors cursor-pointer hover:bg-white/10 ${
                       unlocked 
                         ? `bg-${character}-primary/20 border border-${character}-primary/40` 
                         : 'bg-white/5 border border-white/10'
                     }`}
+                    onClick={() => setSelectedAchievement({
+                      ...achievement,
+                      unlocked,
+                      progress
+                    })}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -268,11 +289,12 @@ const AchievementsPage = () => {
                 return (
                   <div 
                     key={item.id} 
-                    className={`rounded-lg p-4 transition-colors ${
+                    className={`rounded-lg p-4 transition-colors cursor-pointer hover:bg-white/10 ${
                       purchased 
                         ? `bg-${character}-primary/20 border border-${character}-primary/40` 
                         : 'bg-white/5 border border-white/10'
                     }`}
+                    onClick={() => setSelectedItem(item)}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -305,7 +327,10 @@ const AchievementsPage = () => {
                           </div>
                         ) : (
                           <AnimatedButton
-                            onClick={() => handlePurchaseItem(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePurchaseItem(item);
+                            }}
                             disabled={coins < item.price || purchaseLoading === item.id}
                             character={character || undefined}
                             size="sm"
@@ -322,6 +347,34 @@ const AchievementsPage = () => {
           </AnimatedCard>
         </div>
       </div>
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          owned={isItemPurchased(selectedItem.id)}
+          onClose={() => setSelectedItem(null)}
+          onPurchase={() => {
+            handlePurchaseItem(selectedItem);
+            setSelectedItem(null);
+          }}
+        />
+      )}
+
+      {selectedAchievement && (
+        <AchievementDetailModal
+          achievement={selectedAchievement}
+          unlocked={selectedAchievement.unlocked}
+          progress={selectedAchievement.progress}
+          onClose={() => setSelectedAchievement(null)}
+        />
+      )}
+
+      {showLogoutConfirm && (
+        <LogoutConfirmModal
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
     </div>
   );
 };

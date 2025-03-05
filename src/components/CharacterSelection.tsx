@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -44,6 +43,30 @@ const CharacterSelection = () => {
     };
     
     fetchCharacterCounts();
+    
+    // Set up a subscription to real-time updates for character counts
+    const subscription = supabase
+      .channel('character_counts_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'character_counts'
+        }, 
+        (payload: any) => {
+          if (payload.new) {
+            setCharacterCounts(prev => ({
+              ...prev,
+              [payload.new.character_type]: payload.new.count
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const handleCharacterClick = (character: 'goku' | 'saitama' | 'jin-woo') => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -7,6 +6,7 @@ import AnimatedButton from '@/components/ui/AnimatedButton';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
 
 const WorkoutPage = () => {
   const { character, userName, addPoints } = useUser();
@@ -17,6 +17,7 @@ const WorkoutPage = () => {
   const [success, setSuccess] = useState(false);
   const [workoutHistory, setWorkoutHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     fetchWorkoutHistory();
@@ -65,16 +66,18 @@ const WorkoutPage = () => {
     const exercise = getSelectedExercise();
     if (!exercise) return 0;
     
-    // Base points from exercise
     let totalPoints = exercise.points;
     
-    // Add points based on duration (1 point per 5 minutes)
     totalPoints += Math.floor(duration / 5);
     
-    // Add points based on reps (1 point per 5 reps)
     totalPoints += Math.floor(reps / 5);
     
     return totalPoints;
+  };
+
+  const handleSubmitWorkout = () => {
+    if (!selectedExercise) return;
+    setShowConfirmModal(true);
   };
 
   const handleAddWorkout = async () => {
@@ -89,7 +92,6 @@ const WorkoutPage = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
-      // Insert workout into database
       const { data, error } = await supabase
         .from('workouts')
         .insert([
@@ -104,7 +106,6 @@ const WorkoutPage = () => {
 
       if (error) throw error;
       
-      // Add points to user
       addPoints(pointsEarned);
       
       toast({
@@ -115,10 +116,8 @@ const WorkoutPage = () => {
       
       setSuccess(true);
       
-      // Refresh workout history
       fetchWorkoutHistory();
       
-      // Reset after a moment
       setTimeout(() => {
         setSuccess(false);
         setSelectedExercise(null);
@@ -141,7 +140,6 @@ const WorkoutPage = () => {
       <h1 className="text-2xl font-bold mb-6">Workout Center</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Add Workout Section */}
         <div>
           <AnimatedCard className="p-6">
             <h2 className="text-xl font-bold mb-4">Add Workout</h2>
@@ -243,7 +241,7 @@ const WorkoutPage = () => {
                 </div>
                 
                 <AnimatedButton
-                  onClick={handleAddWorkout}
+                  onClick={handleSubmitWorkout}
                   disabled={!selectedExercise || loading}
                   character={character || undefined}
                   className="w-full"
@@ -255,7 +253,6 @@ const WorkoutPage = () => {
           </AnimatedCard>
         </div>
         
-        {/* Workout History Section */}
         <div>
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -294,6 +291,19 @@ const WorkoutPage = () => {
           </AnimatedCard>
         </div>
       </div>
+
+      {showConfirmModal && selectedExercise && (
+        <WorkoutConfirmModal
+          exerciseName={getSelectedExercise()?.name || selectedExercise}
+          reps={reps}
+          duration={duration}
+          onConfirm={() => {
+            setShowConfirmModal(false);
+            handleAddWorkout();
+          }}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -34,11 +34,15 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
         });
 
         if (error) throw error;
-        toast({
-          title: 'Login successful',
-          description: 'Welcome back to Workout Wars!',
-        });
-        onSuccess();
+        
+        // Wait for a moment to ensure auth state is updated
+        setTimeout(() => {
+          toast({
+            title: 'Login successful',
+            description: 'Welcome back to Workout Wars!',
+          });
+          onSuccess();
+        }, 300);
       } else {
         // Sign up
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -54,47 +58,47 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
 
         if (authError) throw authError;
 
-        // Wait a moment before creating the user record
-        // This allows Supabase to fully process the auth signup
-        setTimeout(async () => {
+        // Create user record immediately
+        if (authData.user) {
           try {
-            // Check if auth user was created
-            if (authData.user) {
-              // Insert directly into public.users table
-              const { error: insertError } = await supabase
-                .from('users')
-                .insert([
-                  { 
-                    id: authData.user.id,
-                    email,
-                    warrior_name: warriorName,
-                    character_type: character,
-                    password: 'hashed-by-supabase' // We don't store actual passwords
-                  },
-                ]);
+            // Insert directly into public.users table
+            const { error: insertError } = await supabase
+              .from('users')
+              .insert([
+                { 
+                  id: authData.user.id,
+                  email,
+                  warrior_name: warriorName,
+                  character_type: character,
+                  password: 'hashed-by-supabase' // We don't store actual passwords
+                },
+              ]);
 
-              if (insertError) {
-                console.error("Error inserting user data:", insertError);
-                toast({
-                  title: 'Account created, but profile setup failed',
-                  description: 'You can log in, but may need to set up your profile later.',
-                  variant: 'destructive',
-                });
-              } else {
-                // Update the character count in the new table
-                await updateCharacterCount(character);
-              }
+            if (insertError) {
+              console.error("Error inserting user data:", insertError);
+              toast({
+                title: 'Account created, but profile setup failed',
+                description: 'You can log in, but may need to set up your profile later.',
+                variant: 'destructive',
+              });
+            } else {
+              // Update the character count in the new table
+              await updateCharacterCount(character);
             }
             
-            toast({
-              title: 'Sign up successful',
-              description: 'Your warrior journey begins now!',
-            });
-            onSuccess();
+            // Wait a bit longer before success to ensure database operations complete
+            setTimeout(() => {
+              toast({
+                title: 'Sign up successful',
+                description: 'Your warrior journey begins now!',
+              });
+              onSuccess();
+            }, 500);
           } catch (e: any) {
             console.error("Profile creation error:", e);
+            throw e;
           }
-        }, 500);
+        }
       }
     } catch (e: any) {
       setError(e.message);
