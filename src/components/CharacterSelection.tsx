@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -251,7 +250,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
     }
   ];
 
-  // Render the current section based on the index
   const renderCurrentSection = () => {
     switch (currentSection) {
       case 0:
@@ -420,7 +418,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           </div>
         </div>
 
-        {/* Carousel Navigation */}
         <div className="mt-16 mb-6 relative">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">{sections[currentSection].title}</h2>
@@ -444,7 +441,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             )}
           </div>
           
-          {/* Section Content */}
           <div className="overflow-hidden">
             <div 
               className="transition-transform duration-500 ease-in-out" 
@@ -454,7 +450,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             </div>
           </div>
           
-          {/* Mobile touch indicators */}
           <div className="mt-6 flex justify-center space-x-2">
             {sections.map((_, index) => (
               <button
@@ -473,7 +468,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           </div>
         </div>
         
-        {/* FAQ Section - with reduced height */}
         <div className="py-10 mb-6">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-2">Frequently Asked Questions</h2>
@@ -615,8 +609,8 @@ const ArrowDown = (props: React.SVGProps<SVGSVGElement>) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      width={props.width || 24}
+      height={props.height || 24}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

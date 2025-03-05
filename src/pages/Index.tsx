@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import CharacterSelection from '@/components/CharacterSelection';
@@ -79,7 +78,7 @@ const Index = () => {
         checkUserCharacter();
       } else if (event === 'SIGNED_OUT') {
         setCurrentUserId(null);
-      } else if (event === 'SIGNED_UP') {
+      } else if (event === 'USER_UPDATED' && event.toString() === 'SIGNED_UP') {
         toast({
           title: "Account created successfully!",
           description: "Please select a character to continue your journey.",

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -137,6 +138,65 @@ const WorkoutPage = () => {
         ]);
 
       if (error) throw error;
+      
+      // Fix the achievement check - get total points first
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('points')
+        .eq('id', user.user.id)
+        .single();
+        
+      if (userError) throw userError;
+      
+      // Now check achievements with the user's total points
+      const totalPoints = userData?.points + pointsEarned;
+      
+      // Fix the type error by properly handling the achievements query result
+      const { data: achievements, error: achievementsError } = await supabase
+        .from('achievements')
+        .select('*')
+        .lte('points_required', totalPoints)
+        .order('points_required', { ascending: false });
+        
+      if (achievementsError) throw achievementsError;
+      
+      // Process achievements if there are any
+      if (achievements && achievements.length > 0) {
+        // Check which achievements the user already has
+        const { data: userAchievements, error: userAchievementsError } = await supabase
+          .from('user_achievements')
+          .select('achievement_id')
+          .eq('user_id', user.user.id);
+          
+        if (userAchievementsError) throw userAchievementsError;
+        
+        // Find new achievements to award
+        const userAchievementIds = userAchievements?.map(ua => ua.achievement_id) || [];
+        const newAchievements = achievements.filter(a => !userAchievementIds.includes(a.id));
+        
+        // Award new achievements if any
+        if (newAchievements.length > 0) {
+          const achievementsToInsert = newAchievements.map(achievement => ({
+            user_id: user.user.id,
+            achievement_id: achievement.id
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('user_achievements')
+            .insert(achievementsToInsert);
+            
+          if (insertError) throw insertError;
+          
+          // Show toast notification for new achievements
+          newAchievements.forEach(achievement => {
+            toast({
+              title: 'New Achievement Unlocked!',
+              description: `${achievement.name}: ${achievement.description}`,
+              duration: 5000,
+            });
+          });
+        }
+      }
       
       const { error: userUpdateError } = await supabase
         .from('users')

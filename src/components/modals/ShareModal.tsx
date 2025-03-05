@@ -1,148 +1,82 @@
-
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { XIcon, Copy, Share2, Download, Smartphone, LinkIcon, CheckIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Share, Copy, Check, Twitter, Facebook, Linkedin, Mail, QrCode, Globe, Download } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
-interface ShareModalProps {
-  isOpen: boolean;
+export interface ShareModalProps {
   onClose: () => void;
-  userId?: string;
+  character?: 'goku' | 'saitama' | 'jin-woo';
 }
 
-const ShareModal = ({ isOpen, onClose, userId }: ShareModalProps) => {
-  const [copied, setCopied] = useState(false);
-  const appUrl = window.location.origin;
-  const shareUrl = userId ? `${appUrl}/profile/${userId}` : appUrl;
-  
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast({
-        title: "Link copied",
-        description: "The link has been copied to your clipboard",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      toast({
-        title: "Failed to copy",
-        description: "Please try again or copy the link manually",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleShareNative = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Solo Prove - Anime-inspired fitness app',
-          text: 'Check out my profile on Solo Prove, the anime-inspired fitness app!',
-          url: shareUrl,
-        });
-        toast({
-          title: "Shared successfully",
-          description: "Thanks for sharing Solo Prove!",
-        });
-      } else {
-        toast({
-          title: "Sharing not supported",
-          description: "Your browser doesn't support direct sharing. Please use the copy link option instead.",
-          variant: "destructive",
-        });
-      }
-    } catch (err) {
-      console.error('Error sharing:', err);
-    }
-  };
-  
-  const handleAddToHomeScreen = () => {
+const ShareModal: React.FC<ShareModalProps> = ({ onClose, character }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const shareUrl = `${window.location.origin}?ref=${character}`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setIsCopied(true);
     toast({
-      title: "Add to Home Screen",
-      description: "Open your browser menu and select 'Add to Home Screen' or 'Install App' to add Solo Prove to your device.",
-      duration: 5000,
+      title: "Copied to clipboard!",
+      description: "Share this link with your friends.",
     });
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const shareOnTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=Join%20me%20on%20SoloProve%20and%20let's%20conquer%20our%20fitness%20goals%20together!`, '_blank');
+  };
+
+  const shareOnFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const shareOnLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+  };
+
+  const sendEmail = () => {
+    window.location.href = `mailto:?subject=Join me on SoloProve!&body=Hey,%20I'm using SoloProve to track my workouts and level up my fitness. Join me and let's conquer our goals together!%0D%0A%0D%0A${shareUrl}`;
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5" />
-            Share Solo Prove
-          </DialogTitle>
+          <DialogTitle>Share SoloProve</DialogTitle>
+          <DialogDescription>
+            Share your referral link with friends.
+          </DialogDescription>
         </DialogHeader>
-        
         <div className="grid gap-4 py-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 rounded-md overflow-hidden">
-              <div className="flex items-center border border-white/10 bg-white/5 rounded-md p-2">
-                <LinkIcon className="h-4 w-4 text-white/60 mr-2 flex-shrink-0" />
-                <span className="text-sm text-white/70 truncate flex-1">{shareUrl}</span>
-              </div>
-            </div>
-            <Button 
-              type="button" 
-              size="sm" 
-              variant="outline" 
-              onClick={handleCopyLink}
-              className="gap-1.5"
-            >
-              {copied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Copy"}
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            <Button 
-              variant="outline" 
-              onClick={handleShareNative}
-              className="flex items-center gap-2 py-6"
-            >
-              <Share2 className="h-5 w-5" />
-              <div className="flex flex-col items-start">
-                <span>Share</span>
-                <span className="text-xs text-white/60">With others</span>
-              </div>
-            </Button>
-            
-            <Button 
-              variant="outline"
-              onClick={handleAddToHomeScreen}
-              className="flex items-center gap-2 py-6"
-            >
-              <Smartphone className="h-5 w-5" />
-              <div className="flex flex-col items-start">
-                <span>Install</span>
-                <span className="text-xs text-white/60">On your device</span>
-              </div>
+          <div className="flex items-center space-x-2">
+            <Input type="text" value={shareUrl} readOnly className="cursor-pointer" onClick={copyToClipboard} />
+            <Button variant="outline" size="sm" onClick={copyToClipboard} disabled={isCopied}>
+              {isCopied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+              {isCopied ? "Copied!" : "Copy"}
             </Button>
           </div>
         </div>
-        
-        <DialogFooter className="flex items-center border-t border-white/10 pt-4">
-          <p className="text-xs text-white/60 flex-1">
-            Share Solo Prove with your friends and training partners!
-          </p>
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="sm"
-            onClick={onClose}
-          >
-            <XIcon className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+        <DialogFooter>
+          <div className="grid grid-cols-3 gap-2 w-full">
+            <Button variant="secondary" className="justify-center" onClick={shareOnTwitter}>
+              <Twitter className="mr-2 h-4 w-4" />
+              Twitter
+            </Button>
+            <Button variant="secondary" className="justify-center" onClick={shareOnFacebook}>
+              <Facebook className="mr-2 h-4 w-4" />
+              Facebook
+            </Button>
+            <Button variant="secondary" className="justify-center" onClick={shareOnLinkedIn}>
+              <Linkedin className="mr-2 h-4 w-4" />
+              LinkedIn
+            </Button>
+            <Button variant="secondary" className="justify-center col-span-3" onClick={sendEmail}>
+              <Mail className="mr-2 h-4 w-4" />
+              Email
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
