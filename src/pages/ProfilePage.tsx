@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle, Trophy } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle, Trophy } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
@@ -286,16 +286,15 @@ const ProfilePage = () => {
           <AnimatedCard className="p-6">
             <div className="flex items-center gap-4">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden ${userData?.character_type ? `bg-${userData.character_type}-primary/30` : 'bg-primary/30'}`}>
-                {userData?.character_type ? (
-                  <img 
-                    src={`/${userData.character_type}.png`}
-                    alt={userData.character_type}
-                    className="w-full h-full object-cover"
-                    onError={e => {
-                      e.currentTarget.src = "/placeholder.svg";
-                      e.currentTarget.onerror = null;
-                    }}
-                  />
+                {userData?.warrior_name ? (
+                  <span className={`text-2xl font-bold ${
+                    userData?.character_type === 'goku' ? 'text-goku-primary' :
+                    userData?.character_type === 'saitama' ? 'text-saitama-primary' :
+                    userData?.character_type === 'jin-woo' ? 'text-jin-woo-primary' :
+                    'text-white'
+                  }`}>
+                    {userData.warrior_name.charAt(0).toUpperCase()}
+                  </span>
                 ) : (
                   <User className="text-primary" size={28} />
                 )}

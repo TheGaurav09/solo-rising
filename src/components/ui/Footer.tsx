@@ -35,7 +35,7 @@ const Footer = () => {
           <div className="flex items-center gap-6">
             <span className="text-white/70 text-sm">Join us on:</span>
             <a 
-              href="https://twitter.com" 
+              href="https://twitter.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white/60 hover:text-white transition-colors group"
@@ -44,7 +44,7 @@ const Footer = () => {
               <Twitter className={`h-5 w-5 ${getColorClass('twitter')}`} />
             </a>
             <a 
-              href="https://instagram.com" 
+              href="https://instagram.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white/60 hover:text-white transition-colors group"
@@ -53,7 +53,7 @@ const Footer = () => {
               <Instagram className={`h-5 w-5 ${getColorClass('instagram')}`} />
             </a>
             <a 
-              href="https://youtube.com" 
+              href="https://youtube.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white/60 hover:text-white transition-colors group"
@@ -62,7 +62,7 @@ const Footer = () => {
               <Youtube className={`h-5 w-5 ${getColorClass('youtube')}`} />
             </a>
             <a 
-              href="https://discord.com" 
+              href="https://discord.com/thegaurav.r" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white/60 hover:text-white transition-colors group"

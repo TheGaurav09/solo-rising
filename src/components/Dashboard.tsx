@@ -1,15 +1,16 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import { 
-  Dumbbell, Trophy, User, LogOut, Award, 
+  Dumbbell, Trophy, User, Award, 
   ShoppingBag, ChevronLeft, ChevronRight, Flame, Info, 
-  ArrowUp, Menu, X
+  ArrowUp, Menu, X, Share2
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import LogoutConfirmModal from './modals/LogoutConfirmModal';
+import ShareModal from './modals/ShareModal';
 import Footer from './ui/Footer';
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,7 +22,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
   const streakModalRef = useRef<HTMLDivElement>(null);
@@ -71,21 +72,16 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const { data } = await supabase.auth.getUser();
+      
+      // Fix for auto-login issue: Check auth each time and clear local storage if there's no user
       if (!data.user) {
-        // Check if we have locally stored data
-        const storedCharacter = localStorage.getItem('character');
-        const storedUserName = localStorage.getItem('userName');
-        
-        if (storedCharacter && storedUserName) {
-          // Allow access with locally stored data
-          setCharacter(storedCharacter as 'goku' | 'saitama' | 'jin-woo');
-          setUserName(storedUserName);
-          setLoading(false);
-          return;
-        }
-        
-        // No local data either, redirect to home
+        // Clear locally stored data if we're not logged in
+        localStorage.removeItem('character');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('points');
+        setCharacter(null);
         navigate('/');
+        setLoading(false);
         return;
       }
 
@@ -111,6 +107,11 @@ const Dashboard = () => {
         description: 'Failed to load user data',
         variant: 'destructive',
       });
+      // Clear local storage on error
+      localStorage.removeItem('character');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('points');
+      navigate('/');
     } finally {
       setLoading(false);
     }
@@ -187,11 +188,21 @@ const Dashboard = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
+    <div className={`min-h-screen flex flex-col ${
+      character === 'goku' ? 'bg-goku' : 
+      character === 'saitama' ? 'bg-saitama' : 
+      character === 'jin-woo' ? 'bg-jin-woo' : 
+      'bg-background'
+    } animated-grid`}>
       <header className="container mx-auto pt-8 pb-6 px-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className={`text-3xl font-bold text-gradient ${getTitleGradient()}`}>
+            <h1 className={`text-3xl font-bold text-gradient ${
+              character === 'goku' ? 'goku-gradient' : 
+              character === 'saitama' ? 'saitama-gradient' : 
+              character === 'jin-woo' ? 'jin-woo-gradient' : 
+              ''
+            }`}>
               WORKOUT WARS
             </h1>
             <p className="text-white/70 mt-1">Welcome back, {userName}</p>
@@ -261,39 +272,63 @@ const Dashboard = () => {
               
               <nav className="space-y-2 mt-4">
                 <div 
-                  className={getNavItemClass('/workout')}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    location.pathname === '/workout' 
+                    ? character 
+                      ? `bg-${character}-primary/20 text-${character}-primary` 
+                      : 'bg-primary/20 text-primary' 
+                    : 'hover:bg-white/5'
+                  }`}
                   onClick={() => navigate('/workout')}
                 >
                   <Dumbbell size={20} />
                   <span>Workouts</span>
                 </div>
                 <div 
-                  className={getNavItemClass('/profile/me')}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    location.pathname === '/profile/me' 
+                    ? character 
+                      ? `bg-${character}-primary/20 text-${character}-primary` 
+                      : 'bg-primary/20 text-primary' 
+                    : 'hover:bg-white/5'
+                  }`}
                   onClick={() => navigate('/profile/me')}
                 >
                   <User size={20} />
                   <span>Profile & Leaderboard</span>
                 </div>
                 <div 
-                  className={getNavItemClass('/achievements')}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    location.pathname === '/achievements' 
+                    ? character 
+                      ? `bg-${character}-primary/20 text-${character}-primary` 
+                      : 'bg-primary/20 text-primary' 
+                    : 'hover:bg-white/5'
+                  }`}
                   onClick={() => navigate('/achievements')}
                 >
                   <Award size={20} />
                   <span>Achievements</span>
                 </div>
                 <div 
-                  className={getNavItemClass('/store')}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    location.pathname === '/store' 
+                    ? character 
+                      ? `bg-${character}-primary/20 text-${character}-primary` 
+                      : 'bg-primary/20 text-primary' 
+                    : 'hover:bg-white/5'
+                  }`}
                   onClick={() => navigate('/store')}
                 >
                   <ShoppingBag size={20} />
                   <span>Store</span>
                 </div>
                 <div 
-                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5 text-red-400"
-                  onClick={() => setShowLogoutConfirm(true)}
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
+                  onClick={() => setShowShareModal(true)}
                 >
-                  <LogOut size={20} />
-                  <span>Logout</span>
+                  <Share2 size={20} />
+                  <span>Share App</span>
                 </div>
               </nav>
             </div>
@@ -312,32 +347,63 @@ const Dashboard = () => {
             
             <nav className="space-y-1 mt-8 md:mt-0">
               <div 
-                className={getNavItemClass('/workout')}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  location.pathname === '/workout' 
+                  ? character 
+                    ? `bg-${character}-primary/20 text-${character}-primary` 
+                    : 'bg-primary/20 text-primary' 
+                  : 'hover:bg-white/5'
+                }`}
                 onClick={() => navigate('/workout')}
               >
                 <Dumbbell size={20} />
                 {!isNavCollapsed && <span>Workouts</span>}
               </div>
               <div 
-                className={getNavItemClass('/profile/me')}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  location.pathname === '/profile/me' 
+                  ? character 
+                    ? `bg-${character}-primary/20 text-${character}-primary` 
+                    : 'bg-primary/20 text-primary' 
+                  : 'hover:bg-white/5'
+                }`}
                 onClick={() => navigate('/profile/me')}
               >
                 <User size={20} />
                 {!isNavCollapsed && <span>Profile & Leaderboard</span>}
               </div>
               <div 
-                className={getNavItemClass('/achievements')}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  location.pathname === '/achievements' 
+                  ? character 
+                    ? `bg-${character}-primary/20 text-${character}-primary` 
+                    : 'bg-primary/20 text-primary' 
+                  : 'hover:bg-white/5'
+                }`}
                 onClick={() => navigate('/achievements')}
               >
                 <Award size={20} />
                 {!isNavCollapsed && <span>Achievements</span>}
               </div>
               <div 
-                className={getNavItemClass('/store')}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  location.pathname === '/store' 
+                  ? character 
+                    ? `bg-${character}-primary/20 text-${character}-primary` 
+                    : 'bg-primary/20 text-primary' 
+                  : 'hover:bg-white/5'
+                }`}
                 onClick={() => navigate('/store')}
               >
                 <ShoppingBag size={20} />
                 {!isNavCollapsed && <span>Store</span>}
+              </div>
+              <div 
+                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
+                onClick={() => setShowShareModal(true)}
+              >
+                <Share2 size={20} />
+                {!isNavCollapsed && <span>Share App</span>}
               </div>
             </nav>
           </AnimatedCard>
@@ -362,33 +428,10 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {showLogoutConfirm && (
-        <LogoutConfirmModal
-          onConfirm={async () => {
-            try {
-              await supabase.auth.signOut();
-              // Clear local storage
-              localStorage.removeItem('character');
-              localStorage.removeItem('userName');
-              localStorage.removeItem('points');
-              setCharacter(null);
-              navigate('/');
-              
-              toast({
-                title: 'Logged Out',
-                description: 'You have been successfully logged out',
-                duration: 3000,
-              });
-            } catch (error) {
-              toast({
-                title: 'Logout Failed',
-                description: 'There was an error logging out',
-                variant: 'destructive',
-              });
-            }
-            setShowLogoutConfirm(false);
-          }}
-          onCancel={() => setShowLogoutConfirm(false)}
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal 
+          onClose={() => setShowShareModal(false)}
           character={character || undefined}
         />
       )}
