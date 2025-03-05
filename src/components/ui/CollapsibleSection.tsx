@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CollapsibleSectionProps {
@@ -12,22 +12,17 @@ interface CollapsibleSectionProps {
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
-  defaultOpen = false, // Default is now false (collapsed)
+  defaultOpen = false,
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Handle toggle with a single click
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // Handle click outside to close the section if it's open
-  React.useEffect(() => {
+  // Handle click outside to close the section
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      // Check if the click is outside the collapsible section
-      if (isOpen && !target.closest(`[data-collapsible-id="${title}"]`)) {
+      if (sectionRef.current && !sectionRef.current.contains(event.target as Node) && isOpen) {
         setIsOpen(false);
       }
     };
@@ -36,31 +31,30 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, title]);
+  }, [isOpen]);
 
   return (
-    <div 
-      className={`border border-white/10 rounded-lg overflow-hidden ${className}`}
-      data-collapsible-id={title}
-    >
-      <button
-        className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 text-left"
-        onClick={handleToggle}
-        aria-expanded={isOpen}
+    <div ref={sectionRef} className={`${className}`}>
+      <div
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
       >
-        <h3 className="font-medium text-lg">{title}</h3>
+        <h3 className="text-lg font-medium">{title}</h3>
         {isOpen ? (
-          <ChevronUp className="text-white/60" />
+          <ChevronUp className="text-white/60" size={20} />
         ) : (
-          <ChevronDown className="text-white/60" />
+          <ChevronDown className="text-white/60" size={20} />
         )}
-      </button>
+      </div>
       
-      {isOpen && (
-        <div className="p-4 bg-black/20">
-          {children}
-        </div>
-      )}
+      <div
+        ref={contentRef}
+        className={`overflow-hidden transition-all duration-300 ${
+          isOpen ? 'max-h-[1000px] opacity-100 mt-4' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 };

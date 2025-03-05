@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle, Maximize, ArrowLeft } from 'lucide-react';
+import { Dumbbell, Award, User, ShoppingBag, MessageCircle, Maximize, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
   // Check if the current route is AI Chat
   const isAIChat = location.pathname.includes('/ai-chat');
@@ -126,15 +127,6 @@ const Dashboard = () => {
     };
   }, []);
   
-  // Request fullscreen for AI Chat
-  useEffect(() => {
-    if (isAIChat && !document.fullscreenElement && document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    }
-  }, [isAIChat]);
-  
   // Navigate back from AI Chat
   const handleBackFromAIChat = () => {
     navigate('/workout');
@@ -169,33 +161,12 @@ const Dashboard = () => {
     }
   ];
   
-  // Primary actions for sidebar
+  // Primary actions for sidebar (removed logout, kept fullscreen)
   const primaryActions = [
     {
       icon: <Maximize size={20} />,
       label: 'Fullscreen',
       onClick: toggleFullscreen
-    },
-    {
-      icon: <LogOut size={20} />,
-      label: 'Logout',
-      onClick: async () => {
-        try {
-          await supabase.auth.signOut();
-          toast({
-            title: 'Logged Out',
-            description: 'You have been successfully logged out',
-          });
-          navigate('/', { replace: true });
-        } catch (error) {
-          console.error('Logout error:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to log out. Please try again.',
-            variant: 'destructive',
-          });
-        }
-      }
     }
   ];
   
@@ -230,6 +201,19 @@ const Dashboard = () => {
     }
   };
   
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+  
+  const sidebarToggleButton = (
+    <button 
+      onClick={toggleSidebar}
+      className={`fixed top-4 left-4 z-50 p-2 rounded-full ${character ? `bg-${character}-primary/80` : 'bg-primary/80'} text-white`}
+    >
+      {isSidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+    </button>
+  );
+  
   return (
     <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
       {/* AI Chat Back Button (only shown on AI Chat page) */}
@@ -250,19 +234,24 @@ const Dashboard = () => {
         </div>
       )}
       
+      {/* Add the sidebar toggle button */}
+      {sidebarToggleButton}
+      
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          navigationItems={navigationItems}
-          primaryActions={primaryActions}
-          accentClass={getSidebarAccentColor()}
-          brandIcon={getIconComponent('dumbbell', 24)}
-          brandIconStyle={getBrandIconStyle()}
-          handleShareClick={handleShareClick}
-        />
+        <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0' : 'w-64 opacity-100'}`}>
+          <Sidebar
+            navigationItems={navigationItems}
+            primaryActions={primaryActions}
+            accentClass={getSidebarAccentColor()}
+            brandIcon={getIconComponent('dumbbell', 24)}
+            brandIconStyle={getBrandIconStyle()}
+            handleShareClick={handleShareClick}
+          />
+        </div>
         
         {/* Main content area with padding to account for sidebar */}
-        <main className="flex-1 overflow-y-auto ml-0 md:ml-0 pb-0 md:pb-0 relative w-full">
-          <div className={`min-h-screen ${isAIChat ? 'pt-16' : 'pt-4'} px-4`}>
+        <main className={`flex-1 overflow-y-auto relative w-full transition-all duration-300 ${isSidebarCollapsed ? 'ml-0' : 'ml-0 md:ml-0'}`}>
+          <div className={`min-h-screen ${isAIChat ? 'pt-16' : 'pt-16'} px-4`}>
             <Outlet />
           </div>
         </main>
