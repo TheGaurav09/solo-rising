@@ -10,20 +10,39 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Timer, Dumbbell, History, Clock, Award, ChevronDown, ChevronUp, RefreshCw, Share2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Footer from '@/components/ui/Footer';
 import { CharacterType } from '@/context/UserContext';
+import { Slider } from "@/components/ui/slider";
+import WorkoutLogger from '@/components/WorkoutLogger';
+import { Button } from '@/components/ui/button';
 
 const ProfileAndWorkoutPage = () => {
-  const { userName, character, xp, level, coins, updateUserProfile, updateCharacter } = useUser();
+  const { userName, character, xp, level, coins, updateUserProfile, updateCharacter, points, streak } = useUser();
   const [newName, setNewName] = useState(userName);
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterType>(character);
   const [isCharacterUpdating, setIsCharacterUpdating] = useState(false);
-  const [date, setDate] = useState<Date | undefined>(new Date())
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [duration, setDuration] = useState(30);
+  const [intensity, setIntensity] = useState(5);
+  const [exercise, setExercise] = useState("");
+  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+
+  // Weekly schedule
+  const weeklySchedule = [
+    { day: "Monday", workout: "Upper Body", completed: false },
+    { day: "Tuesday", workout: "Lower Body", completed: false },
+    { day: "Wednesday", workout: "Rest Day", completed: true },
+    { day: "Thursday", workout: "Cardio", completed: false },
+    { day: "Friday", workout: "Full Body", completed: false },
+    { day: "Saturday", workout: "Flexible Training", completed: false },
+    { day: "Sunday", workout: "Rest Day", completed: true }
+  ];
 
   useEffect(() => {
     if (userName) {
@@ -114,112 +133,232 @@ const ProfileAndWorkoutPage = () => {
 
   const progress = calculateLevelProgress();
 
+  const fetchWorkoutHistory = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData || !userData.user) return;
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', userData.user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error("Error fetching workout history:", error);
+        return;
+      }
+
+      setWorkoutHistory(data || []);
+    } catch (error) {
+      console.error("Error in fetchWorkoutHistory:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkoutHistory();
+  }, []);
+
+  const refreshWorkouts = () => {
+    fetchWorkoutHistory();
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pt-16 md:pt-8">
       <h1 className="text-2xl font-bold mb-6">Profile & Workout</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="warriorName">Warrior Name</Label>
-              <Input
-                id="warriorName"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="bg-white/5 border-white/10"
-              />
-            </div>
-
-            <AnimatedButton
-              onClick={handleUpdateName}
-              disabled={isUpdating || !newName.trim() || newName === userName}
-              character={character || undefined}
-            >
-              {isUpdating ? 'Updating...' : 'Update Name'}
-            </AnimatedButton>
-          </div>
-        </AnimatedCard>
-
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Character</h2>
-
-          <div className="flex items-center justify-center mb-4">
-            <Avatar className={`w-32 h-32 border-4 ${getCharacterColor()}`}>
-              <AvatarImage src={characterImages[selectedCharacter || ''] || ''} alt={selectedCharacter || ''} />
-              <AvatarFallback>{selectedCharacter?.slice(0, 2).toUpperCase()}</AvatarFallback>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Card */}
+        <AnimatedCard className="p-6 col-span-1">
+          <div className="flex flex-col items-center">
+            <Avatar className={`w-24 h-24 border-4 ${getCharacterColor()} mb-4`}>
+              <AvatarImage src={characterImages[character || ''] || ''} alt={character || ''} />
+              <AvatarFallback>{character?.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            {Object.keys(characterImages).map((char) => {
-              const charType = char as CharacterType;
-              if (!charType) return null;
-              
-              return (
-                <AnimatedButton
-                  key={char}
-                  onClick={() => handleCharacterSelect(charType)}
-                  disabled={isCharacterUpdating || char === selectedCharacter}
-                  className={`w-full ${char === selectedCharacter ? 'ring-2 ring-white' : ''}`}
-                >
-                  <span className="p-1">{char.charAt(0).toUpperCase() + char.slice(1)}</span>
-                </AnimatedButton>
-              );
-            })}
-          </div>
-        </AnimatedCard>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Stats</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="text-sm font-bold">Level</div>
-              <div className="text-2xl">{level}</div>
+            
+            <h2 className="text-xl font-bold">{userName}</h2>
+            <p className="text-sm opacity-70">Caped Baldy</p>
+            
+            <div className="w-full mt-4">
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-sm font-medium">Level {level}</p>
+                <p className="text-sm">{points} / {(level + 1) * 100} XP</p>
+              </div>
+              <Progress value={progress} className="h-2" />
             </div>
-            <div>
-              <div className="text-sm font-bold">XP</div>
-              <Progress value={progress} className="h-4" />
-              <div className="text-sm text-white/70 mt-1">{xp} / {(level + 1) * 100}</div>
+            
+            <div className="flex justify-between w-full mt-4">
+              <div className="text-center">
+                <p className="text-lg font-bold">{points}</p>
+                <p className="text-xs opacity-70">Total Points</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{streak}</p>
+                <p className="text-xs opacity-70">Streak</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold">{coins}</p>
+                <p className="text-xs opacity-70">Coins</p>
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-bold">Coins</div>
-              <div className="text-2xl">{coins}</div>
-            </div>
-          </div>
-        </AnimatedCard>
-
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Workout Calendar</h2>
-          <Popover>
-            <PopoverTrigger asChild>
-              <AnimatedButton
-                variant={"outline"}
-                className={cn(
-                  "w-[240px] justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
+            
+            <div className="w-full mt-6">
+              <AnimatedButton 
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => setShowProfileSettings(!showProfileSettings)}
+                character={character}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {showProfileSettings ? 'Hide Settings' : 'Edit Profile'}
+                {showProfileSettings ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </AnimatedButton>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center" side="bottom">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                disabled={(date) =>
-                  date > new Date() || date < new Date("2023-01-01")
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+            </div>
+            
+            {showProfileSettings && (
+              <div className="space-y-4 w-full mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="warriorName">Warrior Name</Label>
+                  <Input
+                    id="warriorName"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="bg-white/5 border-white/10"
+                  />
+                  <AnimatedButton
+                    onClick={handleUpdateName}
+                    disabled={isUpdating || !newName.trim() || newName === userName}
+                    character={character}
+                    className="w-full mt-2"
+                  >
+                    {isUpdating ? 'Updating...' : 'Update Name'}
+                  </AnimatedButton>
+                </div>
+                
+                <div>
+                  <Label className="block mb-2">Character</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.keys(characterImages).map((char) => {
+                      return (
+                        <button
+                          key={char}
+                          onClick={() => handleCharacterSelect(char as CharacterType)}
+                          disabled={isCharacterUpdating || char === selectedCharacter}
+                          className={`p-2 rounded-lg transition-all ${
+                            char === selectedCharacter 
+                              ? 'ring-2 ring-white bg-white/10' 
+                              : 'hover:bg-white/5'
+                          }`}
+                        >
+                          <span className="text-sm capitalize">{char}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </AnimatedCard>
+
+        {/* Workout Logger */}
+        <AnimatedCard className="p-6 col-span-1 lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Dumbbell size={20} />
+              Workout Logger
+            </h2>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={refreshWorkouts}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={14} />
+              Refresh
+            </Button>
+          </div>
+          
+          <WorkoutLogger />
+        </AnimatedCard>
+
+        {/* Workout History */}
+        <AnimatedCard className="p-6 col-span-1">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <History size={20} />
+            Workout History
+          </h2>
+          
+          {workoutHistory && workoutHistory.length > 0 ? (
+            <div className="space-y-3">
+              {workoutHistory.map((workout: any) => (
+                <div key={workout.id} className="border border-white/10 rounded-lg p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium">{workout.exercise_type || 'Workout'}</h3>
+                      <p className="text-xs opacity-70">
+                        {new Date(workout.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{workout.points} pts</p>
+                      <div className="flex items-center text-xs opacity-70 justify-end">
+                        <Clock size={12} className="mr-1" />
+                        {workout.duration} min
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center opacity-70 py-6">No workouts logged yet.</p>
+          )}
+        </AnimatedCard>
+
+        {/* Training Schedule */}
+        <AnimatedCard className="p-6 col-span-1">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <CalendarIcon size={20} />
+            Training Schedule
+          </h2>
+          
+          <div className="space-y-2">
+            {weeklySchedule.map((day) => (
+              <div 
+                key={day.day} 
+                className={`border border-white/10 rounded-lg p-3 flex justify-between items-center ${
+                  day.completed ? 'bg-green-950/20 border-green-800/30' : ''
+                }`}
+              >
+                <div>
+                  <h3 className="font-medium">{day.day}</h3>
+                  <p className="text-xs opacity-70">{day.workout}</p>
+                </div>
+                {day.completed && (
+                  <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </AnimatedCard>
+
+        {/* Achievements */}
+        <AnimatedCard className="p-6 col-span-1">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Award size={20} />
+            Achievements
+          </h2>
+          
+          <div className="flex flex-col items-center justify-center py-6">
+            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
+              <Clock size={32} className="text-white/40" />
+            </div>
+            <p className="text-center">Complete workouts to earn achievements</p>
+          </div>
         </AnimatedCard>
       </div>
       <Footer />

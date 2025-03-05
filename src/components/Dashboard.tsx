@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
@@ -18,18 +19,12 @@ const Dashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   
   const isAIChat = location.pathname.includes('/ai-chat');
 
   useEffect(() => {
     // Load sidebar state from localStorage
-    const savedSidebarState = localStorage.getItem('sidebar-collapsed');
-    if (savedSidebarState) {
-      setSidebarCollapsed(savedSidebarState === 'true');
-    }
-    
     const savedSidebarHiddenState = localStorage.getItem('sidebar-hidden');
     if (savedSidebarHiddenState) {
       setSidebarHidden(savedSidebarHiddenState === 'true');
@@ -38,9 +33,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Save sidebar states to localStorage
-    localStorage.setItem('sidebar-collapsed', sidebarCollapsed.toString());
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
-  }, [sidebarCollapsed, sidebarHidden]);
+  }, [sidebarHidden]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -152,16 +146,7 @@ const Dashboard = () => {
   }, [isAIChat]);
 
   const toggleSidebar = () => {
-    if (sidebarHidden) {
-      // If completely hidden, show it first
-      setSidebarHidden(false);
-    } else if (!sidebarCollapsed) {
-      // If expanded, collapse it
-      setSidebarCollapsed(true);
-    } else {
-      // If collapsed, hide it completely
-      setSidebarHidden(true);
-    }
+    setSidebarHidden(!sidebarHidden);
   };
   
   const navigationItems = [
@@ -235,42 +220,94 @@ const Dashboard = () => {
     }
   };
   
+  // Close sidebar when clicking outside of it
+  const handleClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (
+      !sidebarHidden && 
+      e.target instanceof HTMLElement && 
+      !e.target.closest('.sidebar') && 
+      !e.target.closest('.sidebar-toggle')
+    ) {
+      setSidebarHidden(true);
+    }
+  };
+  
   return (
-    <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
+    <div 
+      className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}
+      onClick={handleClickOutside}
+    >
       <div className="flex flex-1 overflow-hidden">
         {!sidebarHidden && (
-          <Sidebar
-            navigationItems={navigationItems}
-            primaryActions={primaryActions}
-            accentClass={getSidebarAccentColor()}
-            brandIcon={getIconComponent('dumbbell', 24)}
-            brandIconStyle={getBrandIconStyle()}
-            handleShareClick={handleShareClick}
-            isCollapsed={sidebarCollapsed}
-          />
+          <div className="sidebar fixed h-full z-10 w-64 bg-black/60 backdrop-blur-md border-r border-white/10 transition-all duration-300">
+            <div className="h-full flex flex-col py-6">
+              <div className="px-5 flex items-center justify-between">
+                <div className={`${getBrandIconStyle()} mb-6 text-2xl font-bold flex items-center gap-2`}>
+                  {getIconComponent('dumbbell', 24)}
+                  <span>Solo Rising</span>
+                </div>
+                <button 
+                  onClick={toggleSidebar}
+                  className="text-white/80 hover:text-white mb-6"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <nav className="flex-1 space-y-1 px-3">
+                {navigationItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center px-3 py-3 rounded-lg transition-colors ${
+                      location.pathname.split('/')[1] === item.href.split('/')[1]
+                        ? getSidebarAccentColor()
+                        : 'hover:bg-white/5 text-white/80'
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="ml-2">{item.label}</span>
+                  </a>
+                ))}
+              </nav>
+
+              <div className="pt-6 px-3 space-y-1">
+                <button
+                  onClick={handleShareClick}
+                  className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
+                >
+                  <Menu size={20} />
+                  <span className="ml-2">Share Profile</span>
+                </button>
+                
+                {primaryActions?.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={action.onClick}
+                    className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
+                  >
+                    {action.icon}
+                    <span className="ml-2">{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
         
         <button 
           onClick={toggleSidebar}
-          className={`fixed z-20 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 transition-all px-1 py-4 rounded-r-md ${
-            sidebarHidden ? 'left-0' : 
-            sidebarCollapsed ? 'left-16' : 'left-64'
-          }`}
+          className="sidebar-toggle fixed z-20 top-4 left-4 bg-black/30 hover:bg-black/50 transition-all p-2 rounded-md"
         >
           {sidebarHidden ? (
             <Menu size={20} className="text-white/80" />
-          ) : sidebarCollapsed ? (
-            <ChevronRight size={20} className="text-white/80" />
           ) : (
-            <ChevronLeft size={20} className="text-white/80" />
+            <X size={20} className="text-white/80" />
           )}
         </button>
         
-        <main className={`flex-1 overflow-y-auto pb-0 relative w-full transition-all ${
-          sidebarHidden ? 'ml-0' : 
-          sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-64'
-        }`}>
-          <div className={`min-h-screen pt-4 px-4`}>
+        <main className="flex-1 overflow-y-auto pb-0 relative w-full transition-all">
+          <div className="min-h-screen pt-4 px-4">
             <Outlet />
           </div>
         </main>

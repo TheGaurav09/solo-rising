@@ -11,6 +11,7 @@ interface AnimatedButtonProps {
   character?: 'goku' | 'saitama' | 'jin-woo' | null | undefined;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
+  style?: React.CSSProperties;
 }
 
 const AnimatedButton = ({ 
@@ -22,6 +23,7 @@ const AnimatedButton = ({
   character = null,
   disabled = false,
   type = 'button',
+  style,
   ...props
 }: AnimatedButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
   const getCharacterGradient = () => {
@@ -72,6 +74,7 @@ const AnimatedButton = ({
       onClick={onClick}
       disabled={disabled}
       type={type}
+      style={style}
       className={cn(
         'relative rounded-lg font-medium',
         'transition-all duration-300 ease-out transform-gpu',
