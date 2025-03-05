@@ -7,6 +7,7 @@ import { useUser } from '@/context/UserContext';
 import AuthModal from './AuthModal';
 import { Award, User, Users } from 'lucide-react';
 import UsersList from './UsersList';
+import { useNavigate } from 'react-router-dom';
 
 const CharacterSelection = () => {
   const { setCharacter, setUserName } = useUser();
@@ -18,6 +19,7 @@ const CharacterSelection = () => {
     'jin-woo': 0
   });
   const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch character selection counts from the new table
@@ -79,6 +81,12 @@ const CharacterSelection = () => {
     if (selectedCharacter) {
       setCharacter(selectedCharacter);
       // UserName will be set by the user context after login
+      
+      // Store in localStorage for faster loading next time
+      localStorage.setItem('character', selectedCharacter);
+      
+      // Navigate to workouts page
+      navigate('/workout');
     }
   };
 

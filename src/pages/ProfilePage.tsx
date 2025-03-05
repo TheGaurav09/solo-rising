@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import AnimatedButton from '@/components/ui/AnimatedButton';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
 
 const ProfilePage = () => {
   const { userName, character, points } = useUser();
@@ -16,7 +17,9 @@ const ProfilePage = () => {
   const [userRank, setUserRank] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   
   useEffect(() => {
     fetchData();
@@ -28,13 +31,11 @@ const ProfilePage = () => {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) return;
 
-      // Fetch user data
       let targetUserId = currentUser.user.id;
       if (userId && userId !== 'me') {
         targetUserId = userId;
       }
 
-      // Fetch user profile
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -44,7 +45,6 @@ const ProfilePage = () => {
       if (userError) throw userError;
       setUserData(userData);
 
-      // Fetch user workouts
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
@@ -54,7 +54,6 @@ const ProfilePage = () => {
       if (workoutsError) throw workoutsError;
       setWorkouts(workoutsData || []);
 
-      // Fetch user achievements
       const { data: userAchievements, error: achievementsError } = await supabase
         .from('user_achievements')
         .select(`
@@ -66,16 +65,14 @@ const ProfilePage = () => {
       if (achievementsError) throw achievementsError;
       setAchievements(userAchievements || []);
 
-      // Fetch leaderboard
       const { data: leaderboard, error: leaderboardError } = await supabase
         .from('users')
-        .select('id, warrior_name, character_type')
+        .select('id, warrior_name, character_type, points')
         .order('points', { ascending: false })
         .limit(10);
 
       if (leaderboardError) throw leaderboardError;
       
-      // Add rank to leaderboard data
       const rankedLeaderboard = leaderboard.map((user, index) => ({
         ...user,
         rank: index + 1
@@ -83,7 +80,6 @@ const ProfilePage = () => {
       
       setLeaderboardData(rankedLeaderboard);
       
-      // Find user's rank
       const userEntry = rankedLeaderboard.find(entry => entry.id === currentUser.user?.id);
       if (userEntry) {
         setUserRank(userEntry.rank);
@@ -149,6 +145,12 @@ const ProfilePage = () => {
     }
   };
 
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const isOwnProfile = userId === 'me' || userId === userData?.id;
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
@@ -157,11 +159,9 @@ const ProfilePage = () => {
     );
   }
 
-  // Display profile data
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Section */}
         <div className="lg:col-span-2">
           <AnimatedCard className="p-6">
             <div className="flex items-center gap-4">
@@ -176,9 +176,21 @@ const ProfilePage = () => {
                 <p className="text-white/70">{getCharacterTitle(userData?.character_type)}</p>
               </div>
               
-              <div className="text-right">
-                <div className="text-lg font-bold">{userData?.points || 0}</div>
-                <div className="text-sm text-white/70">total points</div>
+              <div className="text-right flex items-center gap-2">
+                <div>
+                  <div className="text-lg font-bold">{userData?.points || 0}</div>
+                  <div className="text-sm text-white/70">total points</div>
+                </div>
+                
+                {isOwnProfile && (
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut size={20} className="text-white/70" />
+                  </button>
+                )}
               </div>
             </div>
             
@@ -195,7 +207,6 @@ const ProfilePage = () => {
               </div>
             </div>
             
-            {/* Recent Workouts */}
             <div className="mt-8">
               <h3 className="text-lg font-bold mb-4">Recent Workouts</h3>
               
@@ -223,7 +234,6 @@ const ProfilePage = () => {
               )}
             </div>
             
-            {/* Achievements */}
             <div className="mt-8">
               <h3 className="text-lg font-bold mb-4">Achievements</h3>
               
@@ -251,7 +261,6 @@ const ProfilePage = () => {
           </AnimatedCard>
         </div>
         
-        {/* Leaderboard Section */}
         <div>
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -289,6 +298,10 @@ const ProfilePage = () => {
                     </div>
                     
                     <div className="text-right flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="font-medium">{entry.points || 0}</div>
+                        <div className="text-xs text-white/60">points</div>
+                      </div>
                       <Link to={`/profile/${entry.id}`} className="text-white/60 hover:text-white">
                         <ExternalLink size={16} />
                       </Link>
@@ -330,6 +343,35 @@ const ProfilePage = () => {
           </AnimatedCard>
         </div>
       </div>
+
+      {showLogoutConfirm && (
+        <LogoutConfirmModal
+          onConfirm={async () => {
+            try {
+              await supabase.auth.signOut();
+              localStorage.removeItem('character');
+              localStorage.removeItem('userName');
+              localStorage.removeItem('points');
+              
+              toast({
+                title: 'Logged Out',
+                description: 'You have been successfully logged out',
+                duration: 3000,
+              });
+              navigate('/');
+            } catch (error) {
+              toast({
+                title: 'Logout Failed',
+                description: 'There was an error logging out',
+                variant: 'destructive',
+              });
+            }
+            setShowLogoutConfirm(false);
+          }}
+          onCancel={() => setShowLogoutConfirm(false)}
+          character={character || undefined}
+        />
+      )}
     </div>
   );
 };

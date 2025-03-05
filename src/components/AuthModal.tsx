@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { Mail, Lock, User, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthModalProps {
   character: 'goku' | 'saitama' | 'jin-woo';
@@ -19,6 +20,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
   const [warriorName, setWarriorName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
             description: 'Welcome back to Workout Wars!',
           });
           onSuccess();
+          navigate('/workout');
         }, 300);
       } else {
         // Sign up
@@ -70,7 +73,8 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                   email,
                   warrior_name: warriorName,
                   character_type: character,
-                  password: 'hashed-by-supabase' // We don't store actual passwords
+                  password: 'hashed-by-supabase', // We don't store actual passwords
+                  points: 0
                 },
               ]);
 
@@ -84,6 +88,11 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
             } else {
               // Update the character count in the character_counts table
               await updateCharacterCount(character);
+              
+              // Store data in localStorage for faster loading
+              localStorage.setItem('character', character);
+              localStorage.setItem('userName', warriorName);
+              localStorage.setItem('points', '0');
             }
             
             // Wait a bit longer before success to ensure database operations complete
@@ -93,6 +102,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                 description: 'Your warrior journey begins now!',
               });
               onSuccess();
+              navigate('/workout');
             }, 500);
           } catch (e: any) {
             console.error("Profile creation error:", e);

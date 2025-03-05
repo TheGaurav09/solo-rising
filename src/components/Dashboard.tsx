@@ -3,15 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
-import { Dumbbell, Trophy, User, LayoutDashboard, LogOut, Award, ShoppingBag } from 'lucide-react';
+import { Dumbbell, Trophy, User, LayoutDashboard, LogOut, Award, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
+import LogoutConfirmModal from './modals/LogoutConfirmModal';
 
 const Dashboard = () => {
   const { character, userName, setCharacter, setUserName } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -22,11 +25,19 @@ const Dashboard = () => {
     try {
       const { data } = await supabase.auth.getUser();
       if (!data.user) {
-        // User is not logged in, clear local storage and redirect
-        localStorage.removeItem('character');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('points');
-        setCharacter(null);
+        // Check if we have locally stored data
+        const storedCharacter = localStorage.getItem('character');
+        const storedUserName = localStorage.getItem('userName');
+        
+        if (storedCharacter && storedUserName) {
+          // Allow access with locally stored data
+          setCharacter(storedCharacter as 'goku' | 'saitama' | 'jin-woo');
+          setUserName(storedUserName);
+          setLoading(false);
+          return;
+        }
+        
+        // No local data either, redirect to home
         navigate('/');
         return;
       }
@@ -40,9 +51,12 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Set user data in context
+      // Set user data in context and localStorage for faster loading
       setCharacter(userData.character_type as 'goku' | 'saitama' | 'jin-woo');
       setUserName(userData.warrior_name);
+      localStorage.setItem('character', userData.character_type);
+      localStorage.setItem('userName', userData.warrior_name);
+      localStorage.setItem('points', userData.points.toString());
     } catch (error) {
       console.error('Error checking auth:', error);
       toast({
@@ -84,29 +98,19 @@ const Dashboard = () => {
     }`;
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      // Clear local storage
-      localStorage.removeItem('character');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('points');
-      setCharacter(null);
-      navigate('/');
-      
-      toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out',
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        title: 'Logout Failed',
-        description: 'There was an error logging out',
-        variant: 'destructive',
-      });
-    }
+  const toggleNav = () => {
+    setIsNavCollapsed(!isNavCollapsed);
+    // Store preference in localStorage
+    localStorage.setItem('navCollapsed', (!isNavCollapsed).toString());
   };
+
+  useEffect(() => {
+    // Load nav collapse preference
+    const savedCollapsed = localStorage.getItem('navCollapsed');
+    if (savedCollapsed !== null) {
+      setIsNavCollapsed(savedCollapsed === 'true');
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -127,36 +131,36 @@ const Dashboard = () => {
       
       <main className="container mx-auto px-4 flex flex-col md:flex-row gap-6">
         {/* Sidebar Navigation */}
-        <div className="md:w-64 flex-shrink-0">
-          <AnimatedCard className="p-2">
-            <nav className="space-y-1">
+        <div className={`transition-all duration-300 ease-in-out ${isNavCollapsed ? 'md:w-16' : 'md:w-64'} flex-shrink-0`}>
+          <AnimatedCard className="p-2 relative">
+            <button 
+              onClick={toggleNav}
+              className="absolute top-2 right-2 md:flex items-center justify-center hidden w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              {isNavCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
+            
+            <nav className="space-y-1 mt-8 md:mt-0">
               <div 
                 className={getNavItemClass('/workout')}
                 onClick={() => navigate('/workout')}
               >
                 <Dumbbell size={20} />
-                <span>Workouts</span>
+                {!isNavCollapsed && <span>Workouts</span>}
               </div>
               <div 
                 className={getNavItemClass('/profile/me')}
                 onClick={() => navigate('/profile/me')}
               >
                 <User size={20} />
-                <span>Profile & Leaderboard</span>
+                {!isNavCollapsed && <span>Profile & Leaderboard</span>}
               </div>
               <div 
                 className={getNavItemClass('/achievements')}
                 onClick={() => navigate('/achievements')}
               >
                 <Award size={20} />
-                <span>Achievements & Store</span>
-              </div>
-              <div 
-                className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors text-white/60 hover:bg-white/5 mt-4 border-t border-white/10 pt-4"
-                onClick={handleLogout}
-              >
-                <LogOut size={20} />
-                <span>Logout</span>
+                {!isNavCollapsed && <span>Achievements & Store</span>}
               </div>
             </nav>
           </AnimatedCard>
@@ -167,6 +171,37 @@ const Dashboard = () => {
           <Outlet />
         </div>
       </main>
+
+      {showLogoutConfirm && (
+        <LogoutConfirmModal
+          onConfirm={async () => {
+            try {
+              await supabase.auth.signOut();
+              // Clear local storage
+              localStorage.removeItem('character');
+              localStorage.removeItem('userName');
+              localStorage.removeItem('points');
+              setCharacter(null);
+              navigate('/');
+              
+              toast({
+                title: 'Logged Out',
+                description: 'You have been successfully logged out',
+                duration: 3000,
+              });
+            } catch (error) {
+              toast({
+                title: 'Logout Failed',
+                description: 'There was an error logging out',
+                variant: 'destructive',
+              });
+            }
+            setShowLogoutConfirm(false);
+          }}
+          onCancel={() => setShowLogoutConfirm(false)}
+          character={character || undefined}
+        />
+      )}
     </div>
   );
 };
