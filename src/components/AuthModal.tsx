@@ -145,7 +145,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         setUserData(
           userData.warrior_name,
-          userData.character_type,
+          userData.character_type as CharacterType,
           userData.points,
           userData.streak,
           userData.coins,

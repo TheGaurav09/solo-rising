@@ -14,31 +14,20 @@ import { Music, VolumeX, Volume1, Volume2, Play, Pause } from 'lucide-react';
 import Footer from '@/components/ui/Footer';
 
 const SettingsPage = () => {
-  const { warriorName, character, updateUserName } = useUser();
+  const { userName, character, updateUserProfile } = useUser();
   const { isPlaying, volume, isLooping, togglePlay, setVolume, toggleLoop } = useAudio();
   
-  const [newName, setNewName] = useState(warriorName);
+  const [newName, setNewName] = useState(userName);
   const [isUpdating, setIsUpdating] = useState(false);
   
   const handleUpdateName = async () => {
-    if (!newName.trim() || newName === warriorName) return;
+    if (!newName.trim() || newName === userName) return;
     
     setIsUpdating(true);
     
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        const { error } = await supabase
-          .from('users')
-          .update({ warrior_name: newName })
-          .eq('id', authData.user.id);
-          
-        if (error) {
-          throw error;
-        }
-        
-        updateUserName(newName);
-        
+      const success = await updateUserProfile(newName);
+      if (success) {
         toast({
           title: "Profile Updated",
           description: "Your warrior name has been updated successfully.",
@@ -83,7 +72,7 @@ const SettingsPage = () => {
             
             <AnimatedButton
               onClick={handleUpdateName}
-              disabled={isUpdating || !newName.trim() || newName === warriorName}
+              disabled={isUpdating || !newName.trim() || newName === userName}
               character={character || undefined}
             >
               {isUpdating ? 'Updating...' : 'Update Name'}
