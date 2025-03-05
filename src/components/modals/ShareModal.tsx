@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { X, Twitter, Facebook, Linkedin, Link, Mail, Copy } from 'lucide-react';
-import AnimatedCard from '@/components/ui/AnimatedCard';
-import AnimatedButton from '@/components/ui/AnimatedButton';
+import { X, Share2, MessageCircle, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy } from 'lucide-react';
+import AnimatedCard from '../ui/AnimatedCard';
+import AnimatedButton from '../ui/AnimatedButton';
 import { toast } from '@/components/ui/use-toast';
 
 interface ShareModalProps {
@@ -12,47 +12,47 @@ interface ShareModalProps {
 
 const ShareModal = ({ onClose, character }: ShareModalProps) => {
   const appUrl = window.location.origin;
-  const shareText = "Join me in Workout Wars! Train like your favorite anime characters and compete on the global leaderboard.";
+  const shareText = "Join me on Workout Wars and transform your fitness journey with anime-inspired workouts! 💪";
   
-  const shareOptions = [
-    { 
-      name: 'Twitter', 
-      icon: <Twitter className="w-5 h-5" />, 
-      action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`, '_blank')
-    },
-    { 
-      name: 'Facebook', 
-      icon: <Facebook className="w-5 h-5" />, 
-      action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}`, '_blank')
-    },
-    { 
-      name: 'LinkedIn', 
-      icon: <Linkedin className="w-5 h-5" />, 
-      action: () => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`, '_blank')
-    },
-    { 
-      name: 'Email', 
-      icon: <Mail className="w-5 h-5" />, 
-      action: () => window.open(`mailto:?subject=Join Workout Wars&body=${encodeURIComponent(shareText + '\n\n' + appUrl)}`, '_blank')
-    },
-  ];
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(appUrl).then(() => {
-      toast({
-        title: "Link Copied!",
-        description: "Share with your friends to join the competition!",
-        duration: 3000,
-      });
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-      toast({
-        title: "Failed to copy",
-        description: "Please try again or copy the link manually",
-        variant: "destructive",
-        duration: 3000,
-      });
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`${appUrl}\n\n${shareText}`);
+    toast({
+      title: "Link Copied!",
+      description: "Share link has been copied to clipboard",
+      duration: 3000,
     });
+  };
+
+  const handleShareTwitter = () => {
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`;
+    window.open(twitterUrl, '_blank');
+  };
+
+  const handleShareFacebook = () => {
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}&quote=${encodeURIComponent(shareText)}`;
+    window.open(facebookUrl, '_blank');
+  };
+
+  const handleShareLinkedin = () => {
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`;
+    window.open(linkedinUrl, '_blank');
+  };
+
+  const handleNativeShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Workout Wars',
+        text: shareText,
+        url: appUrl,
+      })
+      .catch((error) => console.log('Error sharing', error));
+    } else {
+      toast({
+        title: "Sharing not supported",
+        description: "Your browser doesn't support native sharing",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -66,52 +66,75 @@ const ShareModal = ({ onClose, character }: ShareModalProps) => {
             <X size={20} />
           </button>
           
-          <h2 className="text-xl font-bold text-center mb-2">Share Workout Wars</h2>
-          
-          <p className="text-center text-white/70 mb-6">
-            Invite friends to join you in your fitness journey
-          </p>
-          
-          <div className="flex justify-center gap-4 mb-6">
-            {shareOptions.map((option) => (
-              <button
-                key={option.name}
-                onClick={option.action}
-                className={`p-3 rounded-full ${
-                  character ? `bg-${character}-primary/20 hover:bg-${character}-primary/30` : 'bg-white/10 hover:bg-white/20'
-                } transition-colors`}
-                aria-label={`Share on ${option.name}`}
-              >
-                {option.icon}
-              </button>
-            ))}
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+              <Share2 size={32} />
+            </div>
           </div>
           
-          <div className="flex items-center gap-2 bg-white/5 rounded-lg p-2 mb-4">
-            <input
-              type="text"
-              value={appUrl}
-              readOnly
-              className="flex-1 bg-transparent border-none focus:outline-none text-sm"
-            />
+          <h2 className="text-xl font-bold text-center mb-4">Share Workout Wars</h2>
+          
+          <p className="text-center text-white/70 mb-6">
+            Share this app with your friends and build a community of anime-inspired fitness warriors!
+          </p>
+
+          <div className="bg-white/5 p-4 rounded-md mb-6">
+            <p className="text-sm text-white/90">{shareText}</p>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-4 mb-6">
             <button
-              onClick={copyToClipboard}
-              className={`p-2 rounded-full ${
-                character ? `bg-${character}-primary/20 hover:bg-${character}-primary/30` : 'bg-white/10 hover:bg-white/20'
-              } transition-colors`}
-              aria-label="Copy link"
+              onClick={handleShareTwitter}
+              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
             >
-              <Copy size={16} />
+              <Twitter size={24} className="text-[#1DA1F2]" />
+              <span className="text-xs">Twitter</span>
+            </button>
+            
+            <button
+              onClick={handleShareFacebook}
+              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <Facebook size={24} className="text-[#4267B2]" />
+              <span className="text-xs">Facebook</span>
+            </button>
+            
+            <button
+              onClick={handleShareLinkedin}
+              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <Linkedin size={24} className="text-[#0077B5]" />
+              <span className="text-xs">LinkedIn</span>
+            </button>
+            
+            <button
+              onClick={handleCopyLink}
+              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              <Copy size={24} className="text-white/80" />
+              <span className="text-xs">Copy</span>
             </button>
           </div>
           
-          <AnimatedButton
-            onClick={onClose}
-            character={character}
-            className="w-full"
-          >
-            Close
-          </AnimatedButton>
+          <div className="flex flex-col gap-3">
+            <AnimatedButton
+              onClick={handleNativeShare}
+              character={character}
+              className="w-full justify-center"
+            >
+              <Share2 size={16} className="mr-2" />
+              Share via Device
+            </AnimatedButton>
+            
+            <AnimatedButton
+              onClick={handleCopyLink}
+              variant="outline"
+              className="w-full justify-center"
+            >
+              <LinkIcon size={16} className="mr-2" />
+              Copy Link
+            </AnimatedButton>
+          </div>
         </div>
       </AnimatedCard>
     </div>

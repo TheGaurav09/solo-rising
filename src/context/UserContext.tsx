@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -55,43 +56,149 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const fetchUserData = async () => {
       try {
         const { data: authData } = await supabase.auth.getUser();
-        if (authData.user) {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authData.user.id)
-            .maybeSingle();
-            
-          if (error) throw error;
-          
-          if (userData) {
-            setCharacter(userData.character_type as CharacterType);
-            setUserName(userData.warrior_name);
-            if (userData.country) setCountry(userData.country);
-            setPoints(userData.points || 0);
-            setCoins(userData.coins || 0);
-            setStreak(userData.streak || 0);
-            setLastWorkoutDate(userData.last_workout_date);
-            
-            // Update localStorage for faster loading next time
-            localStorage.setItem('character', userData.character_type);
-            localStorage.setItem('userName', userData.warrior_name);
-            localStorage.setItem('country', userData.country || 'Global');
-            localStorage.setItem('points', String(userData.points || 0));
-            localStorage.setItem('coins', String(userData.coins || 0));
-            localStorage.setItem('streak', String(userData.streak || 0));
-            if (userData.last_workout_date) {
-              localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
-            }
+        if (!authData || !authData.user) {
+          console.log("No authenticated user found");
+          // Clear context if no user is found
+          if (storedCharacter || storedUserName) {
+            localStorage.clear(); // Clear all localStorage if there's stale data
+            setCharacter(null);
+            setUserName('');
+            setCountry('Global');
+            setPoints(0);
+            setCoins(0);
+            setStreak(0);
+            setLastWorkoutDate(null);
           }
+          return;
+        }
+        
+        console.log("Fetching user data for:", authData.user.id);
+        
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+          
+        if (error) {
+          console.error("Error fetching user data:", error);
+          throw error;
+        }
+        
+        if (userData) {
+          console.log("User data retrieved:", userData);
+          setCharacter(userData.character_type as CharacterType);
+          setUserName(userData.warrior_name);
+          if (userData.country) setCountry(userData.country);
+          setPoints(userData.points || 0);
+          setCoins(userData.coins || 0);
+          setStreak(userData.streak || 0);
+          setLastWorkoutDate(userData.last_workout_date);
+          
+          // Update localStorage for faster loading next time
+          localStorage.setItem('character', userData.character_type);
+          localStorage.setItem('userName', userData.warrior_name);
+          localStorage.setItem('country', userData.country || 'Global');
+          localStorage.setItem('points', String(userData.points || 0));
+          localStorage.setItem('coins', String(userData.coins || 0));
+          localStorage.setItem('streak', String(userData.streak || 0));
+          if (userData.last_workout_date) {
+            localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
+          }
+        } else {
+          console.log("No user data found for ID:", authData.user.id);
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error in fetchUserData:", error);
       }
     };
     
     fetchUserData();
+    
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.id);
+      if (event === 'SIGNED_OUT') {
+        // Clear all user data on sign out
+        localStorage.clear();
+        setCharacter(null);
+        setUserName('');
+        setCountry('Global');
+        setPoints(0);
+        setCoins(0);
+        setStreak(0);
+        setLastWorkoutDate(null);
+      } else if (event === 'SIGNED_IN' && session) {
+        // Refetch user data on sign in
+        fetchUserData();
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  const handleCharacterUpdate = async (newCharacter: CharacterType) => {
+    setCharacter(newCharacter);
+    localStorage.setItem('character', newCharacter as string);
+    
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ character_type: newCharacter })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating character:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update character. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Update character count in database
+        if (newCharacter) {
+          const { data, error: countError } = await supabase
+            .from('character_counts')
+            .select('*')
+            .eq('character_type', newCharacter)
+            .single();
+            
+          if (countError && countError.code !== 'PGRST116') {
+            console.error("Error checking character count:", countError);
+          }
+          
+          if (data) {
+            // Update existing count
+            const { error: updateError } = await supabase
+              .from('character_counts')
+              .update({ count: data.count + 1 })
+              .eq('id', data.id);
+              
+            if (updateError) {
+              console.error("Error updating character count:", updateError);
+            }
+          } else {
+            // Insert new count
+            const { error: insertError } = await supabase
+              .from('character_counts')
+              .insert({ character_type: newCharacter, count: 1 });
+              
+            if (insertError) {
+              console.error("Error inserting character count:", insertError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleCharacterUpdate:", error);
+    }
+  };
 
   const addPoints = async (amount: number) => {
     const newPoints = points + amount;
@@ -172,6 +279,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCoins(coins);
           return false;
         }
+
+        // Update localStorage
+        localStorage.setItem('coins', String(newCoins));
 
         // Log the transaction for debugging
         console.log(`Successfully used ${amount} coins. New balance: ${newCoins}`);
@@ -315,7 +425,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         streak,
         lastWorkoutDate,
         hasSelectedCharacter: !!character,
-        setCharacter,
+        setCharacter: handleCharacterUpdate,
         setUserName,
         setCountry,
         addPoints,

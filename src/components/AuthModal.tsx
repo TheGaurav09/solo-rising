@@ -88,14 +88,27 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
 
       if (error) throw error;
 
+      // Clear any existing local storage data to prevent conflicts
+      localStorage.removeItem('character');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('country');
+      localStorage.removeItem('points');
+      localStorage.removeItem('coins');
+      localStorage.removeItem('streak');
+      localStorage.removeItem('lastWorkoutDate');
+
       // Get user data from our database
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle() to handle missing data gracefully
 
       if (userError) throw userError;
+
+      if (!userData) {
+        throw new Error("User profile not found. Please contact support.");
+      }
 
       // Set user data in context
       setCharacter(userData.character_type as 'goku' | 'saitama' | 'jin-woo');
@@ -126,48 +139,93 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
   const handleSignup = async (email: string, password: string, name: string, country: string) => {
     setLoading(true);
     try {
+      // Check if user already exists first
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (existingUser) {
+        toast({
+          title: 'Account already exists',
+          description: 'Please login instead',
+          variant: 'destructive',
+        });
+        setView('login');
+        setLoading(false);
+        return;
+      }
+
+      // Create auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            warrior_name: name,
+            country: country,
+          }
+        }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Insert user data into our database - fixing the character_type constraint issue
+        // Using a temporary character type that matches the constraint
+        // We'll update this to the user's selection later
+        const characterType = 'goku'; // Use a valid default value that matches the constraint
+        
+        // Insert user data into our database 
         const { error: insertError } = await supabase
           .from('users')
           .insert({
             id: data.user.id,
             email,
             warrior_name: name,
-            character_type: 'none', // Set a valid default value that matches the constraint
-            password: password,  // Include the password field as required
+            character_type: characterType, // Set a valid default that matches the constraint
+            password: password,
             country: country,
             points: 0,
             coins: 10, // Start with 10 coins
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error inserting user data:', insertError);
+          throw insertError;
+        }
 
+        // Now set temporary character in context, will be updated when user selects
+        setCharacter(characterType as 'goku');
         setUserName(name);
         setCountry(country);
         
         toast({
           title: 'Account created!',
-          description: 'Please select your character to continue.',
+          description: 'Please select your character to begin your journey.',
         });
         
         onClose();
-        navigate('/character-selection');
+        navigate('/'); // Go to character selection
       }
     } catch (error: any) {
       console.error('Error signing up:', error.message);
-      toast({
-        title: 'Signup failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      
+      // Handle case where user already exists more gracefully
+      if (error.message.includes('already registered')) {
+        toast({
+          title: 'Email already registered',
+          description: 'Please try logging in instead',
+          variant: 'destructive',
+        });
+        setView('login');
+      } else {
+        toast({
+          title: 'Signup failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }

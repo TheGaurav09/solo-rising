@@ -4,23 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
-import AuthModal from './AuthModal';
-import { Award, User, Users, ChevronDown, Dumbbell, Trophy, ShieldCheck, BarChart2, HelpCircle, Heart, ArrowDown } from 'lucide-react';
+import { Award, User, Users, ChevronDown, ChevronUp, Dumbbell, Trophy, ShieldCheck, BarChart2, HelpCircle, Heart, ArrowDown, Info, Check, MessageCircle } from 'lucide-react';
 import UsersList from './UsersList';
 import { useNavigate } from 'react-router-dom';
 import Footer from './ui/Footer';
 
-const CharacterSelection = () => {
+const CharacterSelection = ({ onLoginClick, onSignupClick }: { 
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+}) => {
   const { setCharacter, setUserName } = useUser();
   const [selectedCharacter, setSelectedCharacter] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [characterCounts, setCharacterCounts] = useState<{[key: string]: number}>({
     goku: 0,
     saitama: 0,
     'jin-woo': 0
   });
   const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const howToUseRef = useRef<HTMLDivElement>(null);
   const testimonialRef = useRef<HTMLDivElement>(null);
   const faqRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -86,17 +89,15 @@ const CharacterSelection = () => {
     }
   };
 
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    if (selectedCharacter) {
-      setCharacter(selectedCharacter);
-      // UserName will be set by the user context after login
-      
-      // Store in localStorage for faster loading next time
-      localStorage.setItem('character', selectedCharacter);
-      
-      // Navigate to workouts page
-      navigate('/workout');
+  const scrollToHowToUse = () => {
+    if (howToUseRef.current) {
+      howToUseRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleAuthClick = () => {
+    if (onSignupClick) {
+      onSignupClick();
     }
   };
 
@@ -113,36 +114,83 @@ const CharacterSelection = () => {
     setShowUsersList(character);
   };
 
+  const toggleFaq = (index: number) => {
+    if (openFaqIndex === index) {
+      setOpenFaqIndex(null);
+    } else {
+      setOpenFaqIndex(index);
+    }
+  };
+
   const features = [
     {
       title: "Personalized Workouts",
       description: "Train like your favorite anime character with tailored workout plans.",
-      icon: <Dumbbell className="w-8 h-8 text-white/70" />
+      icon: <Dumbbell className="w-8 h-8 text-white/70" />,
+      color: "blue"
     },
     {
       title: "Global Leaderboard",
       description: "Compete with other warriors around the world and climb the ranks.",
-      icon: <Trophy className="w-8 h-8 text-white/70" />
+      icon: <Trophy className="w-8 h-8 text-white/70" />,
+      color: "yellow"
     },
     {
       title: "Achievement System",
       description: "Unlock achievements as you progress and showcase your milestones.",
-      icon: <Award className="w-8 h-8 text-white/70" />
+      icon: <Award className="w-8 h-8 text-white/70" />,
+      color: "purple"
     },
     {
       title: "Streak Tracking",
       description: "Build and maintain workout streaks to boost your motivation.",
-      icon: <BarChart2 className="w-8 h-8 text-white/70" />
+      icon: <BarChart2 className="w-8 h-8 text-white/70" />,
+      color: "green"
     },
     {
       title: "In-App Store",
       description: "Earn coins and spend them on special items and power-ups.",
-      icon: <ShieldCheck className="w-8 h-8 text-white/70" />
+      icon: <ShieldCheck className="w-8 h-8 text-white/70" />,
+      color: "orange"
     },
     {
       title: "Community",
       description: "Connect with other fitness enthusiasts who share your passion.",
-      icon: <Users className="w-8 h-8 text-white/70" />
+      icon: <Users className="w-8 h-8 text-white/70" />,
+      color: "pink"
+    }
+  ];
+
+  const howToUseSteps = [
+    {
+      title: "Create Your Account",
+      description: "Sign up with your email and password to start your fitness journey.",
+      icon: <User className="w-8 h-8 text-blue-400" />
+    },
+    {
+      title: "Choose Your Character",
+      description: "Select from Goku, Saitama, or Sung Jin-Woo to define your training style.",
+      icon: <Heart className="w-8 h-8 text-red-400" />
+    },
+    {
+      title: "Log Your Workouts",
+      description: "Record your exercises, reps, and duration to earn points and track progress.",
+      icon: <Dumbbell className="w-8 h-8 text-green-400" />
+    },
+    {
+      title: "Complete Challenges",
+      description: "Take on special challenges to earn extra points and unlock achievements.",
+      icon: <Trophy className="w-8 h-8 text-yellow-400" />
+    },
+    {
+      title: "Check the Leaderboard",
+      description: "See how you rank against other warriors globally or in your country.",
+      icon: <Users className="w-8 h-8 text-purple-400" />
+    },
+    {
+      title: "Visit the Store",
+      description: "Spend your earned coins on items to customize your experience.",
+      icon: <ShieldCheck className="w-8 h-8 text-orange-400" />
     }
   ];
 
@@ -184,6 +232,14 @@ const CharacterSelection = () => {
     {
       question: "What are coins used for?",
       answer: "Coins can be spent in the store to purchase boosts, cosmetic items, and special power-ups for your character."
+    },
+    {
+      question: "How do I track my progress?",
+      answer: "Your progress is tracked automatically as you log workouts. You can view your history, achievements, and stats on your profile page."
+    },
+    {
+      question: "Can I compete with my friends?",
+      answer: "Yes! You can share your profile with friends and compare rankings on the global or country-specific leaderboards."
     }
   ];
 
@@ -196,9 +252,35 @@ const CharacterSelection = () => {
             Choose your character to begin your journey to the top of the global leaderboard
           </p>
           
+          <div className="flex justify-center gap-4 mt-6">
+            <button 
+              onClick={scrollToHowToUse} 
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
+            >
+              <Info size={16} />
+              <span>How to Use</span>
+            </button>
+            
+            <button 
+              onClick={scrollToFeatures} 
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
+            >
+              <Check size={16} />
+              <span>Features</span>
+            </button>
+            
+            <button 
+              onClick={() => faqRef.current?.scrollIntoView({ behavior: 'smooth' })} 
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
+            >
+              <HelpCircle size={16} />
+              <span>FAQs</span>
+            </button>
+          </div>
+          
           <button 
             onClick={scrollToFeatures} 
-            className="mt-6 animate-bounce flex flex-col items-center text-white/50 hover:text-white transition-colors"
+            className="mt-10 animate-bounce flex flex-col items-center text-white/50 hover:text-white transition-colors"
           >
             <span className="mb-1 text-sm">Discover More</span>
             <ArrowDown size={20} />
@@ -248,13 +330,46 @@ const CharacterSelection = () => {
 
         <div className="max-w-md mx-auto w-full animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
           <AnimatedButton
-            onClick={() => setShowAuthModal(true)}
+            onClick={handleAuthClick}
             disabled={!selectedCharacter}
             character={selectedCharacter}
             className="w-full py-3 hover:scale-105 transition-transform duration-300"
           >
             Begin Your Journey
           </AnimatedButton>
+          
+          <div className="mt-4 text-center">
+            <button 
+              onClick={onLoginClick} 
+              className="text-white/70 hover:text-white transition-colors"
+            >
+              Already have an account? Login
+            </button>
+          </div>
+        </div>
+
+        {/* How to Use Section */}
+        <div ref={howToUseRef} className="py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3">How to Use Workout Wars</h2>
+            <p className="text-white/70 max-w-xl mx-auto">
+              Follow these simple steps to get started on your anime-inspired fitness journey
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {howToUseSteps.map((step, index) => (
+              <AnimatedCard key={index} className="p-6 border border-white/10">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 p-3 rounded-full bg-white/10">
+                    {step.icon}
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
+                  <p className="text-white/70">{step.description}</p>
+                </div>
+              </AnimatedCard>
+            ))}
+          </div>
         </div>
 
         {/* Features Section */}
@@ -268,9 +383,9 @@ const CharacterSelection = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {features.map((feature, index) => (
-              <AnimatedCard key={index} className="p-6">
+              <AnimatedCard key={index} className="p-6 border border-white/10">
                 <div className="flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-white/10">
+                  <div className={`mb-4 p-3 rounded-full bg-${feature.color}-500/20`}>
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
@@ -324,16 +439,28 @@ const CharacterSelection = () => {
           <div className="max-w-3xl mx-auto">
             {faqs.map((faq, index) => (
               <div key={index} className="mb-4">
-                <AnimatedCard className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 rounded-full bg-white/10 mt-1">
-                      <HelpCircle size={16} />
+                <AnimatedCard 
+                  className={`p-6 border ${openFaqIndex === index ? 'border-white/30' : 'border-white/10'} hover:border-white/20 transition-colors duration-300`}
+                >
+                  <button 
+                    onClick={() => toggleFaq(index)} 
+                    className="flex items-start justify-between w-full text-left"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 rounded-full bg-white/10 mt-1">
+                        <HelpCircle size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
+                        {openFaqIndex === index && (
+                          <p className="text-white/70 mt-2">{faq.answer}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
-                      <p className="text-white/70">{faq.answer}</p>
+                    <div className="ml-4 flex-shrink-0">
+                      {openFaqIndex === index ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                     </div>
-                  </div>
+                  </button>
                 </AnimatedCard>
               </div>
             ))}
@@ -342,14 +469,6 @@ const CharacterSelection = () => {
       </div>
 
       <Footer />
-
-      {showAuthModal && selectedCharacter && (
-        <AuthModal 
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)} 
-          initialView="signup"
-        />
-      )}
 
       {showUsersList && (
         <UsersList 
