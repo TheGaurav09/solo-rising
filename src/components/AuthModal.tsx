@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { useUser } from '@/context/UserContext';
+import { useUser, CharacterType } from '@/context/UserContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -98,8 +97,8 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         if (profileError) throw profileError;
         
-        // Fix: Pass character directly without conversion
-        setUserData(warriorName, character, 0, 0, 100, country);
+        const typedCharacter = character as CharacterType;
+        setUserData(warriorName, typedCharacter, 0, 0, 100, country);
         
         toast({
           title: "Account created!",
