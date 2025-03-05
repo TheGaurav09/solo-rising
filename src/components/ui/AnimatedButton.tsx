@@ -75,7 +75,7 @@ const AnimatedButton = ({
         'relative rounded-lg font-medium',
         'transition-all duration-300 ease-out transform-gpu',
         'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
-        'active:scale-[0.98]',
+        'active:scale-[0.98] hover:border hover:border-white/20',
         getVariantClasses(),
         getSizeClasses(),
         disabled && 'opacity-50 cursor-not-allowed',

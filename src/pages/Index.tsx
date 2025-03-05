@@ -23,7 +23,7 @@ const Index = () => {
   }, [hasSelectedCharacter, navigate]);
 
   return (
-    <div className="animated-grid min-h-screen">
+    <div className="animated-grid min-h-screen bg-gradient-to-b from-black to-gray-900">
       <CharacterSelection />
     </div>
   );

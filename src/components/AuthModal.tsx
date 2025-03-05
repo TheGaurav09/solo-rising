@@ -54,31 +54,47 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
 
         if (authError) throw authError;
 
-        // Create user record with ID matching auth.users
-        if (authData.user) {
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert([
-              { 
-                id: authData.user.id,
-                email,
-                warrior_name: warriorName,
-                character_type: character,
-                password: 'hashed-by-supabase' // We don't store actual passwords
-              },
-            ]);
+        // Wait a moment before creating the user record
+        // This allows Supabase to fully process the auth signup
+        setTimeout(async () => {
+          try {
+            // Check if auth user was created
+            if (authData.user) {
+              // Insert directly into public.users table
+              const { error: insertError } = await supabase
+                .from('users')
+                .insert([
+                  { 
+                    id: authData.user.id,
+                    email,
+                    warrior_name: warriorName,
+                    character_type: character,
+                    password: 'hashed-by-supabase' // We don't store actual passwords
+                  },
+                ]);
 
-          if (insertError) {
-            console.error("Error inserting user data:", insertError);
-            throw new Error("Failed to create user profile");
+              if (insertError) {
+                console.error("Error inserting user data:", insertError);
+                toast({
+                  title: 'Account created, but profile setup failed',
+                  description: 'You can log in, but may need to set up your profile later.',
+                  variant: 'destructive',
+                });
+              } else {
+                // Increment the character count
+                await updateCharacterCount(character);
+              }
+            }
+            
+            toast({
+              title: 'Sign up successful',
+              description: 'Your warrior journey begins now!',
+            });
+            onSuccess();
+          } catch (e: any) {
+            console.error("Profile creation error:", e);
           }
-        }
-
-        toast({
-          title: 'Sign up successful',
-          description: 'Your warrior journey begins now!',
-        });
-        onSuccess();
+        }, 500);
       }
     } catch (e: any) {
       setError(e.message);
@@ -89,6 +105,33 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to update character count
+  const updateCharacterCount = async (characterType: string) => {
+    try {
+      // First check if the character already exists in the count table
+      const { data: existingData } = await supabase
+        .from('character_selection_counts')
+        .select('*')
+        .eq('character_type', characterType)
+        .single();
+
+      if (existingData) {
+        // Update existing count
+        await supabase
+          .from('character_selection_counts')
+          .update({ count: existingData.count + 1 })
+          .eq('character_type', characterType);
+      } else {
+        // Insert new record with count 1
+        await supabase
+          .from('character_selection_counts')
+          .insert([{ character_type: characterType, count: 1 }]);
+      }
+    } catch (error) {
+      console.error('Error updating character count:', error);
     }
   };
 
@@ -141,7 +184,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                     value={warriorName}
                     onChange={(e) => setWarriorName(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 hover:border-white/20 focus:outline-none transition-colors"
                     placeholder="Choose a warrior name"
                   />
                 </div>
@@ -162,7 +205,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 hover:border-white/20 focus:outline-none transition-colors"
                   placeholder="your@email.com"
                 />
               </div>
@@ -182,7 +225,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 focus:outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-white/30 hover:border-white/20 focus:outline-none transition-colors"
                   placeholder="Min 6 characters"
                   minLength={6}
                 />

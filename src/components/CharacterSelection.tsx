@@ -89,7 +89,7 @@ const CharacterSelection = () => {
           animationDelay="0.2s"
           count={characterCounts.goku}
           onCountClick={() => handleWarriorCountClick('goku')}
-          imagePath="/goku.jpeg"
+          imagePath="/goku.png"
         />
         
         <CharacterCard
@@ -102,7 +102,7 @@ const CharacterSelection = () => {
           animationDelay="0.3s"
           count={characterCounts.saitama}
           onCountClick={() => handleWarriorCountClick('saitama')}
-          imagePath="/saitama.jpg"
+          imagePath="/saitama.png"
         />
         
         <CharacterCard
@@ -124,7 +124,7 @@ const CharacterSelection = () => {
           onClick={() => setShowAuthModal(true)}
           disabled={!selectedCharacter}
           character={selectedCharacter}
-          className="w-full py-3"
+          className="w-full py-3 hover:scale-105 transition-transform duration-300"
         >
           Begin Your Journey
         </AnimatedButton>
@@ -182,7 +182,7 @@ const CharacterCard = ({
         active={selected}
         onClick={onClick}
         hoverEffect="glow"
-        className={`h-full transition-all duration-300 ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+        className={`h-full transition-all duration-300 hover:border hover:border-white/30 ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
       >
         <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
           <img 
@@ -215,22 +215,22 @@ const CharacterCard = ({
           <div className="mt-4 flex gap-2 flex-wrap">
             {character === 'goku' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary transition-colors duration-300 hover:bg-goku-primary/30">Strength</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary transition-colors duration-300 hover:bg-goku-secondary/30">Endurance</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary transition-colors duration-300 hover:bg-goku-primary/30 hover:scale-105">Strength</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary transition-colors duration-300 hover:bg-goku-secondary/30 hover:scale-105">Endurance</span>
               </>
             )}
             
             {character === 'saitama' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary transition-colors duration-300 hover:bg-saitama-primary/30">Consistency</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary transition-colors duration-300 hover:bg-saitama-secondary/30">Power</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary transition-colors duration-300 hover:bg-saitama-primary/30 hover:scale-105">Consistency</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary transition-colors duration-300 hover:bg-saitama-secondary/30 hover:scale-105">Power</span>
               </>
             )}
             
             {character === 'jin-woo' && (
               <>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary transition-colors duration-300 hover:bg-jin-woo-primary/30">Leveling</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent transition-colors duration-300 hover:bg-jin-woo-secondary/30">Progression</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary transition-colors duration-300 hover:bg-jin-woo-primary/30 hover:scale-105">Leveling</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent transition-colors duration-300 hover:bg-jin-woo-secondary/30 hover:scale-105">Progression</span>
               </>
             )}
           </div>
