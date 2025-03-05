@@ -1,151 +1,97 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { useMediaQuery } from '@/hooks/use-mobile';
-import { Share2, ChevronLeft, ChevronRight, Coffee } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 
-// Updated sidebar component with collapsible functionality for all screen sizes
-export function Sidebar({
+interface SidebarProps {
+  navigationItems: {
+    href: string;
+    icon: React.ReactNode;
+    label: string;
+  }[];
+  primaryActions?: {
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
+  }[];
+  accentClass?: string;
+  brandIcon?: React.ReactNode;
+  brandIconStyle?: string;
+  handleShareClick?: () => void;
+  isCollapsed?: boolean;
+}
+
+export const Sidebar = ({
   navigationItems,
   primaryActions,
-  accentClass = 'bg-primary text-primary-foreground',
+  accentClass,
   brandIcon,
-  brandIconStyle = '',
-  handleShareClick
-}) {
+  brandIconStyle,
+  handleShareClick,
+  isCollapsed = false
+}: SidebarProps) => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
-  const sidebarRef = useRef(null);
-  
-  // Click outside handler for sidebar on mobile
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target) && window.innerWidth < 768) {
-        setCollapsed(true);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-  
-  const toggleSidebar = () => {
-    setCollapsed(!collapsed);
-  };
   
   return (
-    <>
-      {/* Sidebar toggle button (visible when collapsed) */}
-      {collapsed && (
-        <button 
-          onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-black/50 border border-white/10 text-white hover:bg-black/70 transition-all"
-          aria-label="Expand sidebar"
-        >
-          <ChevronRight size={20} />
-        </button>
-      )}
-    
-      {/* Main sidebar */}
-      <aside 
-        ref={sidebarRef}
-        className={`fixed top-0 left-0 h-screen bg-black/50 border-r border-white/10 backdrop-blur-sm transition-all duration-300 z-40 ${
-          collapsed ? 'w-0 overflow-hidden -translate-x-full' : 'w-64 translate-x-0'
-        }`}
-      >
-        {/* Sidebar Header with Logo and collapse button */}
-        <div className="flex items-center justify-between px-6 h-16 border-b border-white/10">
-          <div className="flex items-center">
-            <span className={`mr-2 ${brandIconStyle}`}>
-              {brandIcon}
-            </span>
-            <span className="font-bold text-lg tracking-tight">Solo Rising</span>
+    <div
+      className={`fixed h-full z-10 ${
+        isCollapsed ? 'w-16' : 'w-64'
+      } bg-black/60 backdrop-blur-md border-r border-white/10 transition-all duration-300`}
+    >
+      <div className="h-full flex flex-col py-6">
+        <div className={`px-5 ${isCollapsed ? 'flex justify-center' : ''}`}>
+          <div className={`${brandIconStyle} mb-6 text-2xl font-bold ${isCollapsed ? 'text-center' : 'flex items-center gap-2'}`}>
+            {brandIcon}
+            {!isCollapsed && <span>Solo Rising</span>}
           </div>
-          <button 
-            onClick={toggleSidebar}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors"
-            aria-label="Collapse sidebar"
-          >
-            <ChevronLeft size={20} />
-          </button>
         </div>
-        
-        {/* Navigation Links */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-1">
-            {navigationItems.map((item, index) => {
-              const isActive = location.pathname === item.href || 
-                (item.href === '/profile/me' && location.pathname.startsWith('/profile'));
-              
-              return (
-                <li key={index}>
-                  <Link
-                    to={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2 rounded-md transition-colors",
-                      isActive
-                        ? accentClass
-                        : "text-white/70 hover:text-white hover:bg-white/10"
-                    )}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+
+        <nav className="flex-1 space-y-1 px-3">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={`flex items-center ${
+                isCollapsed ? 'justify-center' : ''
+              } px-3 py-3 rounded-lg transition-colors ${
+                location.pathname.split('/')[1] === item.href.split('/')[1]
+                  ? accentClass
+                  : 'hover:bg-white/5 text-white/80'
+              }`}
+            >
+              {item.icon}
+              {!isCollapsed && <span className="ml-2">{item.label}</span>}
+            </Link>
+          ))}
         </nav>
-        
-        {/* Share Button */}
-        {handleShareClick && (
-          <div className="px-3 mb-2">
+
+        <div className="pt-6 px-3 space-y-1">
+          {handleShareClick && (
             <button
               onClick={handleShareClick}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
+              className={`w-full flex items-center ${
+                isCollapsed ? 'justify-center' : ''
+              } px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors`}
             >
-              <Share2 size={18} />
-              <span>Share Progress</span>
+              <Share2 size={20} />
+              {!isCollapsed && <span className="ml-2">Share Profile</span>}
             </button>
-          </div>
-        )}
-        
-        {/* Primary Actions */}
-        <div className="px-3 py-4 border-t border-white/10">
-          {/* Filter out the logout button */}
-          <ul className="space-y-1">
-            {primaryActions
-              .filter(action => action.label !== "Logout")
-              .map((action, index) => (
-                <li key={index}>
-                  <button
-                    onClick={action.onClick}
-                    className="w-full flex items-center px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <span className="mr-3">{action.icon}</span>
-                    <span>{action.label}</span>
-                  </button>
-                </li>
-              ))}
-          </ul>
+          )}
           
-          {/* Buy Me a Coffee Button */}
-          <div className="mt-4">
-            <a 
-              href="https://www.buymeacoffee.com/SoloRising" 
-              target="_blank" 
-              rel="noreferrer"
-              className="w-full flex items-center justify-center px-3 py-2 rounded-md bg-[#FFDD00] text-black hover:opacity-90 transition-colors"
+          {primaryActions?.map((action, index) => (
+            <button
+              key={index}
+              onClick={action.onClick}
+              className={`w-full flex items-center ${
+                isCollapsed ? 'justify-center' : ''
+              } px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors`}
             >
-              <Coffee size={18} className="mr-2" />
-              <span className="font-medium">Buy me a coffee</span>
-            </a>
-          </div>
+              {action.icon}
+              {!isCollapsed && <span className="ml-2">{action.label}</span>}
+            </button>
+          ))}
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   );
-}
+};

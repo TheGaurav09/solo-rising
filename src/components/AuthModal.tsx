@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -98,9 +97,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         if (profileError) throw profileError;
         
-        // Fix: Since character is already a CharacterType from the state declaration,
-        // we need to ensure TypeScript recognizes it as such
-        setUserData(warriorName, character as CharacterType, 0, 0, 100, country);
+        setUserData(warriorName, character, 0, 0, 100, country);
         
         toast({
           title: "Account created!",

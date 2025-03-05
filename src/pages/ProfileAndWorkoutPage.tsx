@@ -6,8 +6,15 @@ import { useUser } from '@/context/UserContext';
 import Profile from '@/components/Profile';
 import WorkoutLogger from '@/components/WorkoutLogger';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Dumbbell, History, Calendar, Trophy } from 'lucide-react';
+import { Dumbbell, History, Calendar, Trophy, CheckCircle, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import Footer from '@/components/ui/Footer';
+
+interface TrainingDay {
+  day: string;
+  workout: string;
+  completed: boolean;
+}
 
 const ProfileAndWorkoutPage = () => {
   const { userId } = useParams();
@@ -16,6 +23,37 @@ const ProfileAndWorkoutPage = () => {
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isViewingOtherUser, setIsViewingOtherUser] = useState(false);
+  const [trainingSchedule, setTrainingSchedule] = useState<TrainingDay[]>([
+    { day: 'Monday', workout: 'Upper Body', completed: false },
+    { day: 'Tuesday', workout: 'Lower Body', completed: false },
+    { day: 'Wednesday', workout: 'Rest Day', completed: true },
+    { day: 'Thursday', workout: 'Cardio', completed: false },
+    { day: 'Friday', workout: 'Full Body', completed: false },
+    { day: 'Saturday', workout: 'Flexible Training', completed: false },
+    { day: 'Sunday', workout: 'Rest Day', completed: true },
+  ]);
+
+  useEffect(() => {
+    // Load completed status from localStorage
+    const savedSchedule = localStorage.getItem('training-schedule');
+    if (savedSchedule) {
+      setTrainingSchedule(JSON.parse(savedSchedule));
+    } else {
+      // Set today's day as completed by default
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      setTrainingSchedule(prev => 
+        prev.map(day => ({
+          ...day,
+          completed: day.day === today ? true : day.completed
+        }))
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save training schedule to localStorage whenever it changes
+    localStorage.setItem('training-schedule', JSON.stringify(trainingSchedule));
+  }, [trainingSchedule]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -119,6 +157,14 @@ const ProfileAndWorkoutPage = () => {
     }
   };
 
+  const toggleWorkoutCompleted = (index: number) => {
+    setTrainingSchedule(prev => {
+      const newSchedule = [...prev];
+      newSchedule[index].completed = !newSchedule[index].completed;
+      return newSchedule;
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {loading ? (
@@ -187,9 +233,38 @@ const ProfileAndWorkoutPage = () => {
                 <Calendar size={20} />
                 Training Schedule
               </h2>
-              <p className="text-white/70">
-                Stay consistent with your workouts to maximize your gains.
-              </p>
+              
+              <div className="space-y-2">
+                {trainingSchedule.map((day, index) => (
+                  <div 
+                    key={day.day} 
+                    className={`flex justify-between items-center p-2 rounded-lg border ${
+                      day.completed 
+                        ? 'bg-green-950/20 border-green-800/30' 
+                        : day.workout === 'Rest Day'
+                          ? 'bg-blue-950/20 border-blue-800/30'
+                          : 'bg-white/5 border-white/10'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium">{day.day}</div>
+                      <div className="text-sm text-white/70">{day.workout}</div>
+                    </div>
+                    {!isViewingOtherUser && (
+                      <button 
+                        onClick={() => toggleWorkoutCompleted(index)}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          day.completed 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-white/10 text-white/60 hover:bg-white/20'
+                        }`}
+                      >
+                        {day.completed ? <CheckCircle size={14} /> : <X size={14} />}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </AnimatedCard>
             
             <AnimatedCard className="p-6 mt-6">
@@ -204,6 +279,8 @@ const ProfileAndWorkoutPage = () => {
           </div>
         </div>
       )}
+      
+      <Footer />
     </div>
   );
 };

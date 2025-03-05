@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake } from 'lucide-react';
+import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
@@ -18,8 +19,22 @@ const Dashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const isAIChat = location.pathname.includes('/ai-chat');
+
+  useEffect(() => {
+    // Load sidebar state from localStorage
+    const savedSidebarState = localStorage.getItem('sidebar-collapsed');
+    if (savedSidebarState) {
+      setSidebarCollapsed(savedSidebarState === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save sidebar state to localStorage
+    localStorage.setItem('sidebar-collapsed', sidebarCollapsed.toString());
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -82,6 +97,9 @@ const Dashboard = () => {
       case 'ai-chat':
         title = 'Solo Prove | AI Chat';
         break;
+      case 'settings':
+        title = 'Solo Prove | Settings';
+        break;
       default:
         title = 'Solo Prove';
     }
@@ -126,6 +144,10 @@ const Dashboard = () => {
       });
     }
   }, [isAIChat]);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
   
   const navigationItems = [
     {
@@ -152,6 +174,11 @@ const Dashboard = () => {
       href: '/hall-of-fame',
       icon: <HeartHandshake size={20} />,
       label: 'Hall of Fame'
+    },
+    {
+      href: '/settings',
+      icon: <Settings size={20} />,
+      label: 'Settings'
     }
   ];
   
@@ -203,9 +230,25 @@ const Dashboard = () => {
           brandIcon={getIconComponent('dumbbell', 24)}
           brandIconStyle={getBrandIconStyle()}
           handleShareClick={handleShareClick}
+          isCollapsed={sidebarCollapsed}
         />
         
-        <main className="flex-1 overflow-y-auto ml-0 md:ml-0 pb-0 md:pb-0 relative w-full">
+        <button 
+          onClick={toggleSidebar}
+          className={`fixed z-20 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 transition-all px-1 py-4 rounded-r-md ${
+            sidebarCollapsed ? 'left-16' : 'left-64'
+          }`}
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight size={20} className="text-white/80" />
+          ) : (
+            <ChevronLeft size={20} className="text-white/80" />
+          )}
+        </button>
+        
+        <main className={`flex-1 overflow-y-auto pb-0 relative w-full transition-all ${
+          sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-64'
+        }`}>
           <div className={`min-h-screen pt-4 px-4`}>
             <Outlet />
           </div>
