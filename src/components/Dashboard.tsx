@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle } from 'lucide-react';
-import { getIconComponent } from '@/lib/utils';
+import { getIconComponent } from '@/lib/iconUtils'; // Fix: Import from iconUtils instead of utils
 import { useMediaQuery } from '@/hooks/use-mobile';
 // Add framer-motion import
 import { AnimatePresence } from 'framer-motion';
