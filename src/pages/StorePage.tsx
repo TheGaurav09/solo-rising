@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -362,7 +361,6 @@ const StorePage = () => {
           item={selectedItem}
           onClose={handleCloseDetail}
           onPurchase={handlePurchase}
-          isOwned={ownedItems.includes(selectedItem.id)}
           character={character}
         />
       )}

@@ -166,9 +166,9 @@ const CharacterSelection = () => {
 
       {showAuthModal && selectedCharacter && (
         <AuthModal 
-          character={selectedCharacter} 
+          isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)} 
-          onSuccess={handleAuthSuccess}
+          initialView="signup"
         />
       )}
 

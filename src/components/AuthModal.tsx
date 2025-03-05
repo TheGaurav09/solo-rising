@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -85,20 +86,19 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
       if (error) throw error;
 
       if (data.user) {
-        // Insert user data into our database
+        // Insert user data into our database - fix the insert method
         const { error: insertError } = await supabase
           .from('users')
-          .insert([
-            {
-              id: data.user.id,
-              email,
-              warrior_name: name,
-              character_type: null, // Will be set in character selection
-              country: country,
-              points: 0,
-              coins: 10, // Start with 10 coins
-            },
-          ]);
+          .insert({
+            id: data.user.id,
+            email,
+            warrior_name: name,
+            character_type: '', // Empty string instead of null
+            password: '', // Placeholder for password since it's required
+            country: country,
+            points: 0,
+            coins: 10, // Start with 10 coins
+          });
 
         if (insertError) throw insertError;
 
@@ -128,7 +128,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
       <div className="fixed inset-0 flex items-center justify-center">
-        <AnimatedCard className="max-w-md w-full p-8 rounded-lg">
+        <div className="max-w-md w-full p-8 rounded-lg bg-background border border-white/10">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">{view === 'login' ? 'Login' : 'Create Account'}</h2>
             <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 transition-colors">
@@ -147,7 +147,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
               {view === 'login' ? 'Need an account? Sign up' : 'Already have an account? Login'}
             </button>
           </div>
-        </AnimatedCard>
+        </div>
       </div>
     </div>
   );

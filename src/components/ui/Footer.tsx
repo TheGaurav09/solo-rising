@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { GitHub, Twitter, Instagram } from 'lucide-react';
+import { Github, Twitter, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 
@@ -57,7 +57,7 @@ const Footer = () => {
               className="text-white/60 hover:text-white transition-colors group"
               aria-label="GitHub"
             >
-              <GitHub className={`h-5 w-5 ${getColorClass('github')}`} />
+              <Github className={`h-5 w-5 ${getColorClass('github')}`} />
             </a>
           </div>
           
