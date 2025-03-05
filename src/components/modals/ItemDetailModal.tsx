@@ -17,9 +17,10 @@ interface ItemDetailModalProps {
   item: StoreItem;
   onClose: () => void;
   onPurchase: () => void;
+  character?: 'goku' | 'saitama' | 'jin-woo' | null;
 }
 
-const ItemDetailModal = ({ item, onClose, onPurchase }: ItemDetailModalProps) => {
+const ItemDetailModal = ({ item, onClose, onPurchase, character }: ItemDetailModalProps) => {
   const { coins } = useUser();
   const canAfford = coins >= item.price;
 
@@ -37,8 +38,8 @@ const ItemDetailModal = ({ item, onClose, onPurchase }: ItemDetailModalProps) =>
         </div>
         
         <div className="flex justify-center my-6">
-          <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center">
-            <Award size={40} className="text-yellow-500" />
+          <div className={`w-24 h-24 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
+            <Award size={40} className={character ? `text-${character}-primary` : 'text-yellow-500'} />
           </div>
         </div>
         
@@ -81,7 +82,9 @@ const ItemDetailModal = ({ item, onClose, onPurchase }: ItemDetailModalProps) =>
             disabled={!canAfford}
             className={`py-2 rounded-lg transition-colors ${
               canAfford 
-                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
+                ? character
+                  ? `bg-${character}-primary/20 text-${character}-primary hover:bg-${character}-primary/30`
+                  : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                 : 'bg-white/5 text-white/40 cursor-not-allowed'
             }`}
           >
