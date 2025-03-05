@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -18,6 +19,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showAllLeaderboard, setShowAllLeaderboard] = useState(false);
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   
@@ -69,7 +71,7 @@ const ProfilePage = () => {
         .from('users')
         .select('id, warrior_name, character_type, points')
         .order('points', { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (leaderboardError) throw leaderboardError;
       
@@ -122,7 +124,10 @@ const ProfilePage = () => {
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Award className="w-5 h-5 text-yellow-500" />;
+    if (rank === 1) return <img src="/1st.png" alt="1st Place" className="w-5 h-5" onError={e => {
+      e.currentTarget.src = "/placeholder.svg";
+      e.currentTarget.onerror = null;
+    }} />;
     if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
     if (rank === 3) return <Medal className="w-5 h-5 text-amber-700" />;
     return <span className="w-5 h-5 flex items-center justify-center">{rank}</span>;
@@ -145,11 +150,22 @@ const ProfilePage = () => {
     }
   };
 
+  const getCharacterImage = (char: string) => {
+    switch(char) {
+      case 'goku': return "/Goku.png";
+      case 'saitama': return "/Saitama.png";
+      case 'jin-woo': return "/jinwoo.png";
+      default: return "/placeholder.svg";
+    }
+  };
+
   const handleLogout = () => {
     setShowLogoutConfirm(true);
   };
 
   const isOwnProfile = userId === 'me' || userId === userData?.id;
+  
+  const visibleLeaderboard = showAllLeaderboard ? leaderboardData : leaderboardData.slice(0, 20);
 
   if (loading) {
     return (
@@ -165,8 +181,20 @@ const ProfilePage = () => {
         <div className="lg:col-span-2">
           <AnimatedCard className="p-6">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${userData?.character_type ? `bg-${userData.character_type}-primary/30` : 'bg-primary/30'}`}>
-                <User className={userData?.character_type ? `text-${userData.character_type}-primary` : 'text-primary'} size={28} />
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden ${userData?.character_type ? `bg-${userData.character_type}-primary/30` : 'bg-primary/30'}`}>
+                {userData?.character_type ? (
+                  <img 
+                    src={getCharacterImage(userData.character_type)} 
+                    alt={userData.character_type}
+                    className="w-full h-full object-cover"
+                    onError={e => {
+                      e.currentTarget.src = "/placeholder.svg";
+                      e.currentTarget.onerror = null;
+                    }}
+                  />
+                ) : (
+                  <User className="text-primary" size={28} />
+                )}
               </div>
               
               <div className="flex-1">
@@ -263,13 +291,27 @@ const ProfilePage = () => {
         
         <div>
           <AnimatedCard className="p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Global Leaderboard</h2>
-              <Users size={20} className="text-white/60" />
+              <div className="flex items-center gap-2">
+                <Users size={20} className="text-white/60" />
+                {leaderboardData.length > 20 && (
+                  <button 
+                    onClick={() => setShowAllLeaderboard(!showAllLeaderboard)}
+                    className="text-sm flex items-center gap-1 text-white/60 hover:text-white"
+                  >
+                    {showAllLeaderboard ? (
+                      <>Show Less <ChevronUp size={14} /></>
+                    ) : (
+                      <>Show All <ChevronDown size={14} /></>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-              {leaderboardData.map((entry, index) => (
+              {visibleLeaderboard.map((entry, index) => (
                 <div key={index}>
                   <div 
                     className={`flex items-center p-3 rounded-lg transition-colors cursor-pointer ${

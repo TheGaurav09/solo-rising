@@ -5,7 +5,7 @@ import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
 import { toast } from '@/components/ui/use-toast';
-import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar } from 'lucide-react';
+import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
 
@@ -19,6 +19,7 @@ const WorkoutPage = () => {
   const [workoutHistory, setWorkoutHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAllExercises, setShowAllExercises] = useState(false);
 
   useEffect(() => {
     fetchWorkoutHistory();
@@ -57,7 +58,15 @@ const WorkoutPage = () => {
     { id: 'running', name: 'Running', points: 15, icon: <Timer size={18} /> },
     { id: 'pullups', name: 'Pull-ups', points: 20, icon: <Repeat size={18} /> },
     { id: 'cycling', name: 'Cycling', points: 18, icon: <Timer size={18} /> },
+    { id: 'jumping_jacks', name: 'Jumping Jacks', points: 8, icon: <Dumbbell size={18} /> },
+    { id: 'burpees', name: 'Burpees', points: 22, icon: <Dumbbell size={18} /> },
+    { id: 'planks', name: 'Planks', points: 16, icon: <Timer size={18} /> },
+    { id: 'lunges', name: 'Lunges', points: 14, icon: <Dumbbell size={18} /> },
+    { id: 'mountain_climbers', name: 'Mountain Climbers', points: 18, icon: <Dumbbell size={18} /> },
+    { id: 'deadlifts', name: 'Deadlifts', points: 25, icon: <Dumbbell size={18} /> },
   ];
+
+  const visibleExercises = showAllExercises ? exercises : exercises.slice(0, 6);
 
   const getSelectedExercise = () => {
     return exercises.find(ex => ex.id === selectedExercise);
@@ -156,11 +165,23 @@ const WorkoutPage = () => {
             ) : (
               <>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2 text-white/80">
-                    Exercise Type
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-white/80">
+                      Exercise Type
+                    </label>
+                    <button 
+                      onClick={() => setShowAllExercises(!showAllExercises)}
+                      className="text-sm flex items-center gap-1 text-white/60 hover:text-white"
+                    >
+                      {showAllExercises ? (
+                        <>Show Less <ChevronUp size={14} /></>
+                      ) : (
+                        <>Show All <ChevronDown size={14} /></>
+                      )}
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {exercises.map((exercise) => (
+                    {visibleExercises.map((exercise) => (
                       <div
                         key={exercise.id}
                         onClick={() => setSelectedExercise(exercise.id)}
