@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle, Trophy, LogOut } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle, Trophy } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
@@ -38,7 +39,8 @@ const ProfilePage = () => {
   
   useEffect(() => {
     checkIfOwnProfile();
-  }, [userId]);
+    fetchData();
+  }, [userId, leaderboardType, selectedRegion]);
   
   const checkIfOwnProfile = async () => {
     try {
@@ -55,32 +57,62 @@ const ProfilePage = () => {
     setLoading(true);
     try {
       const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) return;
+      if (!currentUser.user) {
+        setLoading(false);
+        return;
+      }
 
       let targetUserId = currentUser.user.id;
       if (userId && userId !== 'me') {
         targetUserId = userId;
       }
 
+      // First, get user data
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', targetUserId)
-        .single();
+        .maybeSingle();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error("User data fetch error:", userError);
+        toast({
+          title: 'Error',
+          description: 'Failed to load user data',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!userData) {
+        console.error("No user data found");
+        toast({
+          title: 'Error',
+          description: 'User not found',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
       setUserData(userData);
-      setNewName(userData.warrior_name);
+      setNewName(userData.warrior_name || '');
 
+      // Fetch workouts
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('*')
         .eq('user_id', targetUserId)
         .order('created_at', { ascending: false });
 
-      if (workoutsError) throw workoutsError;
-      setWorkouts(workoutsData || []);
+      if (workoutsError) {
+        console.error("Workouts fetch error:", workoutsError);
+      } else {
+        setWorkouts(workoutsData || []);
+      }
 
+      // Fetch achievements
       const { data: userAchievements, error: achievementsError } = await supabase
         .from('user_achievements')
         .select(`
@@ -89,9 +121,13 @@ const ProfilePage = () => {
         `)
         .eq('user_id', targetUserId);
 
-      if (achievementsError) throw achievementsError;
-      setAchievements(userAchievements || []);
+      if (achievementsError) {
+        console.error("Achievements fetch error:", achievementsError);
+      } else {
+        setAchievements(userAchievements || []);
+      }
 
+      // Build leaderboard query
       let query = supabase
         .from('users')
         .select('id, warrior_name, character_type, points, streak, country')
@@ -106,18 +142,20 @@ const ProfilePage = () => {
       
       const { data: leaderboard, error: leaderboardError } = await query;
 
-      if (leaderboardError) throw leaderboardError;
-      
-      const rankedLeaderboard = leaderboard.map((user, index) => ({
-        ...user,
-        rank: index + 1
-      }));
-      
-      setLeaderboardData(rankedLeaderboard);
-      
-      const userEntry = rankedLeaderboard.find(entry => entry.id === currentUser.user?.id);
-      if (userEntry) {
-        setUserRank(userEntry.rank);
+      if (leaderboardError) {
+        console.error("Leaderboard fetch error:", leaderboardError);
+      } else {
+        const rankedLeaderboard = leaderboard?.map((user, index) => ({
+          ...user,
+          rank: index + 1
+        })) || [];
+        
+        setLeaderboardData(rankedLeaderboard);
+        
+        const userEntry = rankedLeaderboard.find(entry => entry.id === targetUserId);
+        if (userEntry) {
+          setUserRank(userEntry.rank);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);

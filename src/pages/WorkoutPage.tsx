@@ -5,7 +5,7 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInMinutes } from 'date-fns';
 import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
 
 const WorkoutPage = () => {
@@ -19,10 +19,31 @@ const WorkoutPage = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAllExercises, setShowAllExercises] = useState(false);
+  const [lastWorkoutTime, setLastWorkoutTime] = useState<Date | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [cooldownInterval, setCooldownInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchWorkoutHistory();
+    return () => {
+      if (cooldownInterval) clearInterval(cooldownInterval);
+    };
   }, []);
+
+  const updateCooldownTime = () => {
+    if (!lastWorkoutTime) return;
+    
+    const now = new Date();
+    const diffInMinutes = differenceInMinutes(now, lastWorkoutTime);
+    const remaining = Math.max(0, 30 - diffInMinutes);
+    
+    setCooldownRemaining(remaining);
+    
+    if (remaining === 0 && cooldownInterval) {
+      clearInterval(cooldownInterval);
+      setCooldownInterval(null);
+    }
+  };
 
   const fetchWorkoutHistory = async () => {
     setIsLoadingHistory(true);
@@ -38,6 +59,23 @@ const WorkoutPage = () => {
 
       if (error) throw error;
       setWorkoutHistory(data || []);
+      
+      // Check cooldown from the last workout
+      if (data && data.length > 0) {
+        const lastWorkout = new Date(data[0].created_at);
+        setLastWorkoutTime(lastWorkout);
+        
+        const now = new Date();
+        const diffInMinutes = differenceInMinutes(now, lastWorkout);
+        
+        if (diffInMinutes < 30) {
+          setCooldownRemaining(30 - diffInMinutes);
+          
+          // Set up interval to update the cooldown remaining time
+          const interval = setInterval(updateCooldownTime, 60000); // Update every minute
+          setCooldownInterval(interval);
+        }
+      }
     } catch (error) {
       console.error('Error fetching workout history:', error);
       toast({
@@ -86,11 +124,30 @@ const WorkoutPage = () => {
 
   const handleSubmitWorkout = () => {
     if (!selectedExercise) return;
+    
+    if (cooldownRemaining > 0) {
+      toast({
+        title: 'Workout Cooldown',
+        description: `Please wait ${cooldownRemaining} minute${cooldownRemaining > 1 ? 's' : ''} before adding another workout.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setShowConfirmModal(true);
   };
 
   const handleAddWorkout = async () => {
     if (!selectedExercise) return;
+    
+    if (cooldownRemaining > 0) {
+      toast({
+        title: 'Workout Cooldown',
+        description: `Please wait ${cooldownRemaining} minute${cooldownRemaining > 1 ? 's' : ''} before adding another workout.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setLoading(true);
     
@@ -138,7 +195,16 @@ const WorkoutPage = () => {
 
       if (error) throw error;
       
-      // Fix the achievement check - get total points first
+      // Set cooldown
+      const now = new Date();
+      setLastWorkoutTime(now);
+      setCooldownRemaining(30);
+      
+      // Start cooldown timer
+      if (cooldownInterval) clearInterval(cooldownInterval);
+      const interval = setInterval(updateCooldownTime, 60000); // Update every minute
+      setCooldownInterval(interval);
+      
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('points')
@@ -147,10 +213,8 @@ const WorkoutPage = () => {
       
       if (userError) throw userError;
       
-      // Now check achievements with the user's total points
       const totalPoints = (userData?.points || 0) + pointsEarned;
       
-      // Fix the achievement query to explicitly handle the response
       const { data: achievementsData, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
@@ -159,9 +223,7 @@ const WorkoutPage = () => {
       
       if (achievementsError) throw achievementsError;
       
-      // Process achievements if there are any
       if (achievementsData && achievementsData.length > 0) {
-        // Check which achievements the user already has
         const { data: userAchievements, error: userAchievementsError } = await supabase
           .from('user_achievements')
           .select('achievement_id')
@@ -169,11 +231,9 @@ const WorkoutPage = () => {
           
         if (userAchievementsError) throw userAchievementsError;
         
-        // Find new achievements to award
         const userAchievementIds = userAchievements?.map(ua => ua.achievement_id) || [];
         const newAchievements = achievementsData.filter(a => !userAchievementIds.includes(a.id));
         
-        // Award new achievements if any
         if (newAchievements.length > 0) {
           const achievementsToInsert = newAchievements.map(achievement => ({
             user_id: user.user.id,
@@ -186,7 +246,6 @@ const WorkoutPage = () => {
             
           if (insertError) throw insertError;
           
-          // Show toast notification for new achievements
           newAchievements.forEach(achievement => {
             toast({
               title: 'New Achievement Unlocked!',
@@ -197,7 +256,6 @@ const WorkoutPage = () => {
         }
       }
       
-      // Update the user's data with their new streak and points
       const { error: userUpdateError } = await supabase
         .from('users')
         .update({ 
@@ -257,6 +315,14 @@ const WorkoutPage = () => {
               </div>
             ) : (
               <>
+                {cooldownRemaining > 0 && (
+                  <div className="mb-4 p-3 rounded-lg bg-white/10 border border-white/20">
+                    <p className="text-center">
+                      Cooldown: Wait <span className="font-bold">{cooldownRemaining} minute{cooldownRemaining > 1 ? 's' : ''}</span> before adding another workout
+                    </p>
+                  </div>
+                )}
+                
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-white/80">
@@ -357,11 +423,11 @@ const WorkoutPage = () => {
                 
                 <AnimatedButton
                   onClick={handleSubmitWorkout}
-                  disabled={!selectedExercise || loading}
+                  disabled={!selectedExercise || loading || cooldownRemaining > 0}
                   character={character || undefined}
                   className="w-full"
                 >
-                  {loading ? 'Adding...' : 'Add Workout'}
+                  {loading ? 'Adding...' : cooldownRemaining > 0 ? `Cooldown (${cooldownRemaining}m)` : 'Add Workout'}
                 </AnimatedButton>
               </>
             )}

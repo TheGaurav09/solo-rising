@@ -1,79 +1,89 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+// Helper to handle CORS preflight requests
+function handleCors(req: Request) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
+}
+
+// Main function
+serve(async (req) => {
+  // Handle CORS
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   try {
-    const { message, character, previousMessages } = await req.json();
-    
-    if (!message) {
-      return new Response(JSON.stringify({ 
-        error: 'Message is required' 
-      }), { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    console.log(`Processing chat message for character: ${character}`);
-    console.log(`Message: ${message}`);
-    console.log(`Previous messages count: ${previousMessages?.length || 0}`);
-    
-    // Determine character-specific system prompt
-    let systemPrompt = "You are a fitness AI assistant. Be motivational, encouraging, and give specific workout advice.";
-    
-    if (character === 'goku') {
-      systemPrompt = "You are a Saiyan warrior AI assistant, inspired by Goku from Dragon Ball. Speak with enthusiasm, energy, and constantly encourage the user to push beyond their limits. Use phrases like 'power level', 'training', 'stronger', and mention Saiyan heritage occasionally. Be extremely positive about training hard and never giving up.";
-    } else if (character === 'saitama') {
-      systemPrompt = "You are an AI assistant based on Saitama from One Punch Man. Keep your responses simple, direct, and somewhat bored/casual. Occasionally mention your training routine of 100 push-ups, 100 sit-ups, 100 squats, and 10km running EVERY SINGLE DAY. Act unimpressed by most things, but still provide helpful fitness advice in a deadpan manner.";
-    } else if (character === 'jin-woo') {
-      systemPrompt = "You are the Shadow Monarch's AI assistant, based on Sung Jin-Woo from Solo Leveling. Speak with confidence and a sense of growing power. Reference 'leveling up', 'stats', 'gaining strength', and occasionally mention shadows or becoming the strongest hunter. Your advice should focus on systematic improvement and growth through consistent training.";
+    // Only accept POST requests
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Format previous messages for context
-    const formattedPreviousMessages = previousMessages ? 
-      previousMessages.map(msg => {
-        return {
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
-        };
-      }) : [];
+    // Get the API key from environment
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Parse the request body
+    const { messages, character } = await req.json()
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: 'Invalid messages format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Build character prompt
+    let systemPrompt = "You are a friendly AI workout assistant, helping the user with their fitness journey."
     
-    // Add system prompt at the beginning
-    const messages = [
+    if (character === "goku") {
+      systemPrompt = "You are Goku, a Saiyan warrior from Dragon Ball. You're enthusiastic, always looking for a challenge, and love training. You encourage the user to push their limits, just like you do. You often mention your training, the Gravity Chamber, and your quest to become stronger. You occasionally use phrases like 'Power up!' and 'Let's train to surpass our limits!'"
+    } 
+    else if (character === "saitama") {
+      systemPrompt = "You are Saitama from One Punch Man. You speak in a casual, sometimes bored tone, but you're serious about training. You often mention your training regimen (100 push-ups, 100 sit-ups, 100 squats, and a 10km run every day). You're humble despite being incredibly strong, and you give straightforward, no-nonsense fitness advice."
+    }
+    else if (character === "jin-woo") {
+      systemPrompt = "You are Sung Jin-Woo from Solo Leveling. You're calm, determined, and focused on getting stronger. You talk about 'leveling up' and 'grinding' as part of the training process. You appreciate discipline and daily improvement. You sometimes mention your System and how it helps track progress. You encourage users to track their stats and keep pushing to unlock new levels of strength."
+    }
+
+    // Format messages for Gemini
+    const formattedMessages = [
       {
-        role: 'model',
+        role: "system",
         parts: [{ text: systemPrompt }]
       },
-      ...formattedPreviousMessages,
-      {
-        role: 'user',
-        parts: [{ text: message }]
-      }
+      ...messages.map((msg: any) => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+      }))
     ];
 
-    console.log("Calling Gemini API...");
-    
-    // Call Gemini API
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=' + GEMINI_API_KEY, {
-      method: 'POST',
+    console.log("Sending request to Gemini API with messages:", JSON.stringify(formattedMessages));
+
+    // Send request to Gemini API
+    const response = await fetch("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        contents: messages,
+        contents: formattedMessages,
         generationConfig: {
           temperature: 0.7,
           topK: 40,
@@ -82,46 +92,59 @@ serve(async (req) => {
         },
         safetySettings: [
           {
-            category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
           },
           {
-            category: 'HARM_CATEGORY_HATE_SPEECH',
-            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
           },
           {
-            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
           },
           {
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
           }
         ]
-      })
+      }),
     });
 
-    const data = await response.json();
-    console.log("Gemini API response received:", JSON.stringify(data).substring(0, 200) + "...");
+    const result = await response.json();
+    console.log("Received response from Gemini API:", JSON.stringify(result));
+
+    // Extract the response content
+    let responseText = "";
     
-    // Extract the AI's response text
-    const aiMessage = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-      "I'm having trouble processing your request right now. Please try again later.";
-    
+    if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+      const candidateContent = result.candidates[0].content;
+      
+      if (candidateContent.parts && candidateContent.parts[0]) {
+        responseText = candidateContent.parts[0].text;
+      }
+    } else if (result.error) {
+      console.error("Gemini API error:", result.error);
+      return new Response(JSON.stringify({ error: `Gemini API error: ${result.error.message || 'Unknown error'}` }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Return the response
     return new Response(JSON.stringify({ 
-      message: aiMessage 
-    }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      response: responseText,
+      raw: result 
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-    
+
   } catch (error) {
-    console.error('Error in AI chat function:', error);
-    
-    return new Response(JSON.stringify({ 
-      error: error.message || 'An unexpected error occurred'
-    }), { 
+    console.error("Error processing request:", error);
+    return new Response(JSON.stringify({ error: error.message || 'Unknown error occurred' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+})
