@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -13,7 +12,7 @@ import ItemDetailModal from '@/components/modals/ItemDetailModal';
 import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
 
 const StoreAndAchievementsPage = () => {
-  const { character, points, coins, addCoins } = useUser();
+  const { character, points, coins, addCoins, useCoins } = useUser();
   const [storeItems, setStoreItems] = useState<any[]>([]);
   const [userItems, setUserItems] = useState<string[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
@@ -32,14 +31,12 @@ const StoreAndAchievementsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Get current user
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         setLoading(false);
         return;
       }
 
-      // Fetch store items
       const { data: storeItems, error: storeError } = await supabase
         .from('store_items')
         .select('*')
@@ -51,7 +48,6 @@ const StoreAndAchievementsPage = () => {
         setStoreItems(storeItems || []);
       }
 
-      // Fetch user's purchased items
       const { data: userItemsData, error: userItemsError } = await supabase
         .from('user_items')
         .select('item_id')
@@ -63,7 +59,6 @@ const StoreAndAchievementsPage = () => {
         setUserItems(userItemsData?.map(item => item.item_id) || []);
       }
 
-      // Fetch all achievements
       const { data: achievementsData, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
@@ -75,7 +70,6 @@ const StoreAndAchievementsPage = () => {
         setAchievements(achievementsData || []);
       }
 
-      // Fetch user's unlocked achievements
       const { data: userAchievementsData, error: userAchievementsError } = await supabase
         .from('user_achievements')
         .select('achievement_id')
@@ -109,12 +103,10 @@ const StoreAndAchievementsPage = () => {
   };
 
   const handlePurchase = async (item: any) => {
-    // Implementation for purchasing items
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
       
-      // Check if user already has this item
       if (userItems.includes(item.id)) {
         toast({
           title: 'Already Owned',
@@ -124,7 +116,6 @@ const StoreAndAchievementsPage = () => {
         return;
       }
       
-      // Check if user has enough coins
       const { data: userCoins, error: userCoinsError } = await supabase
         .from('users')
         .select('coins')
@@ -143,7 +134,6 @@ const StoreAndAchievementsPage = () => {
         return;
       }
       
-      // Purchase the item
       const { error: purchaseError } = await supabase
         .from('user_items')
         .insert([
@@ -152,7 +142,6 @@ const StoreAndAchievementsPage = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Update user's coins
       const newCoins = userCoins.coins - item.price;
       const { error: updateError } = await supabase
         .from('users')
@@ -161,9 +150,8 @@ const StoreAndAchievementsPage = () => {
       
       if (updateError) throw updateError;
       
-      // Update local state
       setUserItems([...userItems, item.id]);
-      addCoins(-item.price);
+      useCoins(-item.price);
       
       toast({
         title: 'Purchase Successful',
@@ -196,7 +184,7 @@ const StoreAndAchievementsPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Store & Achievements</h1>
-        <CoinDisplay coins={coins} />
+        <CoinDisplay />
       </div>
       
       <Tabs defaultValue="store" className="space-y-4">
@@ -218,7 +206,7 @@ const StoreAndAchievementsPage = () => {
                 <ShoppingBag size={20} />
                 <span>Item Shop</span>
               </h2>
-              <CoinDisplay coins={coins} />
+              <CoinDisplay />
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -228,7 +216,7 @@ const StoreAndAchievementsPage = () => {
                   item={item}
                   owned={userItems.includes(item.id)}
                   onClick={() => handleItemClick(item)}
-                  character={character || undefined}
+                  character={character}
                 />
               ))}
             </div>
@@ -328,9 +316,7 @@ const StoreAndAchievementsPage = () => {
           item={selectedItem}
           onClose={() => setShowItemModal(false)}
           onPurchase={() => handlePurchase(selectedItem)}
-          owned={userItems.includes(selectedItem.id)}
-          character={character || undefined}
-          coins={coins}
+          character={character}
         />
       )}
       
@@ -338,9 +324,8 @@ const StoreAndAchievementsPage = () => {
         <AchievementDetailModal
           achievement={selectedAchievement}
           onClose={() => setShowAchievementModal(false)}
-          unlocked={userAchievements.includes(selectedAchievement.id)}
-          character={character || undefined}
-          points={points}
+          character={character}
+          currentPoints={points}
         />
       )}
     </div>

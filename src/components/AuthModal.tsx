@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -36,7 +35,6 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
   const validateForm = () => {
     let isValid = true;
     
-    // Clear previous errors
     setLoginError('');
     setCountryError('');
     
@@ -83,21 +81,19 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
       if (error) throw error;
       
       if (data.user) {
-        // Create a user record in the users table
         const { error: profileError } = await supabase
           .from('users')
-          .insert([
-            {
-              id: data.user.id,
-              email: email,
-              warrior_name: warriorName,
-              character_type: character,
-              country: country,
-              points: 0,
-              streak: 0,
-              coins: 100, // Starting coins
-            }
-          ]);
+          .insert({
+            id: data.user.id,
+            email: email,
+            warrior_name: warriorName,
+            character_type: character,
+            country: country,
+            points: 0,
+            streak: 0,
+            coins: 100,
+            password: '******'
+          });
         
         if (profileError) throw profileError;
         
@@ -139,7 +135,6 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
       if (error) throw error;
       
       if (data.user) {
-        // Fetch user data from the users table
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
@@ -236,9 +231,9 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
                   } text-white`}
                 >
                   <option value="">Select your country</option>
-                  {countries.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
+                  {countries.map((countryName) => (
+                    <option key={countryName} value={countryName}>
+                      {countryName}
                     </option>
                   ))}
                 </select>

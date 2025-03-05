@@ -24,6 +24,8 @@ interface UserContextType {
   updateUserProfile: (name: string) => Promise<boolean>;
   checkWorkoutCooldown: () => Promise<boolean>;
   setLastWorkoutTime: (time: string) => Promise<void>;
+  setUserData: (name: string, charType: CharacterType, pts: number, strk: number, cns: number, ctry: string) => void;
+  addCoins: (amount: number) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -594,6 +596,45 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addCoins = async (amount: number): Promise<void> => {
+    const newCoins = coins + amount;
+    setCoins(newCoins);
+    localStorage.setItem('coins', String(newCoins));
+    
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ coins: newCoins })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating coins:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update coins. Please try again.",
+            variant: "destructive",
+          });
+          setCoins(coins);
+          localStorage.setItem('coins', String(coins));
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error in addCoins:", error);
+    }
+  };
+
+  const setUserData = (name: string, charType: CharacterType, pts: number, strk: number, cns: number, ctry: string) => {
+    setUserName(name);
+    setCharacter(charType);
+    setPoints(pts);
+    setStreak(strk);
+    setCoins(cns);
+    setCountry(ctry);
+  };
+
   if (!isInitialized) {
     return null;
   }
@@ -619,7 +660,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         checkForAchievements,
         updateUserProfile,
         checkWorkoutCooldown,
-        setLastWorkoutTime: updateLastWorkoutTime
+        setLastWorkoutTime: updateLastWorkoutTime,
+        setUserData,
+        addCoins
       }}
     >
       {children}
