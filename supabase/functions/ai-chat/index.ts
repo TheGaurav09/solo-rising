@@ -27,6 +27,10 @@ serve(async (req) => {
       });
     }
     
+    console.log(`Processing chat message for character: ${character}`);
+    console.log(`Message: ${message}`);
+    console.log(`Previous messages count: ${previousMessages?.length || 0}`);
+    
     // Determine character-specific system prompt
     let systemPrompt = "You are a fitness AI assistant. Be motivational, encouraging, and give specific workout advice.";
     
@@ -60,6 +64,8 @@ serve(async (req) => {
       }
     ];
 
+    console.log("Calling Gemini API...");
+    
     // Call Gemini API
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=' + GEMINI_API_KEY, {
       method: 'POST',
@@ -96,6 +102,7 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log("Gemini API response received:", JSON.stringify(data).substring(0, 200) + "...");
     
     // Extract the AI's response text
     const aiMessage = data.candidates?.[0]?.content?.parts?.[0]?.text || 

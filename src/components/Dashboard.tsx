@@ -1,18 +1,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-// Fix: Use named imports instead of default import
 import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle, Maximize, ArrowLeft } from 'lucide-react';
-import { getIconComponent } from '@/lib/iconUtils'; // Fix: Import from iconUtils instead of utils
-import { useMediaQuery } from '@/hooks/use-mobile';
-// Add framer-motion import
+import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,25 +18,23 @@ const Dashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const isMobile = useIsMobile();
   
   // Check if the current route is AI Chat
   const isAIChat = location.pathname.includes('/ai-chat');
 
+  // Auth checking logic
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data } = await supabase.auth.getUser();
         
         if (!data.user) {
-          // Not authenticated, redirect to homepage
           navigate('/', { replace: true });
           return;
         }
         
         setIsAuthenticated(true);
         
-        // Check if user has selected a character
         if (!hasSelectedCharacter) {
           toast({
             title: "Select Your Character",
@@ -62,6 +56,7 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, hasSelectedCharacter]);
   
+  // Background classes based on character
   const getBackgroundClass = () => {
     switch(character) {
       case 'goku': return 'bg-goku';
@@ -71,7 +66,7 @@ const Dashboard = () => {
     }
   };
   
-  // Set title based on current route
+  // Update page title based on route
   useEffect(() => {
     let title = 'Solo Prove';
     
@@ -98,12 +93,12 @@ const Dashboard = () => {
     document.title = title;
   }, [location]);
   
-  // Handle sharing
+  // Sharing functionality
   const handleShareClick = () => {
     setShowShareModal(true);
   };
   
-  // Toggle fullscreen
+  // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -131,12 +126,21 @@ const Dashboard = () => {
     };
   }, []);
   
+  // Request fullscreen for AI Chat
+  useEffect(() => {
+    if (isAIChat && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    }
+  }, [isAIChat]);
+  
   // Navigate back from AI Chat
   const handleBackFromAIChat = () => {
     navigate('/workout');
   };
   
-  // Define navigation items
+  // Navigation items
   const navigationItems = [
     {
       href: '/workout',
@@ -165,7 +169,7 @@ const Dashboard = () => {
     }
   ];
   
-  // Primary actions (shown at the bottom of the sidebar)
+  // Primary actions for sidebar
   const primaryActions = [
     {
       icon: <Maximize size={20} />,
@@ -226,20 +230,11 @@ const Dashboard = () => {
     }
   };
   
-  const getMobileBarColor = () => {
-    switch(character) {
-      case 'goku': return 'bg-goku-primary/10 border-goku-primary/20';
-      case 'saitama': return 'bg-saitama-primary/10 border-saitama-primary/20';
-      case 'jin-woo': return 'bg-jin-woo-primary/10 border-jin-woo-primary/20';
-      default: return 'bg-white/10 border-white/20';
-    }
-  };
-  
   return (
     <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
       {/* AI Chat Back Button (only shown on AI Chat page) */}
       {isAIChat && (
-        <div className={`fixed top-4 left-4 z-50 ${isMobile ? '' : 'md:left-[17rem]'}`}>
+        <div className="fixed top-4 left-20 z-50">
           <button 
             onClick={handleBackFromAIChat}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
@@ -265,44 +260,13 @@ const Dashboard = () => {
           handleShareClick={handleShareClick}
         />
         
-        {/* Main content area */}
-        <main className={`flex-1 overflow-y-auto pb-20 md:pb-0 ${isAIChat ? 'pt-16' : ''}`}>
-          <div className={`min-h-screen ${isAIChat ? 'pt-4' : ''}`}>
+        {/* Main content area with padding to account for sidebar */}
+        <main className="flex-1 overflow-y-auto ml-0 md:ml-0 pb-0 md:pb-0 relative w-full">
+          <div className={`min-h-screen ${isAIChat ? 'pt-16' : 'pt-4'} px-4`}>
             <Outlet />
           </div>
         </main>
       </div>
-      
-      {/* Mobile navigation */}
-      {isMobile && (
-        <div className={`fixed bottom-0 left-0 right-0 ${getMobileBarColor()} border-t p-2 flex justify-around items-center z-50`}>
-          {navigationItems.map((item, index) => {
-            const isActive = location.pathname === item.href || 
-              (item.href === '/profile/me' && location.pathname.startsWith('/profile'));
-            
-            return (
-              <button
-                key={index}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${
-                  isActive
-                    ? character === 'goku' 
-                      ? 'text-goku-primary bg-goku-primary/20' 
-                      : character === 'saitama' 
-                      ? 'text-saitama-primary bg-saitama-primary/20'
-                      : character === 'jin-woo'
-                      ? 'text-jin-woo-primary bg-jin-woo-primary/20'
-                      : 'text-white bg-white/20'
-                    : 'text-white/60 hover:text-white hover:bg-white/10'
-                }`}
-                onClick={() => navigate(item.href)}
-              >
-                {item.icon}
-                <span className="text-xs mt-1">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Share Modal */}
       <AnimatePresence>

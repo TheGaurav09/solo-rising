@@ -2,9 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Send, User, Bot, MoreVertical, Sparkles, Brain, Target, Rocket } from 'lucide-react';
+import { Send, User, Bot, MoreVertical, Sparkles, Brain, Target } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useMediaQuery } from '@/hooks/use-mobile';
 
 interface Message {
   id: string;
@@ -25,21 +24,6 @@ const AIChatPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  
-  // Request fullscreen on component mount
-  useEffect(() => {
-    // Use a slight delay to ensure the DOM is ready
-    const timer = setTimeout(() => {
-      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(err => {
-          console.error(`Error attempting to enable fullscreen: ${err.message}`);
-        });
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
   
   // Generate welcome message based on character
   useEffect(() => {
@@ -87,6 +71,8 @@ const AIChatPage: React.FC = () => {
     setLoading(true);
     
     try {
+      console.log("Sending message to AI chat function");
+      
       // Call the Supabase Edge Function that uses Gemini API
       const response = await fetch('https://xppaofqmxtaikkacvvzt.supabase.co/functions/v1/ai-chat', {
         method: 'POST',
@@ -104,10 +90,14 @@ const AIChatPage: React.FC = () => {
       });
       
       if (!response.ok) {
+        console.error("AI response failed with status:", response.status);
+        const errorText = await response.text();
+        console.error("Error details:", errorText);
         throw new Error('AI response failed');
       }
       
       const data = await response.json();
+      console.log("AI response received:", data);
       
       const aiMessage: Message = {
         id: Date.now().toString(),
@@ -304,7 +294,7 @@ const AIChatPage: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                rows={isMobile ? 2 : 1}
+                rows={2}
               />
               <button
                 className={`p-3 rounded-full ${

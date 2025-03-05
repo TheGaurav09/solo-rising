@@ -12,7 +12,7 @@ interface CollapsibleSectionProps {
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
-  defaultOpen = false,
+  defaultOpen = false, // Default is now false (collapsed)
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -22,8 +22,27 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     setIsOpen(!isOpen);
   };
 
+  // Handle click outside to close the section if it's open
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if the click is outside the collapsible section
+      if (isOpen && !target.closest(`[data-collapsible-id="${title}"]`)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, title]);
+
   return (
-    <div className={`border border-white/10 rounded-lg overflow-hidden ${className}`}>
+    <div 
+      className={`border border-white/10 rounded-lg overflow-hidden ${className}`}
+      data-collapsible-id={title}
+    >
       <button
         className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 text-left"
         onClick={handleToggle}
