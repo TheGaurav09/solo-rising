@@ -44,6 +44,7 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
         return;
       }
       
+      // Use the new user_showcase table that we created
       const { data, error } = await supabase
         .from('user_showcase')
         .select('*')
@@ -57,7 +58,13 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
       }
       
       if (data) {
-        setShowcase(data);
+        // Convert the data to our Showcase type
+        const showcaseData: Showcase = {
+          id: data.id,
+          user_id: data.user_id,
+          items: data.items || []
+        };
+        setShowcase(showcaseData);
         setSelectedItems(data.items || []);
       } else {
         setShowcase(null);

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -53,8 +54,7 @@ const TrainingSchedule = ({ userId, isViewingOtherUser = false }: TrainingSchedu
     try {
       let query = supabase
         .from('scheduled_tasks')
-        .select('*, users!scheduled_tasks_user_id_fkey(warrior_name)')
-        .order('created_at', { ascending: false });
+        .select('*, users!scheduled_tasks_user_id_fkey(warrior_name)');
       
       if (!isViewingOtherUser) {
         // If viewing own profile, only show own tasks
@@ -67,15 +67,21 @@ const TrainingSchedule = ({ userId, isViewingOtherUser = false }: TrainingSchedu
         query = query.eq('user_id', userId);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         console.error("Error loading tasks:", error);
+        setIsLoading(false);
         return;
       }
       
-      const formattedTasks = data?.map(task => ({
-        ...task,
+      const formattedTasks: ScheduledTask[] = data?.map(task => ({
+        id: task.id,
+        user_id: task.user_id,
+        task: task.task,
+        completed: task.completed,
+        scheduled_for: task.scheduled_for,
+        created_at: task.created_at,
         warrior_name: task.users?.warrior_name
       })) || [];
       
