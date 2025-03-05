@@ -1,272 +1,318 @@
 
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "@/components/ui/use-toast"
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
 import { useUser, CharacterType } from '@/context/UserContext';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import CharacterSelection from './CharacterSelection';
+import { EyeIcon, EyeOffIcon, Info } from 'lucide-react';
+import { countries, Country } from './Countries';
 
 interface AuthModalProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
   initialView?: 'login' | 'signup';
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ open, onClose, initialView = 'login' }) => {
-  const [isSignUp, setIsSignUp] = useState(initialView === 'signup');
+const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userName, setUserName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [warriorName, setWarriorName] = useState('');
+  const [country, setCountry] = useState('');
+  const [countryError, setCountryError] = useState('');
+  const [view, setView] = useState<'login' | 'signup'>(initialView);
   const [loading, setLoading] = useState(false);
-  const [loadingCharacter, setLoadingCharacter] = useState(false);
-  const { setUserData } = useUser();
-  const [characterSelected, setCharacterSelected] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const { character, setUserData } = useUser();
   const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  
+  useEffect(() => {
+    setView(initialView);
+  }, [initialView]);
+  
+  const validateForm = () => {
+    let isValid = true;
+    
+    setLoginError('');
+    setCountryError('');
+    
+    if (view === 'signup' && !country) {
+      setCountryError('Please select your country');
+      isValid = false;
+    }
+    
+    return isValid;
+  };
+  
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    if (!character) {
+      toast({
+        title: "No Character Selected",
+        description: "Please select a character before signing up",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
-
-    if (isSignUp && !userName) {
-      toast({
-        title: "Error",
-        description: "Please provide a username.",
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
-
-    if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
-
+    setLoginError('');
+    
     try {
-      if (isSignUp) {
-        // Sign up
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              user_name: userName,
-            }
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            character_type: character,
+            warrior_name: warriorName,
+            country: country
           }
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: email,
+            warrior_name: warriorName,
+            character_type: character,
+            country: country,
+            points: 0,
+            streak: 0,
+            coins: 100,
+            password: '******'
+          });
+        
+        if (profileError) throw profileError;
+        
+        // Fix: Since character is already a CharacterType from the state declaration,
+        // we need to ensure TypeScript recognizes it as such
+        setUserData(warriorName, character as CharacterType, 0, 0, 100, country);
+        
+        toast({
+          title: "Account created!",
+          description: "Welcome to Solo Rising. Your journey begins now!",
         });
-
-        if (error) {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        if (data?.user) {
-          toast({
-            title: "Success",
-            description: "Account created successfully! Please check your email to verify your account.",
-          });
-          onClose();
-        }
-      } else {
-        // Sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        if (data?.user) {
-          // Fetch user data from the 'users' table
-          const { data: userDetails, error: userDetailsError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-
-          if (userDetailsError) {
-            console.error("Error fetching user details:", userDetailsError);
-            toast({
-              title: "Error",
-              description: "Failed to fetch user details.",
-              variant: "destructive",
-            });
-            setLoading(false);
-            return;
-          }
-
-          if (userDetails) {
-            setUserData(
-              userDetails.warrior_name, 
-              userDetails.character_type as CharacterType,
-              userDetails.points || 0,
-              userDetails.streak || 0, 
-              userDetails.coins || 0,
-              userDetails.country || 'Global'
-            );
-          }
-          
-          if (!userDetails?.character_type) {
-            navigate('/character-selection');
-          }
-          
-          toast({
-            title: "Success",
-            description: "Signed in successfully!",
-          });
-          onClose();
-        }
+        
+        onClose();
+        navigate('/profile-workout');
       }
     } catch (error: any) {
+      console.error('Sign up error', error);
+      setLoginError(error.message || 'An error occurred during sign up');
+      
       toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred.",
+        title: "Sign up failed",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
-
-  // Handle character selection
-  const handleCharacterSelect = async (character: string) => {
+  
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setLoginError('');
+    
     try {
-      setLoadingCharacter(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData?.user) {
-        toast({
-          title: "Error",
-          description: "User not authenticated",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
       
-      // Update user data with the selected character
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ character_type: character })
-        .eq('id', authData.user.id);
+      if (data.user) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
         
-      if (updateError) {
-        console.error("Error updating user character:", updateError);
+        if (userError) throw userError;
+        
+        setUserData(
+          userData.warrior_name,
+          userData.character_type,
+          userData.points,
+          userData.streak,
+          userData.coins,
+          userData.country
+        );
+        
         toast({
-          title: "Error",
-          description: "Could not update character selection",
-          variant: "destructive",
+          title: "Welcome back!",
+          description: `Logged in as ${userData.warrior_name}`,
         });
-        return;
+        
+        onClose();
+        navigate('/profile-workout');
       }
+    } catch (error: any) {
+      console.error('Login error', error);
+      setLoginError(error.message || 'Invalid email or password');
       
-      setCharacterSelected(true);
-      onClose();
-    } catch (error) {
-      console.error("Error in handleCharacterSelect:", error);
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
-      setLoadingCharacter(false);
+      setLoading(false);
     }
   };
-
+  
+  const toggleView = () => {
+    setView(view === 'login' ? 'signup' : 'login');
+    setLoginError('');
+    setCountryError('');
+  };
+  
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isSignUp ? 'Create account' : 'Login'}</DialogTitle>
-          <DialogDescription>
-            {isSignUp ? 'Create a new account' : 'Login to your account'}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          {isSignUp && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">User name</Label>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md p-6 bg-black border border-white/10 text-white rounded-lg">
+        <h2 className="text-xl font-bold mb-4">
+          {view === 'login' ? 'Login to Solo Rising' : 'Create your Account'}
+        </h2>
+        
+        {loginError && (
+          <div className="bg-red-900/30 border border-red-500/50 text-red-200 p-3 rounded-md mb-4 text-sm">
+            {loginError}
+          </div>
+        )}
+        
+        <form onSubmit={view === 'login' ? handleLogin : handleSignUp} className="space-y-4">
+          {view === 'signup' && (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="warriorName" className="block text-sm font-medium text-white/90">
+                  Warrior Name
+                </label>
                 <Input
-                  type="text"
-                  id="name"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
+                  id="warriorName"
+                  placeholder="Enter your warrior name"
+                  value={warriorName}
+                  onChange={(e) => setWarriorName(e.target.value)}
+                  required
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
                 />
               </div>
-            </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="country" className="block text-sm font-medium text-white/90">
+                  Country
+                </label>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    setCountryError('');
+                  }}
+                  required
+                  className={`w-full p-2 rounded-md bg-white/5 border ${
+                    countryError ? 'border-red-500' : 'border-white/10'
+                  } text-white`}
+                >
+                  <option value="">Select your country</option>
+                  {countries.map((country) => (
+                    <option key={country.name} value={country.name}>
+                      {country.flag} {country.name}
+                    </option>
+                  ))}
+                </select>
+                {countryError && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <Info size={12} />
+                    {countryError}
+                  </p>
+                )}
+              </div>
+            </>
           )}
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+          
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-white/90">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-white/90">
+              Password
+            </label>
+            <div className="relative">
               <Input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                type="password"
                 id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
               />
+              <button
+                type="button"
+                onClick={toggleShowPassword}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/80 focus:outline-none"
+              >
+                {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+              </button>
             </div>
           </div>
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Loading...' : (isSignUp ? 'Create account' : 'Login')}
-          </Button>
+          
+          <div className="pt-2">
+            <Button
+              type="submit"
+              disabled={loading}
+              className={`w-full ${
+                character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80' :
+                character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
+                character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80' :
+                'bg-white/10 hover:bg-white/20'
+              }`}
+            >
+              {loading ? 'Processing...' : view === 'login' ? 'Login' : 'Sign Up'}
+            </Button>
+          </div>
         </form>
-        <div className="mt-4 text-sm text-center">
-          {isSignUp ? (
-            <>
-              Already have an account?{' '}
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => setIsSignUp(false)}
-              >
-                Login
-              </button>
-            </>
-          ) : (
-            <>
-              Don't have an account?{' '}
-              <button
-                type="button"
-                className="text-primary hover:underline"
-                onClick={() => setIsSignUp(true)}
-              >
-                Create one
-              </button>
-            </>
-          )}
+        
+        <div className="mt-4 text-center text-sm text-white/60">
+          {view === 'login' ? "Don't have an account? " : "Already have an account? "}
+          <button
+            onClick={toggleView}
+            className="text-white hover:underline focus:outline-none"
+          >
+            {view === 'login' ? 'Sign Up' : 'Login'}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
