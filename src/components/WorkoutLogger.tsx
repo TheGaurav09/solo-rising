@@ -4,6 +4,7 @@ import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
 import { Dumbbell, Timer, Repeat, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 interface WorkoutLoggerProps {
   refreshWorkouts?: () => Promise<void>;
@@ -43,13 +44,10 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     const exercise = getSelectedExercise();
     if (!exercise) return 0;
     
-    // Base points from exercise
     let totalPoints = exercise.points;
     
-    // Add points based on duration (1 point per 5 minutes)
     totalPoints += Math.floor(duration / 5);
     
-    // Add points based on reps (1 point per 5 reps)
     totalPoints += Math.floor(reps / 5);
     
     return totalPoints;
@@ -72,7 +70,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
       const pointsEarned = calculatePoints();
       const exercise = getSelectedExercise();
       
-      // Save to Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -97,24 +94,20 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         }
       }
       
-      // Update last workout time
       await setLastWorkoutTime(new Date().toISOString());
       
-      // Add points
       addPoints(pointsEarned);
       
       if (onWorkoutLogged) {
         onWorkoutLogged(pointsEarned);
       }
       
-      // Refresh workouts list if function provided
       if (refreshWorkouts) {
         await refreshWorkouts();
       }
       
       setSuccess(true);
       
-      // Reset after a moment
       setTimeout(() => {
         setSuccess(false);
         setSelectedExercise(null);
