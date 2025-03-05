@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -18,16 +19,17 @@ import CharacterSelection from './CharacterSelection';
 interface AuthModalProps {
   open: boolean;
   onClose: () => void;
+  initialView?: 'login' | 'signup';
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
+const AuthModal: React.FC<AuthModalProps> = ({ open, onClose, initialView = 'login' }) => {
+  const [isSignUp, setIsSignUp] = useState(initialView === 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingCharacter, setLoadingCharacter] = useState(false);
-  const { setUserData, session } = useUser();
+  const { setUserData } = useUser();
   const [characterSelected, setCharacterSelected] = useState(false);
   const navigate = useNavigate();
 
@@ -35,10 +37,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
     e.preventDefault();
     setLoading(true);
 
-    if (!email || !password || !userName) {
+    if (isSignUp && !userName) {
       toast({
         title: "Error",
-        description: "Please fill in all fields.",
+        description: "Please provide a username.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
       setLoading(false);
@@ -54,8 +66,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
           options: {
             data: {
               user_name: userName,
-              points: 0,
-              coins: 0,
             }
           }
         });
@@ -71,11 +81,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
         }
 
         if (data?.user) {
-          setUserData({
-            userName: data.user.user_metadata.user_name,
-            points: data.user.user_metadata.points,
-            coins: data.user.user_metadata.coins,
-          });
           toast({
             title: "Success",
             description: "Account created successfully! Please check your email to verify your account.",
@@ -118,12 +123,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
             return;
           }
 
-          setUserData({
-            userName: userDetails?.warrior_name || data.user.email,
-            points: userDetails?.points || 0,
-            character: userDetails?.character_type || null,
-            coins: userDetails?.coins || 0,
-          });
+          if (userDetails) {
+            setUserData(
+              userDetails.warrior_name, 
+              userDetails.character_type as CharacterType,
+              userDetails.points || 0,
+              userDetails.streak || 0, 
+              userDetails.coins || 0,
+              userDetails.country || 'Global'
+            );
+          }
           
           if (!userDetails?.character_type) {
             navigate('/character-selection');
@@ -147,25 +156,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
     }
   };
 
-  // Ensure CharacterType is properly used for character selection
+  // Handle character selection
   const handleCharacterSelect = async (character: string) => {
     try {
       setLoadingCharacter(true);
       
-      // Update character count in the database
-      const { error: countError } = await supabase
-        .from('character_counts')
-        .insert({ character_type: character });
-        
-      if (countError) {
-        console.error("Error updating character count:", countError);
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData?.user) {
+        toast({
+          title: "Error",
+          description: "User not authenticated",
+          variant: "destructive",
+        });
+        return;
       }
       
       // Update user data with the selected character
       const { error: updateError } = await supabase
         .from('users')
         .update({ character_type: character })
-        .eq('id', session?.user.id);
+        .eq('id', authData.user.id);
         
       if (updateError) {
         console.error("Error updating user character:", updateError);
@@ -176,14 +186,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, onClose }) => {
         });
         return;
       }
-      
-      // Update user context with the new character
-      setUserData({ 
-        character: character as CharacterType, 
-        points: userData.points,
-        userName: userData.userName,
-        coins: userData.coins
-      });
       
       setCharacterSelected(true);
       onClose();

@@ -17,6 +17,16 @@ const CharacterSelectionPage = () => {
     }
   }, [character, navigate]);
 
+  const handleLoginClick = () => {
+    // This would be handled by the CharacterSelection component
+    console.log("Login clicked");
+  };
+
+  const handleSignupClick = () => {
+    // This would be handled by the CharacterSelection component
+    console.log("Signup clicked");
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
       <AnimatedCard className="max-w-2xl mx-auto p-6">
@@ -25,7 +35,10 @@ const CharacterSelectionPage = () => {
           Select a character that will guide you through your fitness journey
         </p>
         
-        <CharacterSelection onSelect={() => {}} />
+        <CharacterSelection 
+          onLoginClick={handleLoginClick} 
+          onSignupClick={handleSignupClick}
+        />
         
         <div className="mt-8 text-center">
           <Button 

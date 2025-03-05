@@ -113,7 +113,7 @@ const Index = () => {
       
       {showAuthModal && (
         <AuthModal 
-          isOpen={showAuthModal}
+          open={showAuthModal}
           onClose={() => setShowAuthModal(false)} 
           initialView={authView}
         />

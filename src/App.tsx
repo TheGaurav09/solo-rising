@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import {
   createBrowserRouter,
@@ -6,8 +7,6 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 
 import Index from "@/pages/Index";
@@ -41,7 +40,7 @@ const Layout = () => {
 
   return (
     <>
-      <AuthModal />
+      <AuthModal open={false} onClose={() => {}} />
       <Navbar />
       <Outlet />
       <Footer />

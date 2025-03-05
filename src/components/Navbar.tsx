@@ -25,13 +25,13 @@ import AnimatedButton from './ui/AnimatedButton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMobile();
-  const { isAuthenticated, character, userName, logout } = useUser();
+  const isMobile = useIsMobile();
+  const { character, userName } = useUser();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
   const handleLogout = async () => {
@@ -46,7 +46,6 @@ const Navbar = () => {
       return;
     }
     
-    logout();
     navigate('/');
     setIsLogoutModalOpen(false);
     
@@ -65,6 +64,9 @@ const Navbar = () => {
     { path: '/ai-chat', label: 'AI Chat', icon: <MessageCircle size={20} /> },
     { path: '/profile', label: 'Profile', icon: <User size={20} /> },
   ];
+
+  // Check if user is authenticated
+  const isAuthenticated = character !== null;
 
   if (!isAuthenticated) {
     return null;
@@ -115,7 +117,7 @@ const Navbar = () => {
             {navItems.map((item) => (
               <AnimatedButton
                 key={item.path}
-                variant={location.pathname === item.path ? "default" : "ghost"}
+                variant={location.pathname === item.path ? "primary" : "ghost"}
                 character={character}
                 size="sm"
                 onClick={() => navigate(item.path)}

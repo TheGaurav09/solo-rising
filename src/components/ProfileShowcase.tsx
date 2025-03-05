@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
+// Make ShowcaseItem compatible with JSON serialization
 interface ShowcaseItem {
   id: string;
   type: 'achievement' | 'badge' | 'store_item';
@@ -62,10 +64,10 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
         const showcaseData: Showcase = {
           id: data.id,
           user_id: data.user_id,
-          items: data.items || []
+          items: Array.isArray(data.items) ? data.items as ShowcaseItem[] : []
         };
         setShowcase(showcaseData);
-        setSelectedItems(data.items || []);
+        setSelectedItems(Array.isArray(data.items) ? data.items as ShowcaseItem[] : []);
       } else {
         setShowcase(null);
         setSelectedItems([]);
@@ -182,11 +184,23 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
       
+      // Convert selectedItems to a plain object that can be stored as JSON
+      const itemsToSave = selectedItems.map(item => ({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        icon: item.icon,
+        description: item.description
+      }));
+      
       if (showcase) {
         // Update existing showcase
         const { error } = await supabase
           .from('user_showcase')
-          .update({ items: selectedItems })
+          .update({ 
+            items: itemsToSave,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', showcase.id)
           .eq('user_id', userData.user.id);
         
@@ -205,7 +219,7 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
           .from('user_showcase')
           .insert({
             user_id: userData.user.id,
-            items: selectedItems
+            items: itemsToSave
           });
         
         if (error) {
