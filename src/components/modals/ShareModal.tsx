@@ -8,20 +8,9 @@ import { FaWhatsapp, FaTelegram } from 'react-icons/fa';
 interface ShareModalProps {
   onClose: () => void;
   character?: 'goku' | 'saitama' | 'jin-woo';
-  title?: string;
-  shareUrl?: string;
-  shareTitle?: string;
-  shareDescription?: string;
 }
 
-const ShareModal: React.FC<ShareModalProps> = ({ 
-  onClose, 
-  character = 'goku', 
-  title = 'Share SoloProve',
-  shareUrl,
-  shareTitle,
-  shareDescription
-}) => {
+const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) => {
   const [copied, setCopied] = useState(false);
   
   const getAccentClass = () => {
@@ -34,15 +23,15 @@ const ShareModal: React.FC<ShareModalProps> = ({
   };
   
   const getShareText = () => {
-    return encodeURIComponent(shareDescription || "Check out SoloProve! I'm training like an anime character and tracking my progress. Join me!");
+    return encodeURIComponent("Check out SoloProve! I'm training like an anime character and tracking my progress. Join me!");
   };
   
-  const url = encodeURIComponent(shareUrl || window.location.origin);
+  const url = encodeURIComponent(window.location.origin);
   const shareText = getShareText();
   
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl || window.location.origin);
+      await navigator.clipboard.writeText(window.location.origin);
       setCopied(true);
       toast({
         title: "Link Copied",
@@ -63,9 +52,9 @@ const ShareModal: React.FC<ShareModalProps> = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: shareTitle || 'SoloProve Workout App',
+          title: 'SoloProve Workout App',
           text: decodeURIComponent(shareText),
-          url: shareUrl || window.location.origin,
+          url: window.location.origin,
         });
         toast({
           title: "Shared Successfully",
@@ -100,7 +89,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-xl font-bold">{title}</h2>
+          <h2 className="text-xl font-bold">Share SoloProve</h2>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-white/10"
@@ -113,7 +102,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
           <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
             <div className="flex items-center gap-2 truncate">
               <LinkIcon size={18} className="text-white/60" />
-              <span className="truncate text-white/80">{shareUrl || window.location.origin}</span>
+              <span className="truncate text-white/80">{window.location.origin}</span>
             </div>
             <button 
               onClick={handleCopyLink}
