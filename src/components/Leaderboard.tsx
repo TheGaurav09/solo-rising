@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -24,6 +25,7 @@ const Leaderboard = () => {
   const [regionFilter, setRegionFilter] = useState(country || 'Global');
   const [timeFilter, setTimeFilter] = useState('all-time');
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaderboardData();
@@ -31,7 +33,13 @@ const Leaderboard = () => {
 
   const fetchLeaderboardData = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // Check if supabase is available
+      if (!supabase) {
+        throw new Error('Database connection not available');
+      }
+
       let query = supabase
         .from('users')
         .select('id, warrior_name, character_type, points, country')
@@ -41,9 +49,9 @@ const Leaderboard = () => {
         query = query.eq('country', regionFilter);
       }
       
-      const { data, error } = await query;
+      const { data, error: fetchError } = await query;
       
-      if (error) throw error;
+      if (fetchError) throw fetchError;
       
       // Add rank to each user
       const rankedUsers = data.map((user, index) => ({
@@ -60,6 +68,7 @@ const Leaderboard = () => {
       setUserRank(currentUserRank > 0 ? currentUserRank : null);
     } catch (error) {
       console.error('Error fetching leaderboard data:', error);
+      setError('Failed to load leaderboard data');
       toast({
         title: 'Error',
         description: 'Failed to load leaderboard data',
@@ -102,6 +111,23 @@ const Leaderboard = () => {
     }
   };
 
+  // If there's an error, show error state
+  if (error) {
+    return (
+      <AnimatedCard className="p-6">
+        <div className="text-center py-6">
+          <p className="text-red-400 mb-3">{error}</p>
+          <button 
+            onClick={fetchLeaderboardData}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md"
+          >
+            Try Again
+          </button>
+        </div>
+      </AnimatedCard>
+    );
+  }
+
   return (
     <AnimatedCard className="p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -113,6 +139,7 @@ const Leaderboard = () => {
             onChange={(e) => handleRegionChange(e.target.value)}
             className="bg-white/5 border border-white/10 rounded px-3 py-2 text-sm"
           >
+            <option value="Global">🌎 Global</option>
             {countries.map((country) => (
               <option key={country.name} value={country.name}>
                 {country.flag} {country.name}

@@ -1,95 +1,72 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    // Get the API key from environment variables
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
     
-    if (!GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'API key not configured' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY not found in environment variables');
     }
 
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    // Parse request body
+    const { message, character, previousMessages } = await req.json();
 
-    const { message } = await req.json();
-
-    if (!message) {
-      return new Response(
-        JSON.stringify({ error: 'Message is required' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    console.log("Received message:", message);
-
-    // Prepare system instructions for fitness and anime themes
-    const systemPrompt = `
-      You are a fitness advisor who is also knowledgeable about anime characters, especially Goku, Saitama, and Sung Jin-Woo.
-      Provide motivational advice about workouts, fitness, and nutrition in the style of these characters.
-      If asked about anime, provide information related to fitness themes in those shows.
-      Keep responses concise and encouraging. Add relevant anime references when appropriate.
-      If asked something unrelated to fitness or anime, politely redirect the conversation back to fitness topics.
-    `;
-
-    // Updated URL and request to use the latest Gemini API
-    const geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    // Build conversation history
+    let messages = [];
     
-    const response = await fetch(`${geminiUrl}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
+    // Add system message based on character
+    const systemMessage = getSystemMessage(character);
+    messages.push({ role: "user", parts: [{ text: systemMessage }] });
+    messages.push({ role: "model", parts: [{ text: "I understand my role. I'll respond according to the character you've chosen." }] });
+    
+    // Add previous messages, if any
+    if (previousMessages && previousMessages.length > 0) {
+      for (const msg of previousMessages) {
+        // Skip system and welcome messages to avoid redundancy
+        if (msg.role === 'system' || (msg.role === 'assistant' && previousMessages.indexOf(msg) === 0)) {
+          continue;
+        }
+        
+        const role = msg.role === 'user' ? 'user' : 'model';
+        messages.push({ role, parts: [{ text: msg.content }] });
+      }
+    }
+    
+    // Add current message
+    messages.push({ role: 'user', parts: [{ text: message }] });
+
+    console.log('Sending request to Gemini API with message:', message);
+    console.log('Character:', character);
+    console.log('Message count:', messages.length);
+
+    // Updated URL for Gemini 1.5 Pro
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }]
-          },
-          {
-            role: "model",
-            parts: [{ text: "I understand. I'll be a fitness advisor with anime knowledge, focusing on Goku, Saitama, and Sung Jin-Woo. I'll keep my advice motivational, fitness-focused, and include anime references when relevant." }]
-          },
-          {
-            role: "user",
-            parts: [{ text: message }]
-          }
-        ],
+        contents: messages,
         generationConfig: {
           temperature: 0.7,
-          topK: 40,
           topP: 0.95,
-          maxOutputTokens: 800,
+          topK: 40,
+          maxOutputTokens: 1000,
         },
         safetySettings: [
           {
@@ -112,42 +89,66 @@ serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
-    console.log("API Response:", JSON.stringify(data));
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API returned an error:', response.status, errorText);
+      throw new Error(`Gemini API returned ${response.status}: ${errorText}`);
+    }
 
-    // Extract the response text from Gemini API's new structure
-    let responseText = "";
-    if (data.candidates && 
-        data.candidates[0] && 
+    const data = await response.json();
+    console.log('Gemini API response:', JSON.stringify(data));
+    
+    let aiResponse = "";
+    
+    if (data.candidates && data.candidates.length > 0 && 
         data.candidates[0].content && 
         data.candidates[0].content.parts && 
-        data.candidates[0].content.parts[0] && 
-        data.candidates[0].content.parts[0].text) {
-      responseText = data.candidates[0].content.parts[0].text;
-    } else if (data.error) {
-      console.error("Gemini API error:", data.error);
-      responseText = "Sorry, there was an error processing your request. Please try again later.";
+        data.candidates[0].content.parts.length > 0) {
+      aiResponse = data.candidates[0].content.parts[0].text;
     } else {
-      console.error("Unexpected API response structure:", data);
-      responseText = "Sorry, I didn't understand how to respond to that. Can you try again with a question about fitness or anime?";
+      throw new Error('Invalid response format from Gemini API');
     }
 
     return new Response(
-      JSON.stringify({ response: responseText }),
+      JSON.stringify({ message: aiResponse }),
       {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
     );
   } catch (error) {
-    console.error("Error in edge function:", error.message);
+    console.error('Error in AI-chat function:', error);
     
     return new Response(
-      JSON.stringify({ error: `Internal Server Error: ${error.message}` }),
+      JSON.stringify({ 
+        error: error.message,
+        message: "I'm having trouble connecting right now. Please try again later." 
+      }),
       {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }
 });
+
+function getSystemMessage(character: string) {
+  switch (character) {
+    case 'goku':
+      return "You are a Saiyan warrior like Goku from Dragon Ball Z. You're energetic, positive, and always looking for ways to become stronger. Respond to fitness and training questions with enthusiasm, encourage the user to push their limits, and occasionally mention concepts like training at higher gravity, becoming Super Saiyan, or charging up power. Keep answers helpful but stay in character. End messages with encouraging phrases like 'Let's power up!' or 'To go even further beyond!' Use simple, direct language with occasional exclamations.";
+    
+    case 'saitama':
+      return "You are Saitama from One Punch Man. You're deadpan, understated, and somewhat bored because you've achieved incredible strength. When responding to fitness questions, give solid advice but in a matter-of-fact, underwhelmed tone. Occasionally mention your training routine (100 push-ups, 100 sit-ups, 100 squats, and a 10km run EVERY SINGLE DAY). You find most things unexciting but still give good fitness guidance. You occasionally express a desire for a worthy challenge. Keep responses straightforward and use dry humor.";
+    
+    case 'jin-woo':
+      return "You are Sung Jin-Woo from Solo Leveling. You're calm, strategic, and focused on becoming stronger methodically. Respond to fitness questions with precise, calculated advice emphasizing consistency and gradual improvement. Occasionally reference your 'daily quest' or suggest users 'level up' their routines. Use terminology from RPGs like stats, skills, and leveling. Your tone is composed but determined. You value discipline and strategy in training approaches. End with subtle encouragement suggesting the user is on the path to becoming stronger.";
+    
+    default:
+      return "You are a supportive fitness assistant helping users achieve their fitness goals. Provide helpful, accurate, and motivating advice about exercise, nutrition, and wellness. Be friendly and encouraging while keeping information evidence-based.";
+  }
+}
