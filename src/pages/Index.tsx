@@ -5,6 +5,7 @@ import CharacterSelection from '@/components/CharacterSelection';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/AuthModal';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const { hasSelectedCharacter } = useUser();
@@ -78,6 +79,12 @@ const Index = () => {
         checkUserCharacter();
       } else if (event === 'SIGNED_OUT') {
         setCurrentUserId(null);
+      } else if (event === 'SIGNED_UP') {
+        toast({
+          title: "Account created successfully!",
+          description: "Please select a character to continue your journey.",
+          duration: 5000,
+        });
       }
     });
     

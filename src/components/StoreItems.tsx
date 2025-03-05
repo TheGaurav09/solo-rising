@@ -1,214 +1,257 @@
 
-import React from 'react';
-import { ShoppingBag, Award, Zap, Heart, Shield, Flame, Gift, Eye, BarChart2, Clock, Dumbbell, Star } from 'lucide-react';
-import AnimatedButton from './ui/AnimatedButton';
+import React, { useState, useEffect } from 'react';
+import { Award, Dumbbell, Zap, Gift, ShoppingBag, Shield, Flame, Clock, Target, Sparkles, BookOpen, Sword, Crown, Repeat, User } from 'lucide-react';
+import { Button } from './ui/button';
+import ItemDetailModal from './modals/ItemDetailModal';
 import { useUser } from '@/context/UserContext';
-import { toast } from './ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from './ui/use-toast';
 
-// Extended store item data with icons and categories
-const STORE_ITEMS = [
-  {
-    id: 1,
-    name: "Energy Booster",
-    description: "Gain 50% more points for your next workout",
-    price: 10,
-    icon: <Zap className="text-yellow-500" />,
-    category: "boosts"
-  },
-  {
-    id: 2,
-    name: "Power Charm",
-    description: "Increases your character's power for 24 hours",
-    price: 15,
-    icon: <Flame className="text-red-500" />,
-    category: "boosts"
-  },
-  {
-    id: 3,
-    name: "Health Potion",
-    description: "Recover faster after intense workouts",
-    price: 8,
-    icon: <Heart className="text-pink-500" />,
-    category: "recovery"
-  },
-  {
-    id: 4,
-    name: "Warrior Shield",
-    description: "Protect your streak if you miss a day",
-    price: 20,
-    icon: <Shield className="text-blue-500" />,
-    category: "protection"
-  },
-  {
-    id: 5,
-    name: "Mystery Box",
-    description: "Contains a random reward or special item",
-    price: 25,
-    icon: <Gift className="text-purple-500" />,
-    category: "special"
-  },
-  {
-    id: 6,
-    name: "Workout Vision",
-    description: "See optimal workout plans for your character",
-    price: 12,
-    icon: <Eye className="text-cyan-500" />,
-    category: "insights"
-  },
-  {
-    id: 7,
-    name: "Progress Tracker",
-    description: "Enhanced stats and progress visualization",
-    price: 18,
-    icon: <BarChart2 className="text-green-500" />,
-    category: "insights"
-  },
-  {
-    id: 8,
-    name: "Time Extender",
-    description: "Add extra time to limited-time challenges",
-    price: 15,
-    icon: <Clock className="text-orange-500" />,
-    category: "protection"
-  },
-  {
-    id: 9,
-    name: "Super Training Kit",
-    description: "Unlock advanced training routines for your character",
-    price: 30,
-    icon: <Dumbbell className="text-indigo-500" />,
-    category: "training"
-  },
-  {
-    id: 10,
-    name: "Champion's Badge",
-    description: "Show off your dedication with this exclusive badge",
-    price: 50,
-    icon: <Award className="text-amber-500" />,
-    category: "cosmetic"
-  },
-  {
-    id: 11,
-    name: "Legendary Status",
-    description: "Add a special aura to your profile for one week",
-    price: 75,
-    icon: <Star className="text-yellow-400" />,
-    category: "cosmetic"
-  },
-  {
-    id: 12,
-    name: "Merchant's Bag",
-    description: "Store more items in your inventory",
-    price: 40,
-    icon: <ShoppingBag className="text-emerald-500" />,
-    category: "utility"
-  }
-];
-
-interface StoreItemsProps {
-  filter: string;
-  searchTerm: string;
-  character?: 'goku' | 'saitama' | 'jin-woo' | null;
+export interface StoreItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  icon: string;
+  type: string;
+  effect_value: number;
+  image_path?: string;
 }
 
-const StoreItems = ({ filter, searchTerm, character }: StoreItemsProps) => {
+const StoreItems = () => {
+  const [items, setItems] = useState<StoreItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
+  const [userItems, setUserItems] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { coins, useCoins } = useUser();
 
-  // Filter items based on category and search term
-  const filteredItems = STORE_ITEMS.filter(item => {
-    const matchesFilter = filter === 'all' || item.category === filter;
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
-
-  const handlePurchase = async (item: typeof STORE_ITEMS[0]) => {
-    if (coins < item.price) {
-      toast({
-        title: "Not enough coins",
-        description: `You need ${item.price - coins} more coins to purchase this item`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Use the coins
-    const success = await useCoins(item.price);
-    
-    if (success) {
-      // Record the purchase in the database
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        try {
-          const { error } = await supabase
-            .from('user_items')
-            .insert({
-              user_id: authData.user.id,
-              item_id: item.id.toString()
-            });
-            
-          if (error) {
-            console.error("Error recording purchase:", error);
-            toast({
-              title: "Purchase Error",
-              description: "There was an error recording your purchase",
-              variant: "destructive",
-            });
-            return;
-          }
-        } catch (error) {
-          console.error("Error in handlePurchase:", error);
+  useEffect(() => {
+    const fetchStoreItems = async () => {
+      try {
+        const { data: storeData, error: storeError } = await supabase
+          .from('store_items')
+          .select('*')
+          .order('price', { ascending: true });
+        
+        if (storeError) {
+          console.error('Error fetching store items:', storeError);
+          toast({
+            title: 'Error',
+            description: 'Failed to load store items',
+            variant: 'destructive',
+          });
+          return;
         }
+        
+        // Get user's purchased items
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('Error getting user data:', userError);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (userData.user) {
+          const { data: userItemsData, error: userItemsError } = await supabase
+            .from('user_items')
+            .select('item_id')
+            .eq('user_id', userData.user.id);
+          
+          if (userItemsError) {
+            console.error('Error fetching user items:', userItemsError);
+          } else if (userItemsData) {
+            setUserItems(userItemsData.map((item) => item.item_id));
+          }
+        }
+        
+        if (storeData) {
+          setItems(storeData);
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error in fetchStoreItems:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    fetchStoreItems();
+  }, []);
+
+  const handlePurchase = async (item: StoreItem) => {
+    try {
+      // Check if user already has this item
+      if (userItems.includes(item.id)) {
+        toast({
+          title: 'Already Owned',
+          description: 'You already own this item',
+        });
+        return;
       }
       
+      // Check if user has enough coins
+      if (coins < item.price) {
+        toast({
+          title: 'Not Enough Coins',
+          description: 'You do not have enough coins to purchase this item',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Use coins (this updates the user's coin balance)
+      const success = await useCoins(item.price);
+      
+      if (!success) {
+        toast({
+          title: 'Purchase Failed',
+          description: 'Failed to complete purchase. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Add item to user's inventory
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user) {
+        toast({
+          title: 'Purchase Failed',
+          description: 'Failed to complete purchase. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const { error: purchaseError } = await supabase
+        .from('user_items')
+        .insert({
+          user_id: userData.user.id,
+          item_id: item.id
+        });
+      
+      if (purchaseError) {
+        console.error('Error recording purchase:', purchaseError);
+        toast({
+          title: 'Purchase Error',
+          description: 'Your account was charged but there was an error recording your purchase.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Update local state
+      setUserItems([...userItems, item.id]);
+      
       toast({
-        title: "Item Purchased!",
-        description: `You've successfully purchased ${item.name}`,
+        title: 'Purchase Successful',
+        description: `You have purchased ${item.name}!`,
+      });
+      
+      // Close modal if open
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Error in handlePurchase:', error);
+      toast({
+        title: 'Purchase Failed',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
+  const renderIcon = (iconName: string, size = 24) => {
+    const icons: Record<string, React.ReactNode> = {
+      dumbbell: <Dumbbell size={size} />,
+      award: <Award size={size} />,
+      zap: <Zap size={size} />,
+      gift: <Gift size={size} />,
+      bag: <ShoppingBag size={size} />,
+      shield: <Shield size={size} />,
+      flame: <Flame size={size} />,
+      clock: <Clock size={size} />,
+      target: <Target size={size} />,
+      sparkles: <Sparkles size={size} />,
+      book: <BookOpen size={size} />,
+      sword: <Sword size={size} />,
+      crown: <Crown size={size} />,
+      repeat: <Repeat size={size} />,
+      user: <User size={size} />,
+    };
+    
+    return icons[iconName] || <Gift size={size} />;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  const itemsByCategory: Record<string, StoreItem[]> = items.reduce((acc, item) => {
+    acc[item.type] = acc[item.type] || [];
+    acc[item.type].push(item);
+    return acc;
+  }, {} as Record<string, StoreItem[]>);
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-      {filteredItems.length > 0 ? (
-        filteredItems.map((item) => (
-          <div 
-            key={item.id} 
-            className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all duration-300 flex flex-col h-full"
-          >
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                {item.icon}
-              </div>
-              <h3 className="font-bold">{item.name}</h3>
-            </div>
-            
-            <p className="text-sm text-white/70 mb-4 flex-grow">{item.description}</p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center mr-1">
-                  <span className="text-yellow-400 text-xs">₵</span>
+    <div className="w-full">
+      <div className="grid grid-cols-1 gap-6">
+        {Object.entries(itemsByCategory).map(([category, items]) => (
+          <div key={category} className="w-full">
+            <h2 className="text-lg font-bold mb-4 capitalize">{category} Items</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all cursor-pointer animated-border"
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0 rounded-full p-2 bg-white/10">
+                      {renderIcon(item.icon)}
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-medium">{item.name}</h3>
+                      <p className="text-sm text-white/60 line-clamp-1">{item.description}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-between items-center">
+                    <div className="text-sm font-semibold flex items-center space-x-1">
+                      <Sparkles size={16} className="text-yellow-400" />
+                      <span>{item.price} coins</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={userItems.includes(item.id) ? "outline" : "secondary"}
+                      disabled={userItems.includes(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePurchase(item);
+                      }}
+                    >
+                      {userItems.includes(item.id) ? 'Owned' : 'Buy'}
+                    </Button>
+                  </div>
                 </div>
-                <span className="font-semibold">{item.price}</span>
-              </div>
-              
-              <AnimatedButton
-                onClick={() => handlePurchase(item)}
-                character={character}
-                disabled={coins < item.price}
-                size="sm"
-              >
-                {coins < item.price ? 'Not Enough Coins' : 'Purchase'}
-              </AnimatedButton>
+              ))}
             </div>
           </div>
-        ))
-      ) : (
-        <div className="col-span-full text-center py-8">
-          <p className="text-white/60">No items match your search criteria</p>
-        </div>
+        ))}
+      </div>
+
+      {selectedItem && (
+        <ItemDetailModal
+          item={selectedItem}
+          isOpen={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onPurchase={() => handlePurchase(selectedItem)}
+          isOwned={userItems.includes(selectedItem.id)}
+          renderIcon={renderIcon}
+        />
       )}
     </div>
   );

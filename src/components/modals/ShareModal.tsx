@@ -1,143 +1,151 @@
 
-import React from 'react';
-import { X, Share2, MessageCircle, Twitter, Facebook, Linkedin, Link as LinkIcon, Copy } from 'lucide-react';
-import AnimatedCard from '../ui/AnimatedCard';
-import AnimatedButton from '../ui/AnimatedButton';
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { XIcon, Copy, Share2, Download, Smartphone, LinkIcon, CheckIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface ShareModalProps {
+  isOpen: boolean;
   onClose: () => void;
-  character?: 'goku' | 'saitama' | 'jin-woo';
+  userId?: string;
 }
 
-const ShareModal = ({ onClose, character }: ShareModalProps) => {
+const ShareModal = ({ isOpen, onClose, userId }: ShareModalProps) => {
+  const [copied, setCopied] = useState(false);
   const appUrl = window.location.origin;
-  const shareText = "Join me on Solo Prove and transform your fitness journey with anime-inspired workouts! 💪";
+  const shareUrl = userId ? `${appUrl}/profile/${userId}` : appUrl;
   
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${appUrl}\n\n${shareText}`);
-    toast({
-      title: "Link Copied!",
-      description: "Share link has been copied to clipboard",
-      duration: 3000,
-    });
-  };
-
-  const handleShareTwitter = () => {
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(appUrl)}`;
-    window.open(twitterUrl, '_blank');
-  };
-
-  const handleShareFacebook = () => {
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}&quote=${encodeURIComponent(shareText)}`;
-    window.open(facebookUrl, '_blank');
-  };
-
-  const handleShareLinkedin = () => {
-    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(appUrl)}`;
-    window.open(linkedinUrl, '_blank');
-  };
-
-  const handleNativeShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Solo Prove',
-        text: shareText,
-        url: appUrl,
-      })
-      .catch((error) => console.log('Error sharing', error));
-    } else {
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
       toast({
-        title: "Sharing not supported",
-        description: "Your browser doesn't support native sharing",
+        title: "Link copied",
+        description: "The link has been copied to your clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast({
+        title: "Failed to copy",
+        description: "Please try again or copy the link manually",
         variant: "destructive",
       });
     }
   };
+  
+  const handleShareNative = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Solo Prove - Anime-inspired fitness app',
+          text: 'Check out my profile on Solo Prove, the anime-inspired fitness app!',
+          url: shareUrl,
+        });
+        toast({
+          title: "Shared successfully",
+          description: "Thanks for sharing Solo Prove!",
+        });
+      } else {
+        toast({
+          title: "Sharing not supported",
+          description: "Your browser doesn't support direct sharing. Please use the copy link option instead.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+  
+  const handleAddToHomeScreen = () => {
+    toast({
+      title: "Add to Home Screen",
+      description: "Open your browser menu and select 'Add to Home Screen' or 'Install App' to add Solo Prove to your device.",
+      duration: 5000,
+    });
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <AnimatedCard className="w-full max-w-md">
-        <div className="p-6">
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors duration-300"
-          >
-            <X size={20} />
-          </button>
-          
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
-              <Share2 size={32} />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Share2 className="h-5 w-5" />
+            Share Solo Prove
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 rounded-md overflow-hidden">
+              <div className="flex items-center border border-white/10 bg-white/5 rounded-md p-2">
+                <LinkIcon className="h-4 w-4 text-white/60 mr-2 flex-shrink-0" />
+                <span className="text-sm text-white/70 truncate flex-1">{shareUrl}</span>
+              </div>
             </div>
-          </div>
-          
-          <h2 className="text-xl font-bold text-center mb-4">Share Solo Prove</h2>
-          
-          <p className="text-center text-white/70 mb-6">
-            Share this app with your friends and build a community of anime-inspired fitness warriors!
-          </p>
-
-          <div className="bg-white/5 p-4 rounded-md mb-6">
-            <p className="text-sm text-white/90">{shareText}</p>
-          </div>
-          
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <button
-              onClick={handleShareTwitter}
-              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <Twitter size={24} className="text-[#1DA1F2]" />
-              <span className="text-xs">Twitter</span>
-            </button>
-            
-            <button
-              onClick={handleShareFacebook}
-              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <Facebook size={24} className="text-[#4267B2]" />
-              <span className="text-xs">Facebook</span>
-            </button>
-            
-            <button
-              onClick={handleShareLinkedin}
-              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
-            >
-              <Linkedin size={24} className="text-[#0077B5]" />
-              <span className="text-xs">LinkedIn</span>
-            </button>
-            
-            <button
+            <Button 
+              type="button" 
+              size="sm" 
+              variant="outline" 
               onClick={handleCopyLink}
-              className="flex flex-col items-center justify-center gap-2 py-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+              className="gap-1.5"
             >
-              <Copy size={24} className="text-white/80" />
-              <span className="text-xs">Copy</span>
-            </button>
+              {copied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Copied" : "Copy"}
+            </Button>
           </div>
           
-          <div className="flex flex-col gap-3">
-            <AnimatedButton
-              onClick={handleNativeShare}
-              character={character}
-              className="w-full justify-center"
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <Button 
+              variant="outline" 
+              onClick={handleShareNative}
+              className="flex items-center gap-2 py-6"
             >
-              <Share2 size={16} className="mr-2" />
-              Share via Device
-            </AnimatedButton>
+              <Share2 className="h-5 w-5" />
+              <div className="flex flex-col items-start">
+                <span>Share</span>
+                <span className="text-xs text-white/60">With others</span>
+              </div>
+            </Button>
             
-            <AnimatedButton
-              onClick={handleCopyLink}
+            <Button 
               variant="outline"
-              className="w-full justify-center"
+              onClick={handleAddToHomeScreen}
+              className="flex items-center gap-2 py-6"
             >
-              <LinkIcon size={16} className="mr-2" />
-              Copy Link
-            </AnimatedButton>
+              <Smartphone className="h-5 w-5" />
+              <div className="flex flex-col items-start">
+                <span>Install</span>
+                <span className="text-xs text-white/60">On your device</span>
+              </div>
+            </Button>
           </div>
         </div>
-      </AnimatedCard>
-    </div>
+        
+        <DialogFooter className="flex items-center border-t border-white/10 pt-4">
+          <p className="text-xs text-white/60 flex-1">
+            Share Solo Prove with your friends and training partners!
+          </p>
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm"
+            onClick={onClose}
+          >
+            <XIcon className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

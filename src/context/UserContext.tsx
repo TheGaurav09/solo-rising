@@ -99,7 +99,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setLastWorkoutDate(userData.last_workout_date);
           
           // Update localStorage for faster loading next time
-          localStorage.setItem('character', userData.character_type);
+          if (userData.character_type) {
+            localStorage.setItem('character', userData.character_type);
+          }
           localStorage.setItem('userName', userData.warrior_name);
           localStorage.setItem('country', userData.country || 'Global');
           localStorage.setItem('points', String(userData.points || 0));
@@ -149,8 +151,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const handleCharacterUpdate = async (newCharacter: CharacterType) => {
+    if (!newCharacter) return;
+    
     setCharacter(newCharacter);
-    localStorage.setItem('character', newCharacter as string);
+    localStorage.setItem('character', newCharacter);
     
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -171,36 +175,34 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Update character count in database
-        if (newCharacter) {
-          const { data, error: countError } = await supabase
-            .from('character_counts')
-            .select('*')
-            .eq('character_type', newCharacter)
-            .single();
+        const { data, error: countError } = await supabase
+          .from('character_counts')
+          .select('*')
+          .eq('character_type', newCharacter)
+          .maybeSingle();
             
-          if (countError && countError.code !== 'PGRST116') {
-            console.error("Error checking character count:", countError);
+        if (countError && countError.code !== 'PGRST116') {
+          console.error("Error checking character count:", countError);
+        }
+        
+        if (data) {
+          // Update existing count
+          const { error: updateError } = await supabase
+            .from('character_counts')
+            .update({ count: data.count + 1 })
+            .eq('id', data.id);
+            
+          if (updateError) {
+            console.error("Error updating character count:", updateError);
           }
-          
-          if (data) {
-            // Update existing count
-            const { error: updateError } = await supabase
-              .from('character_counts')
-              .update({ count: data.count + 1 })
-              .eq('id', data.id);
-              
-            if (updateError) {
-              console.error("Error updating character count:", updateError);
-            }
-          } else {
-            // Insert new count
-            const { error: insertError } = await supabase
-              .from('character_counts')
-              .insert({ character_type: newCharacter, count: 1 });
-              
-            if (insertError) {
-              console.error("Error inserting character count:", insertError);
-            }
+        } else {
+          // Insert new count
+          const { error: insertError } = await supabase
+            .from('character_counts')
+            .insert({ character_type: newCharacter, count: 1 });
+            
+          if (insertError) {
+            console.error("Error inserting character count:", insertError);
           }
         }
       }
@@ -217,12 +219,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
-        // Use RPC function to atomically increment points
+        // Manually increment points
         const { error } = await supabase
-          .rpc('increment_points', { 
-            id_param: authData.user.id,
-            amount_param: amount 
-          });
+          .from('users')
+          .update({ points: newPoints })
+          .eq('id', authData.user.id);
           
         if (error) {
           console.error("Error updating points:", error);
@@ -236,6 +237,50 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
+        // Update streak
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Only update streak if lastWorkoutDate is from a different day
+        if (!lastWorkoutDate || lastWorkoutDate !== today) {
+          let newStreak = streak;
+          
+          if (lastWorkoutDate) {
+            const lastDate = new Date(lastWorkoutDate);
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            // Check if the last workout was yesterday
+            if (lastDate.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]) {
+              // Continue streak
+              newStreak = streak + 1;
+            } else if (lastDate.toISOString().split('T')[0] !== today) {
+              // Reset streak if last workout wasn't yesterday or today
+              newStreak = 1;
+            }
+          } else {
+            // First workout ever
+            newStreak = 1;
+          }
+          
+          setStreak(newStreak);
+          setLastWorkoutDate(today);
+          localStorage.setItem('streak', String(newStreak));
+          localStorage.setItem('lastWorkoutDate', today);
+          
+          // Update streak in database
+          const { error: streakError } = await supabase
+            .from('users')
+            .update({ 
+              streak: newStreak,
+              last_workout_date: today
+            })
+            .eq('id', authData.user.id);
+            
+          if (streakError) {
+            console.error("Error updating streak:", streakError);
+          }
+        }
+        
         // Add some coins for gaining points (1 coin per 10 points)
         if (amount > 0) {
           const coinsToAdd = Math.floor(amount / 10);
@@ -246,10 +291,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('coins', String(newCoins));
             
             const { error: coinsError } = await supabase
-              .rpc('increment_coins', {
-                id_param: authData.user.id,
-                amount_param: coinsToAdd
-              });
+              .from('users')
+              .update({ coins: newCoins })
+              .eq('id', authData.user.id);
               
             if (coinsError) {
               console.error("Error updating coins:", coinsError);
@@ -284,10 +328,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
-          .rpc('decrement_coins', {
-            id_param: authData.user.id,
-            amount_param: amount
-          });
+          .from('users')
+          .update({ coins: newCoins })
+          .eq('id', authData.user.id);
           
         if (error) {
           console.error("Error updating coins:", error);
@@ -384,15 +427,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       
       // Now check for badges
-      // This is a simplified version - more complex criteria would be checked in a real app
-      const { data: workoutsCount, error: workoutsError } = await supabase
+      const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
-        .select('id', { count: 'exact', head: true })
+        .select('id')
         .eq('user_id', authData.user.id);
       
       if (workoutsError) {
         console.error("Error fetching workouts count:", workoutsError);
+        return;
       }
+      
+      const workoutsCount = workoutsData ? workoutsData.length : 0;
       
       // Get existing badges
       const { data: existingBadges, error: badgesError } = await supabase
@@ -402,6 +447,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       if (badgesError) {
         console.error("Error fetching existing badges:", badgesError);
+        return;
       }
       
       const unlockedBadgeIds = new Set(
@@ -426,7 +472,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         
         switch (badge.requirement_type) {
           case 'workouts':
-            shouldUnlock = (workoutsCount?.count || 0) >= badge.requirement_value;
+            shouldUnlock = workoutsCount >= badge.requirement_value;
             break;
           case 'streak':
             shouldUnlock = streak >= badge.requirement_value;

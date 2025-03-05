@@ -4,16 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
-import { Award, User, Users, ChevronDown, ChevronUp, Dumbbell, Trophy, ShieldCheck, BarChart2, HelpCircle, Heart, ArrowDown, Info, Check, MessageCircle } from 'lucide-react';
+import { Award, User, Users, ChevronDown, ChevronUp, Dumbbell, Trophy, ShieldCheck, BarChart2, Heart, ArrowRight, ArrowLeft, Circle, CircleDot } from 'lucide-react';
 import UsersList from './UsersList';
 import { useNavigate } from 'react-router-dom';
 import Footer from './ui/Footer';
+import { useMediaQuery } from '@/hooks/use-mobile';
 
-const CharacterSelection = ({ onLoginClick, onSignupClick }: { 
+const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;
   onSignupClick?: () => void;
+  userId?: string | null;
 }) => {
-  const { setCharacter, setUserName } = useUser();
+  const { setCharacter } = useUser();
   const [selectedCharacter, setSelectedCharacter] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
   const [characterCounts, setCharacterCounts] = useState<{[key: string]: number}>({
     goku: 0,
@@ -22,33 +24,43 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
   });
   const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const howToUseRef = useRef<HTMLDivElement>(null);
-  const testimonialRef = useRef<HTMLDivElement>(null);
-  const faqRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const [currentSection, setCurrentSection] = useState<number>(0);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
+  const sections = [
+    { id: 'howToUse', title: 'How to Use Solo Prove' },
+    { id: 'features', title: 'App Features' },
+    { id: 'testimonials', title: 'Warrior Testimonials' }
+  ];
 
   useEffect(() => {
-    // Fetch character selection counts from the new table
+    // Fetch character selection counts
     const fetchCharacterCounts = async () => {
-      const { data, error } = await supabase
-        .from('character_counts')
-        .select('character_type, count');
-      
-      if (data && !error) {
-        const counts: {[key: string]: number} = {
-          goku: 0,
-          saitama: 0,
-          'jin-woo': 0
-        };
+      try {
+        const { data: countData, error: countError } = await supabase
+          .from('character_counts')
+          .select('character_type, count');
         
-        data.forEach((item) => {
-          counts[item.character_type] = item.count;
-        });
+        if (countError) {
+          console.error("Error fetching character counts:", countError);
+          return;
+        }
         
-        setCharacterCounts(counts);
-      } else if (error) {
-        console.error("Error fetching character counts:", error);
+        if (countData) {
+          const counts: {[key: string]: number} = {
+            goku: 0,
+            saitama: 0,
+            'jin-woo': 0
+          };
+          
+          countData.forEach((item) => {
+            counts[item.character_type] = item.count;
+          });
+          
+          setCharacterCounts(counts);
+        }
+      } catch (error) {
+        console.error("Error in fetchCharacterCounts:", error);
       }
     };
     
@@ -83,18 +95,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
     setSelectedCharacter(character);
   };
 
-  const scrollToFeatures = () => {
-    if (featuresRef.current) {
-      featuresRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const scrollToHowToUse = () => {
-    if (howToUseRef.current) {
-      howToUseRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const handleAuthClick = () => {
     if (onSignupClick) {
       onSignupClick();
@@ -120,6 +120,14 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
     } else {
       setOpenFaqIndex(index);
     }
+  };
+
+  const nextSection = () => {
+    setCurrentSection((prev) => (prev === sections.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevSection = () => {
+    setCurrentSection((prev) => (prev === 0 ? sections.length - 1 : prev - 1));
   };
 
   const features = [
@@ -198,7 +206,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
     {
       name: "Alex K.",
       character: "goku",
-      text: "Workout Wars transformed my fitness journey. Training like Goku has pushed me beyond my limits!"
+      text: "Solo Prove transformed my fitness journey. Training like Goku has pushed me beyond my limits!"
     },
     {
       name: "Sarah J.",
@@ -243,46 +251,110 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
     }
   ];
 
+  // Render the current section based on the index
+  const renderCurrentSection = () => {
+    switch (currentSection) {
+      case 0:
+        return (
+          <div className="py-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">How to Use Solo Prove</h2>
+              <p className="text-white/70 max-w-xl mx-auto">
+                Follow these simple steps to get started on your anime-inspired fitness journey
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {howToUseSteps.map((step, index) => (
+                <AnimatedCard key={index} className="p-6 border border-white/10 animated-border">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="mb-4 p-3 rounded-full bg-white/10">
+                      {step.icon}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
+                    <p className="text-white/70">{step.description}</p>
+                  </div>
+                </AnimatedCard>
+              ))}
+            </div>
+          </div>
+        );
+      case 1:
+        return (
+          <div className="py-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">App Features</h2>
+              <p className="text-white/70 max-w-xl mx-auto">
+                Solo Prove combines fitness with anime-inspired training to make your workout journey exciting and rewarding
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((feature, index) => (
+                <AnimatedCard key={index} className="p-6 border border-white/10 animated-border">
+                  <div className="flex flex-col items-center text-center">
+                    <div className={`mb-4 p-3 rounded-full bg-${feature.color}-500/20`}>
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                    <p className="text-white/70">{feature.description}</p>
+                  </div>
+                </AnimatedCard>
+              ))}
+            </div>
+          </div>
+        );
+      case 2:
+        return (
+          <div className="py-8 bg-white/5 rounded-2xl p-6">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">Warrior Testimonials</h2>
+              <p className="text-white/70 max-w-xl mx-auto">
+                Hear from other warriors who have transformed their fitness journey with Solo Prove
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-white/5 rounded-lg p-6 border border-white/10 animated-border">
+                  <p className="italic text-white/80 mb-4">"{testimonial.text}"</p>
+                  <div className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-${testimonial.character}-primary/20 mr-3`}>
+                      {testimonial.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium">{testimonial.name}</p>
+                      <p className={`text-sm text-${testimonial.character}-primary`}>
+                        {testimonial.character === 'goku' ? 'Saiyan Warrior' : 
+                         testimonial.character === 'saitama' ? 'Caped Baldy' : 
+                         'Shadow Monarch'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="container max-w-6xl mx-auto px-4 py-10 min-h-screen flex flex-col justify-center">
         <div className="text-center mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <h1 className="text-4xl font-bold mb-3 text-gradient goku-gradient">WORKOUT WARS</h1>
+          <h1 className="text-4xl font-bold mb-3 text-gradient goku-gradient">SOLO PROVE</h1>
           <p className="text-white/70 max-w-xl mx-auto">
             Choose your character to begin your journey to the top of the global leaderboard
           </p>
           
-          <div className="flex justify-center gap-4 mt-6">
-            <button 
-              onClick={scrollToHowToUse} 
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
-            >
-              <Info size={16} />
-              <span>How to Use</span>
-            </button>
-            
-            <button 
-              onClick={scrollToFeatures} 
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
-            >
-              <Check size={16} />
-              <span>Features</span>
-            </button>
-            
-            <button 
-              onClick={() => faqRef.current?.scrollIntoView({ behavior: 'smooth' })} 
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center gap-2"
-            >
-              <HelpCircle size={16} />
-              <span>FAQs</span>
-            </button>
-          </div>
-          
           <button 
-            onClick={scrollToFeatures} 
+            onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} 
             className="mt-10 animate-bounce flex flex-col items-center text-white/50 hover:text-white transition-colors"
           >
-            <span className="mb-1 text-sm">Discover More</span>
+            <span className="mb-1 text-sm">Learn More</span>
             <ArrowDown size={20} />
           </button>
         </div>
@@ -348,89 +420,63 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
           </div>
         </div>
 
-        {/* How to Use Section */}
-        <div ref={howToUseRef} className="py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">How to Use Workout Wars</h2>
-            <p className="text-white/70 max-w-xl mx-auto">
-              Follow these simple steps to get started on your anime-inspired fitness journey
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {howToUseSteps.map((step, index) => (
-              <AnimatedCard key={index} className="p-6 border border-white/10">
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-white/10">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
-                  <p className="text-white/70">{step.description}</p>
-                </div>
-              </AnimatedCard>
-            ))}
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div ref={featuresRef} className="py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">App Features</h2>
-            <p className="text-white/70 max-w-xl mx-auto">
-              Workout Wars combines fitness with anime-inspired training to make your workout journey exciting and rewarding
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {features.map((feature, index) => (
-              <AnimatedCard key={index} className="p-6 border border-white/10">
-                <div className="flex flex-col items-center text-center">
-                  <div className={`mb-4 p-3 rounded-full bg-${feature.color}-500/20`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-white/70">{feature.description}</p>
-                </div>
-              </AnimatedCard>
-            ))}
-          </div>
-        </div>
-        
-        {/* Testimonials Section */}
-        <div ref={testimonialRef} className="py-16 bg-white/5 rounded-2xl p-8 mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">Warrior Testimonials</h2>
-            <p className="text-white/70 max-w-xl mx-auto">
-              Hear from other warriors who have transformed their fitness journey with Workout Wars
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-6 border border-white/10">
-                <p className="italic text-white/80 mb-4">"{testimonial.text}"</p>
-                <div className="flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-${testimonial.character}-primary/20 mr-3`}>
-                    {testimonial.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-medium">{testimonial.name}</p>
-                    <p className={`text-sm text-${testimonial.character}-primary`}>
-                      {testimonial.character === 'goku' ? 'Saiyan Warrior' : 
-                       testimonial.character === 'saitama' ? 'Caped Baldy' : 
-                       'Shadow Monarch'}
-                    </p>
-                  </div>
-                </div>
+        {/* Carousel Navigation */}
+        <div className="mt-16 mb-6 relative">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">{sections[currentSection].title}</h2>
+            {!isMobile && (
+              <div className="flex space-x-4">
+                <button 
+                  onClick={prevSection}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  aria-label="Previous section"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <button 
+                  onClick={nextSection}
+                  className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  aria-label="Next section"
+                >
+                  <ArrowRight size={20} />
+                </button>
               </div>
+            )}
+          </div>
+          
+          {/* Section Content */}
+          <div className="overflow-hidden">
+            <div 
+              className="transition-transform duration-500 ease-in-out" 
+              style={{ transform: `translateX(-${currentSection * 100}%)` }}
+            >
+              {renderCurrentSection()}
+            </div>
+          </div>
+          
+          {/* Mobile touch indicators */}
+          <div className="mt-6 flex justify-center space-x-2">
+            {sections.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSection(index)}
+                className="focus:outline-none"
+                aria-label={`Go to section ${index + 1}`}
+              >
+                {currentSection === index ? (
+                  <CircleDot size={16} className="text-white" />
+                ) : (
+                  <Circle size={16} className="text-white/40" />
+                )}
+              </button>
             ))}
           </div>
         </div>
         
-        {/* FAQ Section */}
-        <div ref={faqRef} className="py-16 mb-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3">Frequently Asked Questions</h2>
+        {/* FAQ Section - with reduced height */}
+        <div className="py-10 mb-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-2">Frequently Asked Questions</h2>
             <p className="text-white/70 max-w-xl mx-auto">
               Got questions? We've got answers to help you get started
             </p>
@@ -438,29 +484,22 @@ const CharacterSelection = ({ onLoginClick, onSignupClick }: {
           
           <div className="max-w-3xl mx-auto">
             {faqs.map((faq, index) => (
-              <div key={index} className="mb-4">
+              <div key={index} className="mb-2">
                 <AnimatedCard 
-                  className={`p-6 border ${openFaqIndex === index ? 'border-white/30' : 'border-white/10'} hover:border-white/20 transition-colors duration-300`}
+                  className={`p-4 border ${openFaqIndex === index ? 'border-white/30' : 'border-white/10'} hover:border-white/20 transition-colors duration-300 animated-border`}
                 >
                   <button 
                     onClick={() => toggleFaq(index)} 
                     className="flex items-start justify-between w-full text-left"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 rounded-full bg-white/10 mt-1">
-                        <HelpCircle size={16} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
-                        {openFaqIndex === index && (
-                          <p className="text-white/70 mt-2">{faq.answer}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-shrink-0">
-                      {openFaqIndex === index ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                    <h3 className="text-lg font-bold">{faq.question}</h3>
+                    <div className="ml-4 flex-shrink-0 mt-1">
+                      {openFaqIndex === index ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </div>
                   </button>
+                  {openFaqIndex === index && (
+                    <p className="text-white/70 mt-2 pt-2 border-t border-white/10">{faq.answer}</p>
+                  )}
                 </AnimatedCard>
               </div>
             ))}
@@ -514,7 +553,7 @@ const CharacterCard = ({
         active={selected}
         onClick={onClick}
         hoverEffect="glow"
-        className={`h-full transition-all duration-300 hover:border hover:border-white/30 ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+        className={`h-full transition-all duration-300 hover:border hover:border-white/30 animated-border ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
       >
         <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
           <img 
@@ -569,6 +608,26 @@ const CharacterCard = ({
         </div>
       </AnimatedCard>
     </div>
+  );
+};
+
+const ArrowDown = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 5v14" />
+      <path d="m19 12-7 7-7-7" />
+    </svg>
   );
 };
 
