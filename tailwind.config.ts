@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,28 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Character-specific theme colors
+				goku: {
+					primary: '#FF6B00',
+					secondary: '#2563EB',
+					accent: '#FFB545',
+					muted: '#2E4482',
+					background: '#0C1631'
+				},
+				saitama: {
+					primary: '#F9C22E',
+					secondary: '#E53935',
+					accent: '#FFEB3B',
+					muted: '#7D3B38',
+					background: '#1A0F0E'
+				},
+				'jin-woo': {
+					primary: '#8B5CF6',
+					secondary: '#2D3748',
+					accent: '#C4B5FD',
+					muted: '#4B5563',
+					background: '#0F172A'
 				}
 			},
 			borderRadius: {
@@ -84,11 +107,54 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				},
+				'fade-in-up': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 15px 2px rgba(255, 255, 255, 0.2)'
+					},
+					'50%': {
+						boxShadow: '0 0 25px 5px rgba(255, 255, 255, 0.4)'
+					}
+				},
+				float: {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-10px)'
+					}
+				},
+				'border-pulse': {
+					'0%, 100%': {
+						borderColor: 'rgba(255, 255, 255, 0.2)'
+					},
+					'50%': {
+						borderColor: 'rgba(255, 255, 255, 0.5)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.5s ease-out forwards',
+				'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
+				'pulse-glow': 'pulse-glow 2s infinite',
+				'float': 'float 4s ease-in-out infinite',
+				'border-pulse': 'border-pulse 3s infinite'
 			}
 		}
 	},
