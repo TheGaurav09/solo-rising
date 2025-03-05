@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import LogoutConfirmModal from './modals/LogoutConfirmModal';
 import Footer from './ui/Footer';
 import { format } from 'date-fns';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
   const { character, userName, setCharacter, setUserName, streak, lastWorkoutDate } = useUser();
@@ -26,7 +25,7 @@ const Dashboard = () => {
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
   const streakModalRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     checkAuth();
