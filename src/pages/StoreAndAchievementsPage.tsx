@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ItemDetailModal from '@/components/modals/ItemDetailModal';
 import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
+import Footer from '@/components/ui/Footer';
 
 const StoreAndAchievementsPage = () => {
   const { character, points, coins, addCoins, useCoins } = useUser();
@@ -328,6 +329,8 @@ const StoreAndAchievementsPage = () => {
           currentPoints={points}
         />
       )}
+      
+      <Footer />
     </div>
   );
 };

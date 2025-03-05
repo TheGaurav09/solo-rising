@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
@@ -25,7 +24,6 @@ const AIChatPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Generate welcome message based on character
   useEffect(() => {
     const welcomeMessage = {
       id: 'welcome',
@@ -36,7 +34,6 @@ const AIChatPage: React.FC = () => {
     setMessages([welcomeMessage]);
   }, [character, userName]);
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -73,7 +70,6 @@ const AIChatPage: React.FC = () => {
     try {
       console.log("Sending message to AI chat function");
       
-      // Call the Supabase Edge Function that uses Gemini API
       const response = await fetch('https://xppaofqmxtaikkacvvzt.supabase.co/functions/v1/ai-chat', {
         method: 'POST',
         headers: {
@@ -115,7 +111,6 @@ const AIChatPage: React.FC = () => {
         variant: 'destructive'
       });
       
-      // Fallback response
       const fallbackMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
@@ -145,7 +140,6 @@ const AIChatPage: React.FC = () => {
     }
   };
   
-  // Suggestion topics
   const suggestionTopics: SuggestionTopic[] = [
     {
       icon: <Sparkles className={character === 'goku' ? 'text-goku-primary' : character === 'saitama' ? 'text-saitama-primary' : character === 'jin-woo' ? 'text-jin-woo-primary' : 'text-primary'} />,
@@ -164,7 +158,6 @@ const AIChatPage: React.FC = () => {
     }
   ];
   
-  // Handle suggestion click
   const handleSuggestionClick = (topic: string) => {
     const suggestions = {
       "Workout Optimization": "What's the best workout routine for building strength?",
@@ -173,7 +166,6 @@ const AIChatPage: React.FC = () => {
     };
     
     setInput(suggestions[topic as keyof typeof suggestions] || "");
-    // Focus on input
     document.getElementById('chat-input')?.focus();
   };
   
@@ -181,7 +173,6 @@ const AIChatPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8 w-full">
       <div className="max-w-5xl mx-auto w-full">
         <AnimatedCard className="relative min-h-[80vh] p-0 overflow-hidden w-full">
-          {/* Header */}
           <div className={`p-4 border-b border-white/10 ${character === 'goku' ? 'bg-goku-primary/10' : character === 'saitama' ? 'bg-saitama-primary/10' : character === 'jin-woo' ? 'bg-jin-woo-primary/10' : 'bg-primary/10'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -199,7 +190,6 @@ const AIChatPage: React.FC = () => {
             </div>
           </div>
           
-          {/* Messages area */}
           <div className="p-4 overflow-y-auto max-h-[calc(80vh-140px)]" style={{ scrollBehavior: 'smooth' }}>
             {messages.map((message) => (
               <div 
@@ -258,7 +248,6 @@ const AIChatPage: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
           
-          {/* Suggestion cards - shown when no messages or at the beginning */}
           {messages.length <= 1 && (
             <div className="px-4 pb-4">
               <h3 className="text-white/70 text-sm mb-3">Suggested Topics:</h3>
@@ -284,7 +273,6 @@ const AIChatPage: React.FC = () => {
             </div>
           )}
           
-          {/* Input area */}
           <div className="border-t border-white/10 p-4 bg-black/20">
             <div className="flex items-center gap-2">
               <textarea

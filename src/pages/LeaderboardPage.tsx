@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -6,6 +5,7 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Users, Globe, MapPin, User, Medal, Trophy, ExternalLink, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import InfoTooltip from '@/components/ui/InfoTooltip';
+import Footer from '@/components/ui/Footer';
 
 const countries = [
   "Global", "United States", "Canada", "United Kingdom", "Australia", "Germany", 
@@ -318,6 +318,7 @@ const LeaderboardPage = () => {
           </div>
         )}
       </AnimatedCard>
+      <Footer />
     </div>
   );
 };

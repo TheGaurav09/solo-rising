@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
@@ -20,6 +19,7 @@ const Dashboard = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   
   const isAIChat = location.pathname.includes('/ai-chat');
 
@@ -29,12 +29,18 @@ const Dashboard = () => {
     if (savedSidebarState) {
       setSidebarCollapsed(savedSidebarState === 'true');
     }
+    
+    const savedSidebarHiddenState = localStorage.getItem('sidebar-hidden');
+    if (savedSidebarHiddenState) {
+      setSidebarHidden(savedSidebarHiddenState === 'true');
+    }
   }, []);
 
   useEffect(() => {
-    // Save sidebar state to localStorage
+    // Save sidebar states to localStorage
     localStorage.setItem('sidebar-collapsed', sidebarCollapsed.toString());
-  }, [sidebarCollapsed]);
+    localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
+  }, [sidebarCollapsed, sidebarHidden]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -146,7 +152,16 @@ const Dashboard = () => {
   }, [isAIChat]);
 
   const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    if (sidebarHidden) {
+      // If completely hidden, show it first
+      setSidebarHidden(false);
+    } else if (!sidebarCollapsed) {
+      // If expanded, collapse it
+      setSidebarCollapsed(true);
+    } else {
+      // If collapsed, hide it completely
+      setSidebarHidden(true);
+    }
   };
   
   const navigationItems = [
@@ -223,23 +238,28 @@ const Dashboard = () => {
   return (
     <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          navigationItems={navigationItems}
-          primaryActions={primaryActions}
-          accentClass={getSidebarAccentColor()}
-          brandIcon={getIconComponent('dumbbell', 24)}
-          brandIconStyle={getBrandIconStyle()}
-          handleShareClick={handleShareClick}
-          isCollapsed={sidebarCollapsed}
-        />
+        {!sidebarHidden && (
+          <Sidebar
+            navigationItems={navigationItems}
+            primaryActions={primaryActions}
+            accentClass={getSidebarAccentColor()}
+            brandIcon={getIconComponent('dumbbell', 24)}
+            brandIconStyle={getBrandIconStyle()}
+            handleShareClick={handleShareClick}
+            isCollapsed={sidebarCollapsed}
+          />
+        )}
         
         <button 
           onClick={toggleSidebar}
           className={`fixed z-20 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 transition-all px-1 py-4 rounded-r-md ${
+            sidebarHidden ? 'left-0' : 
             sidebarCollapsed ? 'left-16' : 'left-64'
           }`}
         >
-          {sidebarCollapsed ? (
+          {sidebarHidden ? (
+            <Menu size={20} className="text-white/80" />
+          ) : sidebarCollapsed ? (
             <ChevronRight size={20} className="text-white/80" />
           ) : (
             <ChevronLeft size={20} className="text-white/80" />
@@ -247,6 +267,7 @@ const Dashboard = () => {
         </button>
         
         <main className={`flex-1 overflow-y-auto pb-0 relative w-full transition-all ${
+          sidebarHidden ? 'ml-0' : 
           sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-64'
         }`}>
           <div className={`min-h-screen pt-4 px-4`}>
