@@ -1,422 +1,323 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
 import { useUser } from '@/context/UserContext';
-import AnimatedButton from './ui/AnimatedButton';
-import { toast } from './ui/use-toast';
-import { X, Mail, Lock, User, MapPin } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { EyeIcon, EyeOffIcon, Info } from 'lucide-react';
+import { countries } from './Countries';
 
-// List of countries for selection in alphabetical order with flags
-const countries = [
-  { name: "Global", flag: "🌎" },
-  { name: "Afghanistan", flag: "🇦🇫" },
-  { name: "Albania", flag: "🇦🇱" },
-  { name: "Algeria", flag: "🇩🇿" },
-  { name: "Argentina", flag: "🇦🇷" },
-  { name: "Australia", flag: "🇦🇺" },
-  { name: "Austria", flag: "🇦🇹" },
-  { name: "Bangladesh", flag: "🇧🇩" },
-  { name: "Belgium", flag: "🇧🇪" },
-  { name: "Brazil", flag: "🇧🇷" },
-  { name: "Canada", flag: "🇨🇦" },
-  { name: "China", flag: "🇨🇳" },
-  { name: "Colombia", flag: "🇨🇴" },
-  { name: "Denmark", flag: "🇩🇰" },
-  { name: "Egypt", flag: "🇪🇬" },
-  { name: "Finland", flag: "🇫🇮" },
-  { name: "France", flag: "🇫🇷" },
-  { name: "Germany", flag: "🇩🇪" },
-  { name: "Greece", flag: "🇬🇷" },
-  { name: "India", flag: "🇮🇳" },
-  { name: "Indonesia", flag: "🇮🇩" },
-  { name: "Ireland", flag: "🇮🇪" },
-  { name: "Israel", flag: "🇮🇱" },
-  { name: "Italy", flag: "🇮🇹" },
-  { name: "Japan", flag: "🇯🇵" },
-  { name: "Kenya", flag: "🇰🇪" },
-  { name: "Malaysia", flag: "🇲🇾" },
-  { name: "Mexico", flag: "🇲🇽" },
-  { name: "Netherlands", flag: "🇳🇱" },
-  { name: "New Zealand", flag: "🇳🇿" },
-  { name: "Nigeria", flag: "🇳🇬" },
-  { name: "Norway", flag: "🇳🇴" },
-  { name: "Pakistan", flag: "🇵🇰" },
-  { name: "Philippines", flag: "🇵🇭" },
-  { name: "Poland", flag: "🇵🇱" },
-  { name: "Portugal", flag: "🇵🇹" },
-  { name: "Russia", flag: "🇷🇺" },
-  { name: "Saudi Arabia", flag: "🇸🇦" },
-  { name: "Singapore", flag: "🇸🇬" },
-  { name: "South Africa", flag: "🇿🇦" },
-  { name: "South Korea", flag: "🇰🇷" },
-  { name: "Spain", flag: "🇪🇸" },
-  { name: "Sweden", flag: "🇸🇪" },
-  { name: "Switzerland", flag: "🇨🇭" },
-  { name: "Thailand", flag: "🇹🇭" },
-  { name: "Turkey", flag: "🇹🇷" },
-  { name: "Ukraine", flag: "🇺🇦" },
-  { name: "United Arab Emirates", flag: "🇦🇪" },
-  { name: "United Kingdom", flag: "🇬🇧" },
-  { name: "United States", flag: "🇺🇸" },
-  { name: "Vietnam", flag: "🇻🇳" }
-];
-
-const AuthModal = ({ isOpen, onClose, initialView = 'login' }: { 
-  isOpen: boolean; 
+interface AuthModalProps {
+  isOpen: boolean;
   onClose: () => void;
   initialView?: 'login' | 'signup';
-}) => {
+}
+
+const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [warriorName, setWarriorName] = useState('');
+  const [country, setCountry] = useState('');
+  const [countryError, setCountryError] = useState('');
   const [view, setView] = useState<'login' | 'signup'>(initialView);
   const [loading, setLoading] = useState(false);
-  const { setCharacter, setUserName, setCountry } = useUser();
+  const [loginError, setLoginError] = useState('');
+  const { character, setUserData } = useUser();
   const navigate = useNavigate();
   
   useEffect(() => {
     setView(initialView);
   }, [initialView]);
-
-  if (!isOpen) return null;
-
-  const handleLogin = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Clear any existing local storage data to prevent conflicts
-      localStorage.removeItem('character');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('country');
-      localStorage.removeItem('points');
-      localStorage.removeItem('coins');
-      localStorage.removeItem('streak');
-      localStorage.removeItem('lastWorkoutDate');
-
-      // Get user data from our database
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .maybeSingle(); // Changed from single() to maybeSingle() to handle missing data gracefully
-
-      if (userError) throw userError;
-
-      if (!userData) {
-        throw new Error("User profile not found. Please contact support.");
-      }
-
-      // Set user data in context
-      setCharacter(userData.character_type as 'goku' | 'saitama' | 'jin-woo');
-      setUserName(userData.warrior_name);
-      if (userData.country) {
-        setCountry(userData.country);
-      }
-      
-      toast({
-        title: 'Welcome back!',
-        description: `Logged in as ${userData.warrior_name}`,
-      });
-      
-      onClose();
-      navigate('/workout');
-    } catch (error: any) {
-      console.error('Error logging in:', error.message);
-      toast({
-        title: 'Login failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+  
+  const validateForm = () => {
+    let isValid = true;
+    
+    // Clear previous errors
+    setLoginError('');
+    setCountryError('');
+    
+    if (view === 'signup' && !country) {
+      setCountryError('Please select your country');
+      isValid = false;
     }
+    
+    return isValid;
   };
-
-  const handleSignup = async (email: string, password: string, name: string, country: string) => {
+  
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    if (!character) {
+      toast({
+        title: "No Character Selected",
+        description: "Please select a character before signing up",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
+    setLoginError('');
+    
     try {
-      // Check if user already exists first
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-        
-      if (existingUser) {
-        toast({
-          title: 'Account already exists',
-          description: 'Please login instead',
-          variant: 'destructive',
-        });
-        setView('login');
-        setLoading(false);
-        return;
-      }
-
-      // Create auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            warrior_name: name,
-            country: country,
+            character_type: character,
+            warrior_name: warriorName,
+            country: country
           }
         }
       });
-
+      
       if (error) throw error;
-
+      
       if (data.user) {
-        // Using a temporary character type that matches the constraint
-        // We'll update this to the user's selection later
-        const characterType = 'goku'; // Use a valid default value that matches the constraint
-        
-        // Insert user data into our database 
-        const { error: insertError } = await supabase
+        // Create a user record in the users table
+        const { error: profileError } = await supabase
           .from('users')
-          .insert({
-            id: data.user.id,
-            email,
-            warrior_name: name,
-            character_type: characterType, // Set a valid default that matches the constraint
-            password: password,
-            country: country,
-            points: 0,
-            coins: 10, // Start with 10 coins
-          });
-
-        if (insertError) {
-          console.error('Error inserting user data:', insertError);
-          throw insertError;
-        }
-
-        // Now set temporary character in context, will be updated when user selects
-        setCharacter(characterType as 'goku');
-        setUserName(name);
-        setCountry(country);
+          .insert([
+            {
+              id: data.user.id,
+              email: email,
+              warrior_name: warriorName,
+              character_type: character,
+              country: country,
+              points: 0,
+              streak: 0,
+              coins: 100, // Starting coins
+            }
+          ]);
+        
+        if (profileError) throw profileError;
+        
+        setUserData(warriorName, character, 0, 0, 100, country);
         
         toast({
-          title: 'Account created!',
-          description: 'Please select your character to begin your journey.',
+          title: "Account created!",
+          description: "Welcome to Solo Rising. Your journey begins now!",
         });
         
         onClose();
-        navigate('/'); // Go to character selection
+        navigate('/profile-workout');
       }
     } catch (error: any) {
-      console.error('Error signing up:', error.message);
+      console.error('Sign up error', error);
+      setLoginError(error.message || 'An error occurred during sign up');
       
-      // Handle case where user already exists more gracefully
-      if (error.message.includes('already registered')) {
-        toast({
-          title: 'Email already registered',
-          description: 'Please try logging in instead',
-          variant: 'destructive',
-        });
-        setView('login');
-      } else {
-        toast({
-          title: 'Signup failed',
-          description: error.message,
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
-
+  
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setLoginError('');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        // Fetch user data from the users table
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (userError) throw userError;
+        
+        setUserData(
+          userData.warrior_name,
+          userData.character_type,
+          userData.points,
+          userData.streak,
+          userData.coins,
+          userData.country
+        );
+        
+        toast({
+          title: "Welcome back!",
+          description: `Logged in as ${userData.warrior_name}`,
+        });
+        
+        onClose();
+        navigate('/profile-workout');
+      }
+    } catch (error: any) {
+      console.error('Login error', error);
+      setLoginError(error.message || 'Invalid email or password');
+      
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const toggleView = () => {
+    setView(view === 'login' ? 'signup' : 'login');
+    setLoginError('');
+    setCountryError('');
+  };
+  
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+  
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="max-w-md w-full p-8 rounded-lg bg-background border border-white/10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{view === 'login' ? 'Login' : 'Create Account'}</h2>
-            <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 transition-colors">
-              <X className="h-6 w-6" />
-            </button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md p-6 bg-black border border-white/10 text-white rounded-lg">
+        <h2 className="text-xl font-bold mb-4">
+          {view === 'login' ? 'Login to Solo Rising' : 'Create your Account'}
+        </h2>
+        
+        {loginError && (
+          <div className="bg-red-900/30 border border-red-500/50 text-red-200 p-3 rounded-md mb-4 text-sm">
+            {loginError}
+          </div>
+        )}
+        
+        <form onSubmit={view === 'login' ? handleLogin : handleSignUp} className="space-y-4">
+          {view === 'signup' && (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="warriorName" className="block text-sm font-medium text-white/90">
+                  Warrior Name
+                </label>
+                <Input
+                  id="warriorName"
+                  placeholder="Enter your warrior name"
+                  value={warriorName}
+                  onChange={(e) => setWarriorName(e.target.value)}
+                  required
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="country" className="block text-sm font-medium text-white/90">
+                  Country
+                </label>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => {
+                    setCountry(e.target.value);
+                    setCountryError('');
+                  }}
+                  required
+                  className={`w-full p-2 rounded-md bg-white/5 border ${
+                    countryError ? 'border-red-500' : 'border-white/10'
+                  } text-white`}
+                >
+                  <option value="">Select your country</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+                {countryError && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <Info size={12} />
+                    {countryError}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+          
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-white/90">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="bg-white/5 border-white/10 text-white placeholder:text-white/30"
+            />
           </div>
           
-          {view === 'login' ? (
-            <LoginForm onSubmit={handleLogin} loading={loading} />
-          ) : (
-            <SignupForm onSubmit={handleSignup} loading={loading} />
-          )}
-
-          <div className="mt-6 text-center">
-            <button onClick={() => setView(view === 'login' ? 'signup' : 'login')} className="text-sm text-white/60 hover:text-white transition-colors">
-              {view === 'login' ? 'Need an account? Sign up' : 'Already have an account? Login'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const LoginForm = ({ onSubmit, loading }: { onSubmit: (email: string, password: string) => void; loading: boolean }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      onSubmit(email, password);
-    }}>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Email</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-white/40" />
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-white/90">
+              Password
+            </label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
+              />
+              <button
+                type="button"
+                onClick={toggleShowPassword}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/80 focus:outline-none"
+              >
+                {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+              </button>
             </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-white/5 border border-white/10 text-white placeholder-white/40 focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg"
-              placeholder="you@example.com"
-            />
           </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Password</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-white/40" />
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-white/5 border border-white/10 text-white placeholder-white/40 focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg"
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-6">
-        <AnimatedButton
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center"
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </AnimatedButton>
-      </div>
-    </form>
-  );
-};
-
-const SignupForm = ({ onSubmit, loading, character }: { 
-  onSubmit: (email: string, password: string, name: string, country: string) => void; 
-  loading: boolean;
-  character?: 'goku' | 'saitama' | 'jin-woo';
-}) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [country, setCountry] = useState('Global');
-
-  return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      onSubmit(email, password, name, country);
-    }}>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Email</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-white/40" />
-            </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-white/5 border border-white/10 text-white placeholder-white/40 focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg"
-              placeholder="you@example.com"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Password</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-5 w-5 text-white/40" />
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-white/5 border border-white/10 text-white placeholder-white/40 focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg"
-              placeholder="••••••••"
-              minLength={6}
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Warrior Name</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-white/40" />
-            </div>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="bg-white/5 border border-white/10 text-white placeholder-white/40 focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg"
-              placeholder="Your warrior name"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2 text-white/80">Country</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MapPin className="h-5 w-5 text-white/40" />
-            </div>
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="bg-white/5 border border-white/10 text-white focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg appearance-none"
+          
+          <div className="pt-2">
+            <Button
+              type="submit"
+              disabled={loading}
+              className={`w-full ${
+                character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80' :
+                character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
+                character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80' :
+                'bg-white/10 hover:bg-white/20'
+              }`}
             >
-              {countries.map((countryOption) => (
-                <option key={countryOption.name} value={countryOption.name}>
-                  {countryOption.flag} {countryOption.name}
-                </option>
-              ))}
-            </select>
+              {loading ? 'Processing...' : view === 'login' ? 'Login' : 'Sign Up'}
+            </Button>
           </div>
+        </form>
+        
+        <div className="mt-4 text-center text-sm text-white/60">
+          {view === 'login' ? "Don't have an account? " : "Already have an account? "}
+          <button
+            onClick={toggleView}
+            className="text-white hover:underline focus:outline-none"
+          >
+            {view === 'login' ? 'Sign Up' : 'Login'}
+          </button>
         </div>
-      </div>
-      
-      <div className="mt-6">
-        <AnimatedButton
-          type="submit"
-          disabled={loading}
-          character={character}
-          className="w-full flex justify-center"
-        >
-          {loading ? 'Creating Account...' : 'Create Account'}
-        </AnimatedButton>
-      </div>
-    </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -1,14 +1,14 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { Dumbbell, Award, User, ShoppingBag, MessageCircle, Maximize } from 'lucide-react';
+import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
+import CoinDisplay from './ui/CoinDisplay';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,10 +19,8 @@ const Dashboard = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // Check if the current route is AI Chat
   const isAIChat = location.pathname.includes('/ai-chat');
 
-  // Auth checking logic
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -56,7 +54,6 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, hasSelectedCharacter]);
   
-  // Background classes based on character
   const getBackgroundClass = () => {
     switch(character) {
       case 'goku': return 'bg-goku';
@@ -66,7 +63,6 @@ const Dashboard = () => {
     }
   };
   
-  // Update page title based on route
   useEffect(() => {
     let title = 'Solo Prove';
     
@@ -93,12 +89,10 @@ const Dashboard = () => {
     document.title = title;
   }, [location]);
   
-  // Sharing functionality
   const handleShareClick = () => {
     setShowShareModal(true);
   };
   
-  // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -113,7 +107,6 @@ const Dashboard = () => {
     }
   };
   
-  // Listen for fullscreen change events
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -126,7 +119,6 @@ const Dashboard = () => {
     };
   }, []);
   
-  // Request fullscreen for AI Chat
   useEffect(() => {
     if (isAIChat && !document.fullscreenElement && document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -135,36 +127,34 @@ const Dashboard = () => {
     }
   }, [isAIChat]);
   
-  // Navigation items
   const navigationItems = [
     {
-      href: '/workout',
-      icon: <Dumbbell size={20} />,
-      label: 'Workout'
-    },
-    {
-      href: '/profile/me',
+      href: '/profile-workout',
       icon: <User size={20} />,
-      label: 'Profile'
+      label: 'Profile & Workout'
     },
     {
-      href: '/achievements',
-      icon: <Award size={20} />,
-      label: 'Achievements'
+      href: '/leaderboard',
+      icon: <Trophy size={20} />,
+      label: 'Leaderboard'
     },
     {
-      href: '/store',
+      href: '/store-achievements',
       icon: <ShoppingBag size={20} />,
-      label: 'Store'
+      label: 'Store & Achievements'
     },
     {
       href: '/ai-chat',
       icon: <MessageCircle size={20} />,
       label: 'AI Chat'
+    },
+    {
+      href: '/hall-of-fame',
+      icon: <HeartHandshake size={20} />,
+      label: 'Hall of Fame'
     }
   ];
   
-  // Primary actions for sidebar - removed logout button
   const primaryActions = [
     {
       icon: <Maximize size={20} />,
@@ -182,10 +172,9 @@ const Dashboard = () => {
   }
   
   if (!isAuthenticated || !hasSelectedCharacter) {
-    return null; // Redirect handled in useEffect
+    return null;
   }
   
-  // Character-specific styling
   const getSidebarAccentColor = () => {
     switch(character) {
       case 'goku': return 'bg-goku-primary text-white';
@@ -216,7 +205,6 @@ const Dashboard = () => {
           handleShareClick={handleShareClick}
         />
         
-        {/* Main content area with padding to account for sidebar */}
         <main className="flex-1 overflow-y-auto ml-0 md:ml-0 pb-0 md:pb-0 relative w-full">
           <div className={`min-h-screen pt-4 px-4`}>
             <Outlet />
@@ -224,7 +212,6 @@ const Dashboard = () => {
         </main>
       </div>
 
-      {/* Share Modal */}
       <AnimatePresence>
         {showShareModal && (
           <ShareModal 

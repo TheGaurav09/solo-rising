@@ -9,11 +9,11 @@ import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./components/Dashboard";
-import WorkoutPage from "./pages/WorkoutPage";
-import ProfilePage from "./pages/ProfilePage";
-import AchievementsPage from "./pages/AchievementsPage";
-import StorePage from "./pages/StorePage";
+import ProfileAndWorkoutPage from "./pages/ProfileAndWorkoutPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import StoreAndAchievementsPage from "./pages/StoreAndAchievementsPage";
 import AIChatPage from "./pages/AIChatPage";
+import HallOfFamePage from "./pages/HallOfFamePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,13 +56,14 @@ const App = () => {
               
               {/* Protected Dashboard Routes */}
               <Route path="/" element={<Dashboard />}>
-                <Route path="workout" element={<WorkoutPage />} />
-                <Route path="profile/:userId" element={<ProfilePage />} />
-                <Route path="achievements" element={<AchievementsPage />} />
-                <Route path="store" element={<StorePage />} />
+                <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
+                <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
+                <Route path="leaderboard" element={<LeaderboardPage />} />
+                <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
                 <Route path="ai-chat" element={<AIChatPage />} />
-                {/* Redirect missing paths to workout */}
-                <Route path="*" element={<Navigate to="/workout" replace />} />
+                <Route path="hall-of-fame" element={<HallOfFamePage />} />
+                {/* Redirect missing paths to profile-workout */}
+                <Route path="*" element={<Navigate to="/profile-workout" replace />} />
               </Route>
               
               {/* Catch-all route */}

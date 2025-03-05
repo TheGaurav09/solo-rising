@@ -9,6 +9,7 @@ import UsersList from './UsersList';
 import { useNavigate } from 'react-router-dom';
 import Footer from './ui/Footer';
 import { useMediaQuery } from '@/hooks/use-mobile';
+import { toast } from '@/components/ui/use-toast';
 
 const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;
@@ -24,32 +25,37 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
   });
   const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCharacterCounts = async () => {
       try {
-        const { data: countData, error: countError } = await supabase
-          .from('character_counts')
-          .select('character_type, count');
+        // Count users by character type
+        const { data: gokuCount, error: gokuError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'goku');
         
-        if (countError) {
-          console.error("Error fetching character counts:", countError);
+        const { data: saitamaCount, error: saitamaError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'saitama');
+        
+        const { data: jinWooCount, error: jinWooError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'jin-woo');
+        
+        if (gokuError || saitamaError || jinWooError) {
+          console.error("Error fetching character counts:", gokuError || saitamaError || jinWooError);
           return;
         }
         
-        if (countData) {
-          const counts: {[key: string]: number} = {
-            goku: 0,
-            saitama: 0,
-            'jin-woo': 0
-          };
-          
-          countData.forEach((item) => {
-            counts[item.character_type] = item.count;
-          });
-          
-          setCharacterCounts(counts);
-        }
+        setCharacterCounts({
+          goku: gokuCount?.length || 0,
+          saitama: saitamaCount?.length || 0,
+          'jin-woo': jinWooCount?.length || 0
+        });
       } catch (error) {
         console.error("Error in fetchCharacterCounts:", error);
       }
@@ -58,20 +64,15 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
     fetchCharacterCounts();
     
     const subscription = supabase
-      .channel('character_counts_changes')
+      .channel('users_changes')
       .on('postgres_changes', 
         { 
-          event: 'UPDATE', 
+          event: '*', 
           schema: 'public', 
-          table: 'character_counts'
+          table: 'users'
         }, 
-        (payload: any) => {
-          if (payload.new) {
-            setCharacterCounts(prev => ({
-              ...prev,
-              [payload.new.character_type]: payload.new.count
-            }));
-          }
+        () => {
+          fetchCharacterCounts();
         }
       )
       .subscribe();
@@ -81,15 +82,24 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
     };
   }, []);
 
-  // Auto-move to signup when a character is selected
-  useEffect(() => {
-    if (selectedCharacter && onSignupClick) {
-      onSignupClick();
-    }
-  }, [selectedCharacter, onSignupClick]);
-
   const handleCharacterClick = (character: 'goku' | 'saitama' | 'jin-woo') => {
     setSelectedCharacter(character);
+    setCharacter(character);
+  };
+
+  const handleBeginJourney = () => {
+    if (!selectedCharacter) {
+      toast({
+        title: "No Character Selected",
+        description: "Please select a character to begin your journey",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (onSignupClick) {
+      onSignupClick();
+    }
   };
 
   const getCharacterLabel = (character: 'goku' | 'saitama' | 'jin-woo') => {
@@ -191,7 +201,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
 
         <div className="max-w-md mx-auto w-full animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
           <AnimatedButton
-            onClick={() => {}}
+            onClick={handleBeginJourney}
             disabled={!selectedCharacter}
             character={selectedCharacter}
             className="w-full py-3 hover:scale-105 transition-transform duration-300"
