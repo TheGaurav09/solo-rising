@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { EyeIcon, EyeOffIcon, Info } from 'lucide-react';
-import { countries } from './Countries';
+import { countries, Country } from './Countries';
 
 interface AuthModalProps {
   isOpen: boolean;

@@ -5,11 +5,21 @@ import { useUser } from '@/context/UserContext';
 import { User, Medal, TrendingUp, Clock, Share2 } from 'lucide-react';
 import AnimatedButton from './ui/AnimatedButton';
 
-const Profile = () => {
+interface ProfileProps {
+  userData?: any;
+  isViewingOtherUser?: boolean;
+}
+
+const Profile = ({ userData, isViewingOtherUser = false }: ProfileProps) => {
   const { userName, character, points } = useUser();
 
+  // Use the provided userData if available, otherwise use the context values
+  const userDisplayName = userData?.warrior_name || userName;
+  const userCharacter = userData?.character_type || character;
+  const userPoints = userData?.points || points;
+
   const getCharacterTitle = () => {
-    switch(character) {
+    switch(userCharacter) {
       case 'goku': return 'Saiyan Warrior';
       case 'saitama': return 'Caped Baldy';
       case 'jin-woo': return 'Shadow Monarch';
@@ -18,7 +28,7 @@ const Profile = () => {
   };
 
   const getLevel = () => {
-    return Math.floor(points / 100) + 1;
+    return Math.floor(userPoints / 100) + 1;
   };
 
   const getNextLevelPoints = () => {
@@ -29,7 +39,7 @@ const Profile = () => {
   const getProgressPercentage = () => {
     const nextLevelPoints = getNextLevelPoints();
     const previousLevelPoints = (getLevel() - 1) * 100;
-    const currentLevelPoints = points - previousLevelPoints;
+    const currentLevelPoints = userPoints - previousLevelPoints;
     return (currentLevelPoints / (nextLevelPoints - previousLevelPoints)) * 100;
   };
 
@@ -55,19 +65,19 @@ const Profile = () => {
     <div className="space-y-6">
       <AnimatedCard className="p-6">
         <div className="flex items-center gap-4">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${character ? `bg-${character}-primary/30` : 'bg-primary/30'}`}>
-            <User className={character ? `text-${character}-primary` : 'text-primary'} size={28} />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${userCharacter ? `bg-${userCharacter}-primary/30` : 'bg-primary/30'}`}>
+            <User className={userCharacter ? `text-${userCharacter}-primary` : 'text-primary'} size={28} />
           </div>
           
           <div className="flex-1">
-            <h2 className={`text-xl font-bold ${character ? `text-${character}-primary` : 'text-white'}`}>
-              {userName}
+            <h2 className={`text-xl font-bold ${userCharacter ? `text-${userCharacter}-primary` : 'text-white'}`}>
+              {userDisplayName}
             </h2>
             <p className="text-white/70">{getCharacterTitle()}</p>
           </div>
           
           <div className="text-right">
-            <div className="text-lg font-bold">{points}</div>
+            <div className="text-lg font-bold">{userPoints}</div>
             <div className="text-sm text-white/70">total points</div>
           </div>
         </div>
@@ -75,27 +85,29 @@ const Profile = () => {
         <div className="mt-6">
           <div className="flex justify-between text-sm mb-2">
             <span>Level {getLevel()}</span>
-            <span>{points} / {getNextLevelPoints()} points</span>
+            <span>{userPoints} / {getNextLevelPoints()} points</span>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div 
-              className={`h-full ${character ? `bg-${character}-primary` : 'bg-primary'}`}
+              className={`h-full ${userCharacter ? `bg-${userCharacter}-primary` : 'bg-primary'}`}
               style={{ width: `${getProgressPercentage()}%` }}
             ></div>
           </div>
         </div>
         
-        <div className="mt-6 flex gap-2">
-          <AnimatedButton 
-            variant="outline" 
-            character={character || undefined}
-            size="sm" 
-            className="flex items-center gap-2"
-          >
-            <Share2 size={16} />
-            <span>Share Profile</span>
-          </AnimatedButton>
-        </div>
+        {!isViewingOtherUser && (
+          <div className="mt-6 flex gap-2">
+            <AnimatedButton 
+              variant="outline" 
+              character={userCharacter || undefined}
+              size="sm" 
+              className="flex items-center gap-2"
+            >
+              <Share2 size={16} />
+              <span>Share Profile</span>
+            </AnimatedButton>
+          </div>
+        )}
       </AnimatedCard>
       
       <AnimatedCard className="p-6">
