@@ -33,6 +33,30 @@ export type Database = {
         }
         Relationships: []
       }
+      character_counts: {
+        Row: {
+          character_type: string
+          count: number
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          character_type: string
+          count?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          character_type?: string
+          count?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       store_items: {
         Row: {
           description: string

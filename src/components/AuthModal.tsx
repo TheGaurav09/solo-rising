@@ -81,7 +81,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                   variant: 'destructive',
                 });
               } else {
-                // Increment the character count
+                // Update the character count in the new table
                 await updateCharacterCount(character);
               }
             }
@@ -108,27 +108,44 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
     }
   };
 
-  // Function to update character count
+  // Updated function to use the new character_counts table
   const updateCharacterCount = async (characterType: string) => {
     try {
       // First check if the character already exists in the count table
-      const { data: existingData } = await supabase
-        .from('character_selection_counts')
+      const { data: existingData, error: fetchError } = await supabase
+        .from('character_counts')
         .select('*')
         .eq('character_type', characterType)
         .single();
 
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // If error is not "no rows returned", log it
+        console.error('Error fetching character count:', fetchError);
+        return;
+      }
+
       if (existingData) {
         // Update existing count
-        await supabase
-          .from('character_selection_counts')
-          .update({ count: existingData.count + 1 })
+        const { error: updateError } = await supabase
+          .from('character_counts')
+          .update({ count: existingData.count + 1, updated_at: new Date().toISOString() })
           .eq('character_type', characterType);
+          
+        if (updateError) {
+          console.error('Error updating character count:', updateError);
+        }
       } else {
         // Insert new record with count 1
-        await supabase
-          .from('character_selection_counts')
-          .insert([{ character_type: characterType, count: 1 }]);
+        const { error: insertError } = await supabase
+          .from('character_counts')
+          .insert([{ 
+            character_type: characterType, 
+            count: 1
+          }]);
+          
+        if (insertError) {
+          console.error('Error inserting character count:', insertError);
+        }
       }
     } catch (error) {
       console.error('Error updating character count:', error);

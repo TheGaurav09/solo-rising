@@ -20,11 +20,11 @@ const CharacterSelection = () => {
   const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
 
   useEffect(() => {
-    // Fetch character selection counts from the database
+    // Fetch character selection counts from the new table
     const fetchCharacterCounts = async () => {
       const { data, error } = await supabase
-        .from('character_selection_counts')
-        .select('*');
+        .from('character_counts')
+        .select('character_type, count');
       
       if (data && !error) {
         const counts: {[key: string]: number} = {
@@ -38,6 +38,8 @@ const CharacterSelection = () => {
         });
         
         setCharacterCounts(counts);
+      } else if (error) {
+        console.error("Error fetching character counts:", error);
       }
     };
     

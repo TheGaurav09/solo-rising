@@ -11,11 +11,20 @@ const Index = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      
-      if (data.user && hasSelectedCharacter) {
-        // If user is logged in and has selected a character, redirect to workout page
-        navigate('/workout');
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Auth check error:", error);
+          return;
+        }
+        
+        if (data.user && hasSelectedCharacter) {
+          // If user is logged in and has selected a character, redirect to workout page
+          navigate('/workout');
+        }
+      } catch (err) {
+        console.error("Error checking authentication:", err);
       }
     };
     
