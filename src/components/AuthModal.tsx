@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -97,6 +98,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         if (profileError) throw profileError;
         
+        // Fix: Pass character directly without conversion
         setUserData(warriorName, character, 0, 0, 100, country);
         
         toast({
