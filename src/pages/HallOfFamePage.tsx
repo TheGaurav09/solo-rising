@@ -7,48 +7,6 @@ import { useUser } from '@/context/UserContext';
 
 const HallOfFamePage = () => {
   const { character } = useUser();
-  
-  const hallOfFameUsers = [
-    {
-      name: "Alex Johnson",
-      character: "goku",
-      achievement: "First to reach 1000 points",
-      date: "May 2023"
-    },
-    {
-      name: "Sarah Williams",
-      character: "saitama",
-      achievement: "30-day workout streak champion",
-      date: "June 2023"
-    },
-    {
-      name: "Michael Rodriguez",
-      character: "jin-woo",
-      achievement: "Most consistent Hunter",
-      date: "July 2023"
-    },
-    {
-      name: "Emily Chen",
-      character: "goku",
-      achievement: "Highest single workout score",
-      date: "August 2023"
-    },
-    {
-      name: "James Wilson",
-      character: "saitama",
-      achievement: "Community ambassador",
-      date: "September 2023"
-    }
-  ];
-  
-  const getCharacterColor = (char: string) => {
-    switch(char) {
-      case 'goku': return 'text-goku-primary';
-      case 'saitama': return 'text-saitama-primary';
-      case 'jin-woo': return 'text-jin-woo-primary';
-      default: return 'text-white';
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -65,25 +23,12 @@ const HallOfFamePage = () => {
               <Award size={24} className="text-yellow-500" />
             </div>
             
-            <div className="space-y-4">
-              {hallOfFameUsers.map((user, index) => (
-                <div 
-                  key={index} 
-                  className="p-4 bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className={`font-bold text-lg ${getCharacterColor(user.character)}`}>
-                        {user.name}
-                      </h3>
-                      <p className="text-white/70">{user.achievement}</p>
-                    </div>
-                    <div className="text-right text-sm text-white/50">
-                      {user.date}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8">
+              <Award size={64} className="mx-auto mb-4 text-gray-400" />
+              <h3 className="text-xl font-bold mb-2">No Warriors Found</h3>
+              <p className="text-white/70 mb-4">
+                Be the first to join the Elite Warriors by completing challenges and achieving high scores!
+              </p>
             </div>
           </AnimatedCard>
         </div>
@@ -112,10 +57,10 @@ const HallOfFamePage = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className={`inline-block px-6 py-3 rounded-lg font-bold transition-all ${
-                  character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80' :
-                  character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
-                  character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80' :
-                  'bg-amber-500 hover:bg-amber-600'
+                  character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80 text-black' :
+                  character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80 text-black' :
+                  character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80 text-white' :
+                  'bg-amber-500 hover:bg-amber-600 text-black'
                 }`}
               >
                 <div className="flex items-center gap-2">

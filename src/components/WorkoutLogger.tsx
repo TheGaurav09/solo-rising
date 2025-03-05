@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
-import { Dumbbell, Timer, Repeat, CheckCircle2 } from 'lucide-react';
+import { Dumbbell, Timer, Repeat, CheckCircle2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -26,18 +27,84 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [cooldownError, setCooldownError] = useState(false);
-
-  const exercises: ExerciseOption[] = [
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState<number | null>(null);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  
+  // Add more exercise options
+  const basicExercises: ExerciseOption[] = [
     { id: 'pushups', name: 'Push-ups', points: 10, icon: <Dumbbell size={18} /> },
     { id: 'situps', name: 'Sit-ups', points: 8, icon: <Dumbbell size={18} /> },
     { id: 'squats', name: 'Squats', points: 12, icon: <Dumbbell size={18} /> },
     { id: 'running', name: 'Running', points: 15, icon: <Timer size={18} /> },
+  ];
+  
+  const extraExercises: ExerciseOption[] = [
     { id: 'pullups', name: 'Pull-ups', points: 20, icon: <Repeat size={18} /> },
     { id: 'cycling', name: 'Cycling', points: 18, icon: <Timer size={18} /> },
+    { id: 'weightlifting', name: 'Weightlifting', points: 22, icon: <Dumbbell size={18} /> },
+    { id: 'swimming', name: 'Swimming', points: 25, icon: <Timer size={18} /> },
+    { id: 'yoga', name: 'Yoga', points: 15, icon: <Timer size={18} /> },
+    { id: 'hiit', name: 'HIIT', points: 28, icon: <Timer size={18} /> },
   ];
+  
+  const allExercises = showMoreOptions ? [...basicExercises, ...extraExercises] : basicExercises;
+
+  useEffect(() => {
+    // Check workout cooldown on initial load
+    const checkInitialCooldown = async () => {
+      const canAdd = await checkWorkoutCooldown();
+      setCooldownError(!canAdd);
+      
+      if (!canAdd) {
+        startCooldownTimer();
+      }
+    };
+    
+    checkInitialCooldown();
+  }, []);
+  
+  const startCooldownTimer = () => {
+    const updateTimer = () => {
+      const { lastWorkoutTime } = useUser();
+      if (!lastWorkoutTime) {
+        setCooldownTimeLeft(null);
+        return;
+      }
+      
+      const lastTime = new Date(lastWorkoutTime).getTime();
+      const currentTime = new Date().getTime();
+      const thirtyMinutesInMs = 30 * 60 * 1000;
+      const timeElapsed = currentTime - lastTime;
+      const timeLeft = thirtyMinutesInMs - timeElapsed;
+      
+      if (timeLeft <= 0) {
+        setCooldownTimeLeft(null);
+        setCooldownError(false);
+        clearInterval(timerInterval);
+      } else {
+        const minutesLeft = Math.floor(timeLeft / (60 * 1000));
+        const secondsLeft = Math.floor((timeLeft % (60 * 1000)) / 1000);
+        setCooldownTimeLeft(minutesLeft * 60 + secondsLeft);
+      }
+    };
+    
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+    
+    return () => clearInterval(timerInterval);
+  };
+  
+  const formatTimeLeft = (seconds: number | null) => {
+    if (seconds === null) return '';
+    
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   const getSelectedExercise = () => {
-    return exercises.find(ex => ex.id === selectedExercise);
+    return allExercises.find(ex => ex.id === selectedExercise);
   };
 
   const calculatePoints = () => {
@@ -63,6 +130,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
       const canAdd = await checkWorkoutCooldown();
       if (!canAdd) {
         setCooldownError(true);
+        startCooldownTimer();
         setLoading(false);
         return;
       }
@@ -114,6 +182,9 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         setDuration(30);
         setReps(10);
       }, 2000);
+      
+      // Start cooldown timer
+      startCooldownTimer();
     } catch (error) {
       console.error("Error in handleLogWorkout:", error);
     } finally {
@@ -135,12 +206,24 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         </div>
       ) : (
         <>
-          <div className="mb-6">
+          {cooldownError && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-2">
+              <AlertCircle className="text-red-400" size={20} />
+              <div>
+                <p className="text-sm text-red-200">Workout cooldown active</p>
+                <p className="text-xs text-red-300">
+                  Next workout available in: {formatTimeLeft(cooldownTimeLeft)}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <div className="mb-4">
             <label className="block text-sm font-medium mb-2 text-white/80">
               Exercise Type
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {exercises.map((exercise) => (
+              {basicExercises.map((exercise) => (
                 <div
                   key={exercise.id}
                   onClick={() => setSelectedExercise(exercise.id)}
@@ -157,6 +240,44 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
                 </div>
               ))}
             </div>
+            
+            {showMoreOptions && (
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {extraExercises.map((exercise) => (
+                  <div
+                    key={exercise.id}
+                    onClick={() => setSelectedExercise(exercise.id)}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 cursor-pointer transition-colors ${
+                      selectedExercise === exercise.id
+                        ? character 
+                          ? `bg-${character}-primary/20 border-${character}-primary/40 border` 
+                          : 'bg-primary/20 border-primary/40 border'
+                        : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    {exercise.icon}
+                    <span className="text-sm">{exercise.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <button
+              className="w-full mt-2 text-white/50 hover:text-white text-sm flex items-center justify-center gap-1"
+              onClick={() => setShowMoreOptions(!showMoreOptions)}
+            >
+              {showMoreOptions ? (
+                <>
+                  <ChevronUp size={16} />
+                  Show Fewer Options
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={16} />
+                  Show More Options
+                </>
+              )}
+            </button>
           </div>
           
           <div className="mb-6">
@@ -225,7 +346,12 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
             onClick={handleLogWorkout}
             disabled={!selectedExercise || loading || cooldownError}
             character={character || undefined}
-            className="w-full"
+            className={`w-full ${
+              character === 'goku' ? 'text-black' :
+              character === 'saitama' ? 'text-black' :
+              character === 'jin-woo' ? 'text-white' :
+              'text-white'
+            }`}
           >
             {loading ? 'Logging...' : 'Log Workout'}
           </AnimatedButton>

@@ -1,79 +1,122 @@
+import React, { useEffect } from "react";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  useNavigate,
+} from "react-router-dom";
+import { useUser } from "@/context/UserContext";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { supabase } from "@/integrations/supabase/client";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { UserProvider } from "./context/UserContext";
-import { useEffect, useState } from "react";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Dashboard from "./components/Dashboard";
-import ProfileAndWorkoutPage from "./pages/ProfileAndWorkoutPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
-import StoreAndAchievementsPage from "./pages/StoreAndAchievementsPage";
-import AIChatPage from "./pages/AIChatPage";
-import HallOfFamePage from "./pages/HallOfFamePage";
+import Index from "@/pages/Index";
+import CharacterSelectionPage from "@/pages/CharacterSelectionPage";
+import WorkoutPage from "@/pages/WorkoutPage";
+import ProfilePage from "@/pages/ProfilePage";
+import AIChatPage from "@/pages/AIChatPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
+import StorePage from "@/pages/StorePage";
+import StoreAndAchievementsPage from "@/pages/StoreAndAchievementsPage";
+import AchievementsPage from "@/pages/AchievementsPage";
+import HallOfFamePage from "@/pages/HallOfFamePage";
+import SettingsPage from "@/pages/SettingsPage";
+import ProfileAndWorkoutPage from "@/pages/ProfileAndWorkoutPage";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import AuthModal from "@/components/AuthModal";
+import ErrorPage from "@/pages/ErrorPage";
+import NotFound from "@/pages/NotFound";
 
-const App = () => {
-  const [isInitialized, setIsInitialized] = useState(false);
+const Layout = () => {
+  const { hasSelectedCharacter } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Simple initialization to avoid infinite loading
-    const timer = setTimeout(() => {
-      setIsInitialized(true);
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+    if (!hasSelectedCharacter && window.location.pathname !== '/character-selection') {
+      navigate('/character-selection');
+    }
+  }, [hasSelectedCharacter, navigate]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              
-              {/* Protected Dashboard Routes */}
-              <Route path="/" element={<Dashboard />}>
-                <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
-                <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
-                <Route path="leaderboard" element={<LeaderboardPage />} />
-                <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
-                <Route path="ai-chat" element={<AIChatPage />} />
-                <Route path="hall-of-fame" element={<HallOfFamePage />} />
-                {/* Redirect missing paths to profile-workout */}
-                <Route path="*" element={<Navigate to="/profile-workout" replace />} />
-              </Route>
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </UserProvider>
-    </QueryClientProvider>
+    <>
+      <AuthModal />
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
   );
 };
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "",
+        element: <Index />,
+      },
+      {
+        path: "character-selection",
+        element: <CharacterSelectionPage />,
+      },
+      {
+        path: "workout",
+        element: <WorkoutPage />,
+      },
+      {
+        path: "profile-workout",
+        element: <ProfileAndWorkoutPage />,
+      },
+      {
+        path: "profile-workout/:userId",
+        element: <ProfileAndWorkoutPage />,
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "ai-chat",
+        element: <AIChatPage />,
+      },
+      {
+        path: "leaderboard",
+        element: <LeaderboardPage />,
+      },
+      {
+        path: "store",
+        element: <StorePage />,
+      },
+      {
+        path: "store-achievements",
+        element: <StoreAndAchievementsPage />,
+      },
+      {
+        path: "achievements",
+        element: <AchievementsPage />,
+      },
+      {
+        path: "hall-of-fame",
+        element: <HallOfFamePage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+      },
+      {
+        path: "*",
+        element: <NotFound />,
+      },
+    ],
+  },
+]);
+
+function App() {
+  return <RouterProvider router={router} />;
+}
 
 export default App;

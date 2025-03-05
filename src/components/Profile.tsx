@@ -4,6 +4,7 @@ import AnimatedCard from './ui/AnimatedCard';
 import { useUser } from '@/context/UserContext';
 import { User, Medal, TrendingUp, Clock, Share2 } from 'lucide-react';
 import AnimatedButton from './ui/AnimatedButton';
+import ProfileShowcase from './ProfileShowcase';
 
 interface ProfileProps {
   userData?: any;
@@ -133,6 +134,13 @@ const Profile = ({ userData, isViewingOtherUser = false }: ProfileProps) => {
             </div>
           )}
         </div>
+      </AnimatedCard>
+      
+      <AnimatedCard className="p-6">
+        <ProfileShowcase 
+          userId={userData?.id} 
+          isViewingOtherUser={isViewingOtherUser} 
+        />
       </AnimatedCard>
     </div>
   );
