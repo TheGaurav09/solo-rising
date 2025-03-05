@@ -3,16 +3,14 @@ import React from 'react';
 import { X, LogOut } from 'lucide-react';
 import AnimatedCard from '../ui/AnimatedCard';
 import AnimatedButton from '../ui/AnimatedButton';
-import { useUser } from '@/context/UserContext';
 
 interface LogoutConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
+  character?: 'goku' | 'saitama' | 'jin-woo';
 }
 
-const LogoutConfirmModal = ({ onConfirm, onCancel }: LogoutConfirmModalProps) => {
-  const { character } = useUser();
-
+const LogoutConfirmModal = ({ onConfirm, onCancel, character }: LogoutConfirmModalProps) => {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
       <AnimatedCard className="w-full max-w-md">
@@ -39,7 +37,7 @@ const LogoutConfirmModal = ({ onConfirm, onCancel }: LogoutConfirmModalProps) =>
           <div className="grid grid-cols-2 gap-4">
             <AnimatedButton
               onClick={onCancel}
-              character={character || undefined}
+              character={character}
               variant="outline"
             >
               Cancel
