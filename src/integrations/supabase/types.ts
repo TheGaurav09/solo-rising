@@ -139,6 +139,7 @@ export type Database = {
           email: string
           id: string
           password: string
+          points: number
           warrior_name: string
         }
         Insert: {
@@ -147,6 +148,7 @@ export type Database = {
           email: string
           id?: string
           password: string
+          points?: number
           warrior_name: string
         }
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           email?: string
           id?: string
           password?: string
+          points?: number
           warrior_name?: string
         }
         Relationships: []

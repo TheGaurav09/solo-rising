@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { Award, ShoppingBag, Coin, Lock, Check, Star, Shield, Zap, Sparkles, Diamond } from 'lucide-react';
+import { Award, ShoppingBag, Coins, Lock, Check, Star, Shield, Zap, Sparkles, Diamond } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 const AchievementsPage = () => {
@@ -181,13 +180,12 @@ const AchievementsPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Achievements & Store</h1>
         <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-lg">
-          <Coin className="text-yellow-400" size={18} />
+          <Coins className="text-yellow-400" size={18} />
           <span className="font-medium">{coins} coins</span>
         </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Achievements Section */}
         <div>
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -256,7 +254,6 @@ const AchievementsPage = () => {
           </AnimatedCard>
         </div>
         
-        {/* Store Section */}
         <div>
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -292,7 +289,7 @@ const AchievementsPage = () => {
                         
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex items-center bg-white/10 px-2 py-0.5 rounded text-xs">
-                            <Coin className="text-yellow-400 mr-1" size={12} />
+                            <Coins className="text-yellow-400 mr-1" size={12} />
                             <span>{item.price}</span>
                           </div>
                           <div className="text-xs text-white/60">
