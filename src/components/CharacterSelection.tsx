@@ -33,7 +33,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
   ];
 
   useEffect(() => {
-    // Fetch character selection counts
     const fetchCharacterCounts = async () => {
       try {
         const { data: countData, error: countError } = await supabase
@@ -65,7 +64,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
     
     fetchCharacterCounts();
     
-    // Set up a subscription to real-time updates for character counts
     const subscription = supabase
       .channel('character_counts_changes')
       .on('postgres_changes', 
@@ -353,7 +351,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             className="mt-10 animate-bounce flex flex-col items-center text-white/50 hover:text-white transition-colors"
           >
             <span className="mb-1 text-sm">Learn More</span>
-            <ArrowDown size={20} />
+            <ArrowDown width={20} height={20} />
           </button>
         </div>
 

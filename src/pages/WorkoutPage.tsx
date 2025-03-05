@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -145,23 +144,23 @@ const WorkoutPage = () => {
         .select('points')
         .eq('id', user.user.id)
         .single();
-        
+      
       if (userError) throw userError;
       
       // Now check achievements with the user's total points
-      const totalPoints = userData?.points + pointsEarned;
+      const totalPoints = (userData?.points || 0) + pointsEarned;
       
-      // Fix the type error by properly handling the achievements query result
-      const { data: achievements, error: achievementsError } = await supabase
+      // Fix the achievement query to explicitly handle the response
+      const { data: achievementsData, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
         .lte('points_required', totalPoints)
         .order('points_required', { ascending: false });
-        
+      
       if (achievementsError) throw achievementsError;
       
       // Process achievements if there are any
-      if (achievements && achievements.length > 0) {
+      if (achievementsData && achievementsData.length > 0) {
         // Check which achievements the user already has
         const { data: userAchievements, error: userAchievementsError } = await supabase
           .from('user_achievements')
@@ -172,7 +171,7 @@ const WorkoutPage = () => {
         
         // Find new achievements to award
         const userAchievementIds = userAchievements?.map(ua => ua.achievement_id) || [];
-        const newAchievements = achievements.filter(a => !userAchievementIds.includes(a.id));
+        const newAchievements = achievementsData.filter(a => !userAchievementIds.includes(a.id));
         
         // Award new achievements if any
         if (newAchievements.length > 0) {
@@ -198,12 +197,13 @@ const WorkoutPage = () => {
         }
       }
       
+      // Update the user's data with their new streak and points
       const { error: userUpdateError } = await supabase
         .from('users')
         .update({ 
           streak: newStreak,
           last_workout_date: new Date().toISOString(),
-          points: supabase.rpc('increment_points', { amount: pointsEarned })
+          points: totalPoints
         })
         .eq('id', user.user.id);
       

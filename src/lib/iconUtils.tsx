@@ -43,3 +43,19 @@ export const getIconComponent = (iconName: string, size = 18) => {
     default: return <Award size={size} />;
   }
 };
+
+export const DiscordIcon = ({ size = 18 }: { size?: number }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M9 12h6M9 16h6M8.5 8.5a2 2 0 0 1 3.5-1.5 2 2 0 0 1 3.5 1.5V9a3 3 0 0 1-3 3h-1a3 3 0 0 1-3-3Z" />
+    <path d="M7 21a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4Z" />
+  </svg>
+);
