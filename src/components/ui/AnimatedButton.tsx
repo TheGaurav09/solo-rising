@@ -8,7 +8,7 @@ interface AnimatedButtonProps {
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
-  character?: 'goku' | 'saitama' | 'jin-woo' | null;
+  character?: 'goku' | 'saitama' | 'jin-woo' | null | undefined;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
 }
@@ -21,8 +21,9 @@ const AnimatedButton = ({
   size = 'md',
   character = null,
   disabled = false,
-  type = 'button'
-}: AnimatedButtonProps) => {
+  type = 'button',
+  ...props
+}: AnimatedButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
   const getCharacterGradient = () => {
     switch (character) {
       case 'goku':
@@ -81,6 +82,7 @@ const AnimatedButton = ({
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
+      {...props}
     >
       <span className="relative z-10">{children}</span>
     </button>

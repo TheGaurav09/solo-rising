@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,12 +15,13 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import Footer from '@/components/ui/Footer';
+import { CharacterType } from '@/context/UserContext';
 
 const ProfileAndWorkoutPage = () => {
   const { userName, character, xp, level, coins, updateUserProfile, updateCharacter } = useUser();
   const [newName, setNewName] = useState(userName);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState(character);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterType>(character);
   const [isCharacterUpdating, setIsCharacterUpdating] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date())
 
@@ -28,6 +30,12 @@ const ProfileAndWorkoutPage = () => {
       setNewName(userName);
     }
   }, [userName]);
+
+  useEffect(() => {
+    if (character) {
+      setSelectedCharacter(character);
+    }
+  }, [character]);
 
   const handleUpdateName = async () => {
     if (!newName.trim() || newName === userName) return;
@@ -54,7 +62,9 @@ const ProfileAndWorkoutPage = () => {
     }
   };
 
-  const handleCharacterSelect = async (newCharacter: string) => {
+  const handleCharacterSelect = async (newCharacter: CharacterType) => {
+    if (!newCharacter) return;
+    
     setSelectedCharacter(newCharacter);
     setIsCharacterUpdating(true);
 
@@ -78,7 +88,7 @@ const ProfileAndWorkoutPage = () => {
     }
   };
 
-  const characterImages = {
+  const characterImages: Record<string, string> = {
     'goku': 'https://avatars.akamai.steamstatic.com/fef49e7fa7e1997a76c7d1039373b5a62359ca63_full.jpg',
     'saitama': 'https://i.pinimg.com/736x/3e/3c/95/3e3c959d20414905a3863f8c1895a958.jpg',
     'jin-woo': 'https://pbs.twimg.com/media/F8ipR0kWwAAjqoz.jpg'
@@ -138,23 +148,27 @@ const ProfileAndWorkoutPage = () => {
 
           <div className="flex items-center justify-center mb-4">
             <Avatar className={`w-32 h-32 border-4 ${getCharacterColor()}`}>
-              <AvatarImage src={characterImages[selectedCharacter] || ''} alt={selectedCharacter} />
+              <AvatarImage src={characterImages[selectedCharacter || ''] || ''} alt={selectedCharacter || ''} />
               <AvatarFallback>{selectedCharacter?.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            {Object.keys(characterImages).map((char) => (
-              <AnimatedButton
-                key={char}
-                onClick={() => handleCharacterSelect(char)}
-                disabled={isCharacterUpdating || char === selectedCharacter}
-                className={`w-full ${char === selectedCharacter ? 'ring-2 ring-white' : ''}`}
-                style={{ padding: '0.5rem' }}
-              >
-                {char.charAt(0).toUpperCase() + char.slice(1)}
-              </AnimatedButton>
-            ))}
+            {Object.keys(characterImages).map((char) => {
+              const charType = char as CharacterType;
+              if (!charType) return null;
+              
+              return (
+                <AnimatedButton
+                  key={char}
+                  onClick={() => handleCharacterSelect(charType)}
+                  disabled={isCharacterUpdating || char === selectedCharacter}
+                  className={`w-full ${char === selectedCharacter ? 'ring-2 ring-white' : ''}`}
+                >
+                  <span className="p-1">{char.charAt(0).toUpperCase() + char.slice(1)}</span>
+                </AnimatedButton>
+              );
+            })}
           </div>
         </AnimatedCard>
       </div>

@@ -9,6 +9,8 @@ interface UserContextType {
   userName: string;
   country: string;
   points: number;
+  xp: number;
+  level: number;
   coins: number;
   streak: number;
   lastWorkoutDate: string | null;
@@ -22,6 +24,7 @@ interface UserContextType {
   useCoins: (amount: number) => Promise<boolean>;
   checkForAchievements: () => Promise<void>;
   updateUserProfile: (name: string) => Promise<boolean>;
+  updateCharacter: (character: CharacterType) => Promise<boolean>;
   checkWorkoutCooldown: () => Promise<boolean>;
   setLastWorkoutTime: (time: string) => Promise<void>;
   setUserData: (name: string, charType: CharacterType, pts: number, strk: number, cns: number, ctry: string) => void;
@@ -35,6 +38,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [userName, setUserName] = useState('');
   const [country, setCountry] = useState('Global');
   const [points, setPoints] = useState(0);
+  const [xp, setXp] = useState(0);
+  const [level, setLevel] = useState(1);
   const [coins, setCoins] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
@@ -635,9 +640,24 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setCountry(ctry);
   };
 
+  const updateCharacter = async (newCharacter: CharacterType): Promise<boolean> => {
+    if (!newCharacter) return false;
+    
+    try {
+      const success = await handleCharacterUpdate(newCharacter);
+      return success !== undefined;
+    } catch (error) {
+      console.error("Error in updateCharacter:", error);
+      return false;
+    }
+  };
+
   if (!isInitialized) {
     return null;
   }
+
+  const calculatedXp = points;
+  const calculatedLevel = Math.floor(points / 100) + 1;
 
   return (
     <UserContext.Provider 
@@ -646,6 +666,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         userName,
         country,
         points,
+        xp: calculatedXp,
+        level: calculatedLevel,
         coins,
         streak,
         lastWorkoutDate,
@@ -659,6 +681,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         useCoins,
         checkForAchievements,
         updateUserProfile,
+        updateCharacter,
         checkWorkoutCooldown,
         setLastWorkoutTime: updateLastWorkoutTime,
         setUserData,
