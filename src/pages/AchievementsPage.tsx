@@ -1,378 +1,272 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import AnimatedButton from '@/components/ui/AnimatedButton';
-import { Award, ShoppingBag, Coins, Lock, Check, LogOut } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import ItemDetailModal from '@/components/modals/ItemDetailModal';
-import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
-import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
+import { Progress } from '@/components/ui/progress';
 import { getIconComponent } from '@/lib/iconUtils';
-import { useNavigate } from 'react-router-dom';
+import { Trophy, Award, EyeIcon } from 'lucide-react';
+import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  points_required: number;
+  unlocked?: boolean;
+  unlocked_at?: string;
+}
 
 const AchievementsPage = () => {
   const { character, points } = useUser();
-  const navigate = useNavigate();
-  const [achievements, setAchievements] = useState<any[]>([]);
-  const [userAchievements, setUserAchievements] = useState<any[]>([]);
-  const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [userItems, setUserItems] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [loading, setLoading] = useState(true);
-  const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
-  const [coins, setCoins] = useState(0);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [selectedAchievement, setSelectedAchievement] = useState<any | null>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchAchievements();
   }, []);
 
-  const fetchData = async () => {
+  const fetchAchievements = async () => {
     setLoading(true);
     try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) return;
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
 
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('points')
-        .eq('id', currentUser.user.id)
-        .single();
-
-      if (userError) throw userError;
-      setCoins(userData?.points || 0);
-
-      const { data: achievementsData, error: achievementsError } = await supabase
+      // First, get all achievements
+      const { data: allAchievements, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
         .order('points_required', { ascending: true });
 
       if (achievementsError) throw achievementsError;
-      setAchievements(achievementsData || []);
 
-      const { data: userAchievementsData, error: userAchievementsError } = await supabase
+      // Then, get user's unlocked achievements
+      const { data: userAchievements, error: userAchievementsError } = await supabase
         .from('user_achievements')
-        .select('*')
-        .eq('user_id', currentUser.user.id);
+        .select('achievement_id, unlocked_at')
+        .eq('user_id', user.user.id);
 
       if (userAchievementsError) throw userAchievementsError;
-      setUserAchievements(userAchievementsData || []);
 
-      const { data: storeItemsData, error: storeItemsError } = await supabase
-        .from('store_items')
-        .select('*')
-        .order('price', { ascending: true });
-
-      if (storeItemsError) throw storeItemsError;
-      setStoreItems(storeItemsData || []);
-
-      const { data: userItemsData, error: userItemsError } = await supabase
-        .from('user_items')
-        .select('*')
-        .eq('user_id', currentUser.user.id);
-
-      if (userItemsError) throw userItemsError;
-      setUserItems(userItemsData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load achievements and store data',
-        variant: 'destructive',
+      // Combine the data
+      const userAchievementsMap = new Map();
+      userAchievements?.forEach(ua => {
+        userAchievementsMap.set(ua.achievement_id, ua.unlocked_at);
       });
+
+      const processedAchievements = allAchievements?.map(achievement => ({
+        ...achievement,
+        unlocked: userAchievementsMap.has(achievement.id),
+        unlocked_at: userAchievementsMap.get(achievement.id) || null
+      }));
+
+      setAchievements(processedAchievements || []);
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const isAchievementUnlocked = (achievementId: string) => {
-    return userAchievements.some(ua => ua.achievement_id === achievementId);
+  const progressToNextAchievement = (currentPoints: number, achievements: Achievement[]) => {
+    // Filter out already unlocked achievements
+    const lockedAchievements = achievements.filter(a => !a.unlocked);
+    
+    if (lockedAchievements.length === 0) return 100; // All achievements unlocked
+    
+    // Find the next achievement to unlock
+    const nextAchievement = lockedAchievements.reduce((closest, current) => {
+      return (!closest || current.points_required < closest.points_required) ? current : closest;
+    }, null as Achievement | null);
+    
+    if (!nextAchievement) return 0;
+    
+    // Find the previous achievement that was unlocked
+    const unlockedAchievements = achievements.filter(a => a.unlocked);
+    const previousAchievement = unlockedAchievements.length > 0 
+      ? unlockedAchievements.reduce((highest, current) => {
+          return (!highest || current.points_required > highest.points_required) ? current : highest;
+        }, null as Achievement | null)
+      : null;
+    
+    const basePoints = previousAchievement ? previousAchievement.points_required : 0;
+    const targetPoints = nextAchievement.points_required;
+    const pointsRange = targetPoints - basePoints;
+    const userProgress = currentPoints - basePoints;
+    
+    if (pointsRange <= 0) return 0;
+    
+    const progressPercentage = Math.min(100, Math.max(0, (userProgress / pointsRange) * 100));
+    return progressPercentage;
   };
 
-  const isItemPurchased = (itemId: string) => {
-    return userItems.some(ui => ui.item_id === itemId);
+  const getNextAchievement = (currentPoints: number, achievements: Achievement[]) => {
+    const lockedAchievements = achievements.filter(a => !a.unlocked);
+    if (lockedAchievements.length === 0) return null;
+    
+    return lockedAchievements.reduce((closest, current) => {
+      if (!closest) return current;
+      if (current.points_required < closest.points_required && current.points_required > currentPoints) {
+        return current;
+      }
+      return closest;
+    }, null as Achievement | null);
   };
 
-  const handlePurchaseItem = async (item: any) => {
-    if (isItemPurchased(item.id)) {
-      toast({
-        title: 'Already Purchased',
-        description: 'You already own this item',
-      });
-      return;
-    }
-
-    if (coins < item.price) {
-      toast({
-        title: 'Not Enough Coins',
-        description: `You need ${item.price - coins} more coins to purchase this item`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setPurchaseLoading(item.id);
-    try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) throw new Error('User not authenticated');
-
-      const { error: purchaseError } = await supabase
-        .from('user_items')
-        .insert([
-          {
-            user_id: currentUser.user.id,
-            item_id: item.id
-          }
-        ]);
-
-      if (purchaseError) throw purchaseError;
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ points: coins - item.price })
-        .eq('id', currentUser.user.id);
-
-      if (updateError) throw updateError;
-
-      setCoins(coins - item.price);
-      setUserItems([...userItems, { user_id: currentUser.user.id, item_id: item.id }]);
-
-      toast({
-        title: 'Purchase Successful',
-        description: `You've purchased ${item.name}!`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Purchase Failed',
-        description: error.message || 'Failed to complete purchase',
-        variant: 'destructive',
-      });
-    } finally {
-      setPurchaseLoading(null);
-    }
+  const getProgressText = () => {
+    const nextAchievement = getNextAchievement(points, achievements);
+    if (!nextAchievement) return "All achievements unlocked!";
+    
+    const pointsNeeded = nextAchievement.points_required - points;
+    return `${pointsNeeded} points until "${nextAchievement.name}"`;
   };
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast({
-        title: 'Logged out successfully',
-        description: 'Come back soon to continue your training!',
-      });
-      
-      navigate('/');
-    } catch (error: any) {
-      toast({
-        title: 'Error logging out',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+  const openAchievementDetails = (achievement: Achievement) => {
+    setSelectedAchievement(achievement);
   };
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Achievements & Store</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-lg">
-            <Coins className="text-yellow-400" size={18} />
-            <span className="font-medium">{coins} coins</span>
-          </div>
-          <button 
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-          >
-            <LogOut size={16} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Achievements</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
           <AnimatedCard className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Achievements</h2>
-              <Award size={20} className="text-white/60" />
-            </div>
+            <h2 className="text-xl font-bold mb-4 flex items-center">
+              <Trophy className="mr-2 text-yellow-500" />
+              Your Progress
+            </h2>
             
-            <div className="space-y-4">
-              {achievements.map((achievement) => {
-                const unlocked = isAchievementUnlocked(achievement.id);
-                const progress = Math.min(100, (coins / achievement.points_required) * 100);
-                
-                return (
-                  <div 
-                    key={achievement.id} 
-                    className={`rounded-lg p-4 transition-colors cursor-pointer hover:bg-white/10 ${
-                      unlocked 
-                        ? `bg-${character}-primary/20 border border-${character}-primary/40` 
-                        : 'bg-white/5 border border-white/10'
-                    }`}
-                    onClick={() => setSelectedAchievement({
-                      ...achievement,
-                      unlocked,
-                      progress
-                    })}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        unlocked 
-                          ? `bg-${character}-primary/30 text-${character}-primary` 
-                          : 'bg-white/10 text-white/60'
-                      }`}>
-                        {getIconComponent(achievement.icon, 24)}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <h3 className="font-medium">{achievement.name}</h3>
-                          {unlocked && (
-                            <Check size={16} className="ml-2 text-green-500" />
-                          )}
-                        </div>
-                        <p className="text-sm text-white/70">{achievement.description}</p>
-                        
-                        {!unlocked && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>{coins} / {achievement.points_required} points</span>
-                              <span>{Math.floor(progress)}%</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${character ? `bg-${character}-primary` : 'bg-primary'}`}
-                                style={{ width: `${progress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {!unlocked && (
-                        <div className="text-white/40">
-                          <Lock size={18} />
-                        </div>
-                      )}
-                    </div>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2 text-sm">
+                    <span className="text-white/70">Current Points: {points}</span>
+                    <span className="text-white/70">{getProgressText()}</span>
                   </div>
-                );
-              })}
-            </div>
+                  <Progress 
+                    value={progressToNextAchievement(points, achievements)} 
+                    className={`h-2 ${character ? `bg-${character}-primary/20` : 'bg-primary/20'}`}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {achievements.map((achievement) => (
+                    <div 
+                      key={achievement.id}
+                      onClick={() => openAchievementDetails(achievement)}
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${
+                        achievement.unlocked 
+                          ? 'bg-green-500/20 border border-green-500/30 hover:bg-green-500/30' 
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            achievement.unlocked ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'
+                          }`}>
+                            {getIconComponent(achievement.icon)}
+                          </div>
+                          <h3 className="ml-2 font-medium">
+                            {achievement.name}
+                          </h3>
+                        </div>
+                        <EyeIcon size={16} className="text-white/40" />
+                      </div>
+                      
+                      <p className="text-sm text-white/70 mb-2 line-clamp-2">
+                        {achievement.description}
+                      </p>
+                      
+                      <div className="flex justify-between text-xs">
+                        <span className={`${
+                          achievement.unlocked ? 'text-green-400' : 'text-white/40'
+                        }`}>
+                          {achievement.unlocked ? 'Unlocked' : 'Locked'} 
+                        </span>
+                        <span className="text-white/40">
+                          {achievement.points_required} points
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </AnimatedCard>
         </div>
         
         <div>
           <AnimatedCard className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Item Shop</h2>
-              <ShoppingBag size={20} className="text-white/60" />
-            </div>
+            <h2 className="text-xl font-bold mb-4 flex items-center">
+              <Award className="mr-2 text-yellow-500" />
+              Latest Unlocks
+            </h2>
             
-            <div className="grid grid-cols-1 gap-4">
-              {storeItems.map((item) => {
-                const purchased = isItemPurchased(item.id);
-                
-                return (
-                  <div 
-                    key={item.id} 
-                    className={`rounded-lg p-4 transition-colors cursor-pointer hover:bg-white/10 ${
-                      purchased 
-                        ? `bg-${character}-primary/20 border border-${character}-primary/40` 
-                        : 'bg-white/5 border border-white/10'
-                    }`}
-                    onClick={() => setSelectedItem(item)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        purchased 
-                          ? `bg-${character}-primary/30 text-${character}-primary` 
-                          : 'bg-white/10 text-white/60'
-                      }`}>
-                        {getIconComponent(item.icon, 24)}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h3 className="font-medium">{item.name}</h3>
-                        <p className="text-sm text-white/70">{item.description}</p>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center bg-white/10 px-2 py-0.5 rounded text-xs">
-                            <Coins className="text-yellow-400 mr-1" size={12} />
-                            <span>{item.price}</span>
-                          </div>
-                          <div className="text-xs text-white/60">
-                            {item.item_type.charAt(0).toUpperCase() + item.item_type.slice(1)}
-                          </div>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {achievements
+                  .filter(a => a.unlocked)
+                  .sort((a, b) => new Date(b.unlocked_at || 0).getTime() - new Date(a.unlocked_at || 0).getTime())
+                  .slice(0, 5)
+                  .map((achievement) => (
+                    <div 
+                      key={achievement.id}
+                      onClick={() => openAchievementDetails(achievement)}
+                      className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 cursor-pointer hover:bg-green-500/20 transition-colors"
+                    >
+                      <div className="flex items-center mb-1">
+                        <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mr-2">
+                          {getIconComponent(achievement.icon, 14)}
                         </div>
+                        <h3 className="font-medium text-sm">
+                          {achievement.name}
+                        </h3>
                       </div>
                       
-                      <div>
-                        {purchased ? (
-                          <div className="px-3 py-1 text-sm rounded-full bg-green-500/20 text-green-500">
-                            Owned
-                          </div>
-                        ) : (
-                          <AnimatedButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePurchaseItem(item);
-                            }}
-                            disabled={coins < item.price || purchaseLoading === item.id}
-                            character={character || undefined}
-                            size="sm"
-                          >
-                            {purchaseLoading === item.id ? 'Buying...' : 'Purchase'}
-                          </AnimatedButton>
+                      <p className="text-xs text-white/70 mb-1">
+                        {achievement.description}
+                      </p>
+                      
+                      <div className="flex justify-between text-xs text-white/40">
+                        <span>{achievement.points_required} points</span>
+                        {achievement.unlocked_at && (
+                          <span>
+                            {new Date(achievement.unlocked_at).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
                     </div>
+                  ))}
+                
+                {achievements.filter(a => a.unlocked).length === 0 && (
+                  <div className="text-center py-8 text-white/50">
+                    <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>No achievements unlocked yet</p>
+                    <p className="text-sm mt-2">Keep training to unlock achievements!</p>
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
           </AnimatedCard>
         </div>
       </div>
 
-      {selectedItem && (
-        <ItemDetailModal
-          item={selectedItem}
-          owned={isItemPurchased(selectedItem.id)}
-          onClose={() => setSelectedItem(null)}
-          onPurchase={() => {
-            handlePurchaseItem(selectedItem);
-            setSelectedItem(null);
-          }}
-        />
-      )}
-
       {selectedAchievement && (
         <AchievementDetailModal
           achievement={selectedAchievement}
-          unlocked={selectedAchievement.unlocked}
-          progress={selectedAchievement.progress}
           onClose={() => setSelectedAchievement(null)}
-        />
-      )}
-
-      {showLogoutConfirm && (
-        <LogoutConfirmModal
-          onConfirm={handleLogout}
-          onCancel={() => setShowLogoutConfirm(false)}
         />
       )}
     </div>

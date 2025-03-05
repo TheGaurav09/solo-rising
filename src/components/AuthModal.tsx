@@ -82,7 +82,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
                 variant: 'destructive',
               });
             } else {
-              // Update the character count in the new table
+              // Update the character count in the character_counts table
               await updateCharacterCount(character);
             }
             
@@ -112,7 +112,7 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
     }
   };
 
-  // Updated function to use the new character_counts table
+  // Updated function to use the character_counts table
   const updateCharacterCount = async (characterType: string) => {
     try {
       // First check if the character already exists in the count table
@@ -132,7 +132,10 @@ const AuthModal = ({ character, onClose, onSuccess }: AuthModalProps) => {
         // Update existing count
         const { error: updateError } = await supabase
           .from('character_counts')
-          .update({ count: existingData.count + 1, updated_at: new Date().toISOString() })
+          .update({ 
+            count: existingData.count + 1, 
+            updated_at: new Date().toISOString() 
+          })
           .eq('character_type', characterType);
           
         if (updateError) {
