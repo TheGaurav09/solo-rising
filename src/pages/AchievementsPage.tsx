@@ -5,9 +5,11 @@ import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Progress } from '@/components/ui/progress';
 import { getIconComponent } from '@/lib/iconUtils';
-import { Trophy, Award, EyeIcon, ShieldCheck, Zap, Star } from 'lucide-react';
+import { Trophy, Award, EyeIcon, ShieldCheck, Zap, Star, Info } from 'lucide-react';
 import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
 import { toast } from '@/components/ui/use-toast';
+import InfoTooltip from '@/components/ui/InfoTooltip';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
 interface Achievement {
   id: string;
@@ -347,15 +349,34 @@ const AchievementsPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Achievements</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          Achievements
+          <InfoTooltip 
+            content={
+              <div>
+                <p className="mb-2">Complete tasks and earn points to unlock achievements and badges.</p>
+                <p>Each achievement and badge gives you bonus points and special status.</p>
+              </div>
+            }
+          />
+        </h1>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <AnimatedCard className="p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center">
-              <Trophy className="mr-2 text-yellow-500" />
-              Your Progress
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold flex items-center">
+                <Trophy className="mr-2 text-yellow-500" />
+                Your Progress
+                <InfoTooltip
+                  content="Your progress towards the next achievement. Keep earning points to unlock more achievements!"
+                  position="right"
+                  width="w-64"
+                />
+              </h2>
+            </div>
             
             {loading ? (
               <div className="flex justify-center items-center py-12">
@@ -374,97 +395,108 @@ const AchievementsPage = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {achievements.map((achievement) => (
-                    <div 
-                      key={achievement.id}
-                      onClick={() => openAchievementDetails(achievement)}
-                      className={`p-4 rounded-lg cursor-pointer transition-all ${
-                        achievement.unlocked 
-                          ? 'bg-green-500/20 border border-green-500/30 hover:bg-green-500/30' 
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            achievement.unlocked ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'
-                          }`}>
-                            {getIconComponent(achievement.icon)}
+                <CollapsibleSection title="Achievements" defaultOpen={true}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {achievements.map((achievement) => (
+                      <div 
+                        key={achievement.id}
+                        onClick={() => openAchievementDetails(achievement)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all ${
+                          achievement.unlocked 
+                            ? 'bg-green-500/20 border border-green-500/30 hover:bg-green-500/30' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              achievement.unlocked ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'
+                            }`}>
+                              {getIconComponent(achievement.icon)}
+                            </div>
+                            <h3 className="ml-2 font-medium">
+                              {achievement.name}
+                            </h3>
                           </div>
-                          <h3 className="ml-2 font-medium">
-                            {achievement.name}
-                          </h3>
+                          <EyeIcon size={16} className="text-white/40" />
                         </div>
-                        <EyeIcon size={16} className="text-white/40" />
+                        
+                        <p className="text-sm text-white/70 mb-2 line-clamp-2">
+                          {achievement.description}
+                        </p>
+                        
+                        <div className="flex justify-between text-xs">
+                          <span className={`${
+                            achievement.unlocked ? 'text-green-400' : 'text-white/40'
+                          }`}>
+                            {achievement.unlocked ? 'Unlocked' : 'Locked'} 
+                          </span>
+                          <span className="text-white/40">
+                            {achievement.points_required} points
+                          </span>
+                        </div>
                       </div>
-                      
-                      <p className="text-sm text-white/70 mb-2 line-clamp-2">
-                        {achievement.description}
-                      </p>
-                      
-                      <div className="flex justify-between text-xs">
-                        <span className={`${
-                          achievement.unlocked ? 'text-green-400' : 'text-white/40'
-                        }`}>
-                          {achievement.unlocked ? 'Unlocked' : 'Locked'} 
-                        </span>
-                        <span className="text-white/40">
-                          {achievement.points_required} points
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </CollapsibleSection>
               </>
             )}
           </AnimatedCard>
           
           <AnimatedCard className="p-6 mt-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center">
-              <ShieldCheck className="mr-2 text-blue-400" />
-              Badges
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {badges.map((badge) => (
-                <div 
-                  key={badge.id}
-                  onClick={() => openBadgeDetails(badge)}
-                  className={`p-4 rounded-lg cursor-pointer transition-all ${
-                    badge.unlocked 
-                      ? 'bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30' 
-                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        badge.unlocked ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-white/40'
-                      }`}>
-                        {getBadgeIcon(badge)}
-                      </div>
-                      <h3 className="ml-2 font-medium">
-                        {badge.name}
-                      </h3>
-                    </div>
-                    <EyeIcon size={16} className="text-white/40" />
-                  </div>
-                  
-                  <p className="text-sm text-white/70 mb-2 line-clamp-2">
-                    {badge.description}
-                  </p>
-                  
-                  <div className="flex justify-between text-xs">
-                    <span className={`${
-                      badge.unlocked ? 'text-blue-400' : 'text-white/40'
-                    }`}>
-                      {badge.unlocked ? 'Earned' : 'Not Earned'} 
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold flex items-center">
+                <ShieldCheck className="mr-2 text-blue-400" />
+                Badges
+                <InfoTooltip
+                  content="Badges are special rewards for completing specific milestones in your workout journey."
+                  position="right"
+                  width="w-64"
+                />
+              </h2>
             </div>
+            
+            <CollapsibleSection title="Available Badges" defaultOpen={true}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {badges.map((badge) => (
+                  <div 
+                    key={badge.id}
+                    onClick={() => openBadgeDetails(badge)}
+                    className={`p-4 rounded-lg cursor-pointer transition-all ${
+                      badge.unlocked 
+                        ? 'bg-blue-500/20 border border-blue-500/30 hover:bg-blue-500/30' 
+                        : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          badge.unlocked ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-white/40'
+                        }`}>
+                          {getBadgeIcon(badge)}
+                        </div>
+                        <h3 className="ml-2 font-medium">
+                          {badge.name}
+                        </h3>
+                      </div>
+                      <EyeIcon size={16} className="text-white/40" />
+                    </div>
+                    
+                    <p className="text-sm text-white/70 mb-2 line-clamp-2">
+                      {badge.description}
+                    </p>
+                    
+                    <div className="flex justify-between text-xs">
+                      <span className={`${
+                        badge.unlocked ? 'text-blue-400' : 'text-white/40'
+                      }`}>
+                        {badge.unlocked ? 'Earned' : 'Not Earned'} 
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
           </AnimatedCard>
         </div>
         
@@ -561,6 +593,15 @@ const AchievementsPage = () => {
             <h2 className="text-xl font-bold mb-4 flex items-center">
               <Zap className="mr-2 text-orange-400" />
               Workout Streak
+              <InfoTooltip
+                content={
+                  <div>
+                    <p>Your current workout streak shows how many consecutive days you've worked out.</p>
+                    <p className="mt-2">Complete a workout each day to maintain your streak. If you miss a day, your streak will reset to zero.</p>
+                  </div>
+                }
+                position="right"
+              />
             </h2>
             
             <div className="text-center py-4">

@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
+import InfoTooltip from '@/components/ui/InfoTooltip';
 
 const ProfilePage = () => {
   const { userName, character, points } = useUser();
@@ -236,7 +237,13 @@ const ProfilePage = () => {
             </div>
             
             <div className="mt-8">
-              <h3 className="text-lg font-bold mb-4">Recent Workouts</h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center">
+                Recent Workouts
+                <InfoTooltip 
+                  content="Your most recent workouts are shown here. Complete more workouts to see them listed."
+                  position="right"
+                />
+              </h3>
               
               {workouts.length === 0 ? (
                 <div className="text-center py-6 text-white/50">
@@ -263,7 +270,13 @@ const ProfilePage = () => {
             </div>
             
             <div className="mt-8">
-              <h3 className="text-lg font-bold mb-4">Achievements</h3>
+              <h3 className="text-lg font-bold mb-4 flex items-center">
+                Achievements
+                <InfoTooltip 
+                  content="Achievements you've unlocked by gaining points and completing workouts."
+                  position="right"
+                />
+              </h3>
               
               {achievements.length === 0 ? (
                 <div className="text-center py-6 text-white/50">
@@ -292,7 +305,13 @@ const ProfilePage = () => {
         <div>
           <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Global Leaderboard</h2>
+              <h2 className="text-xl font-bold flex items-center">
+                Global Leaderboard
+                <InfoTooltip 
+                  content="See how you rank against other warriors based on total points earned."
+                  position="right"
+                />
+              </h2>
               <div className="flex items-center gap-2">
                 <Users size={20} className="text-white/60" />
                 {leaderboardData.length > 20 && (

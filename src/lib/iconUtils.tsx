@@ -1,6 +1,11 @@
 
 import React from 'react';
-import { Award, Star, Zap, Shield, Sparkles, Diamond, Trophy, TrendingUp, Heart, Flame, BookOpen, Book, Coffee, Ghost, Dumbbell } from 'lucide-react';
+import { 
+  Award, Star, Zap, Shield, Sparkles, Diamond, Trophy, 
+  TrendingUp, Heart, Flame, BookOpen, Book, Coffee, 
+  Ghost, Dumbbell, Info, Timer, MessageCircle, Tag,
+  User, CheckCircle, Clock, Calendar, ShoppingBag
+} from 'lucide-react';
 
 export const getIconComponent = (iconName: string, size = 18) => {
   switch(iconName) {
@@ -19,6 +24,15 @@ export const getIconComponent = (iconName: string, size = 18) => {
     case 'coffee': return <Coffee size={size} />;
     case 'ghost': return <Ghost size={size} />;
     case 'dumbbell': return <Dumbbell size={size} />;
+    case 'info': return <Info size={size} />;
+    case 'timer': return <Timer size={size} />;
+    case 'message-circle': return <MessageCircle size={size} />;
+    case 'tag': return <Tag size={size} />;
+    case 'user': return <User size={size} />;
+    case 'check-circle': return <CheckCircle size={size} />;
+    case 'clock': return <Clock size={size} />;
+    case 'calendar': return <Calendar size={size} />;
+    case 'shopping-bag': return <ShoppingBag size={size} />;
     default: return <Award size={size} />;
   }
 };

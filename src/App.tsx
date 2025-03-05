@@ -12,6 +12,7 @@ import Dashboard from "./components/Dashboard";
 import WorkoutPage from "./pages/WorkoutPage";
 import ProfilePage from "./pages/ProfilePage";
 import AchievementsPage from "./pages/AchievementsPage";
+import StorePage from "./pages/StorePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ const App = () => {
                 <Route path="workout" element={<WorkoutPage />} />
                 <Route path="profile/:userId" element={<ProfilePage />} />
                 <Route path="achievements" element={<AchievementsPage />} />
+                <Route path="store" element={<StorePage />} />
                 {/* Redirect missing paths to workout */}
                 <Route path="*" element={<Navigate to="/workout" replace />} />
               </Route>

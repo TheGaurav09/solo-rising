@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 type CharacterType = 'goku' | 'saitama' | 'jin-woo' | null;
 
@@ -36,56 +37,72 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   // Load user data from Supabase on initial render
   useEffect(() => {
     const fetchUserData = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData.user) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', authData.user.id)
+            .single();
 
-        if (data && !error) {
-          setCharacter(data.character_type as CharacterType);
-          setUserName(data.warrior_name);
-          setPoints(data.points || 0);
-          setCoins(data.coins || 0);
-          setStreak(data.streak || 0);
-          setLastWorkoutDate(data.last_workout_date || null);
-          setHasSelectedCharacter(true);
-        }
-      } else {
-        // Fallback to localStorage if not authenticated
-        const storedCharacter = localStorage.getItem('character');
-        const storedUserName = localStorage.getItem('userName');
-        const storedPoints = localStorage.getItem('points');
-        const storedCoins = localStorage.getItem('coins');
-        const storedStreak = localStorage.getItem('streak');
-        const storedLastWorkoutDate = localStorage.getItem('lastWorkoutDate');
-        
-        if (storedCharacter) {
-          setCharacter(storedCharacter as CharacterType);
-          setHasSelectedCharacter(true);
-        }
-        
-        if (storedUserName) {
-          setUserName(storedUserName);
-        }
-        
-        if (storedPoints) {
-          setPoints(parseInt(storedPoints, 10));
-        }
+          if (data && !error) {
+            setCharacter(data.character_type as CharacterType);
+            setUserName(data.warrior_name);
+            setPoints(data.points || 0);
+            setCoins(data.coins || 0);
+            setStreak(data.streak || 0);
+            setLastWorkoutDate(data.last_workout_date || null);
+            setHasSelectedCharacter(true);
+          } else if (error) {
+            console.error("Error fetching user data:", error);
+            toast({
+              title: "Error",
+              description: "Failed to load user data. Please try refreshing the page.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          // Fallback to localStorage if not authenticated
+          const storedCharacter = localStorage.getItem('character');
+          const storedUserName = localStorage.getItem('userName');
+          const storedPoints = localStorage.getItem('points');
+          const storedCoins = localStorage.getItem('coins');
+          const storedStreak = localStorage.getItem('streak');
+          const storedLastWorkoutDate = localStorage.getItem('lastWorkoutDate');
+          
+          if (storedCharacter) {
+            setCharacter(storedCharacter as CharacterType);
+            setHasSelectedCharacter(true);
+          }
+          
+          if (storedUserName) {
+            setUserName(storedUserName);
+          }
+          
+          if (storedPoints) {
+            setPoints(parseInt(storedPoints, 10));
+          }
 
-        if (storedCoins) {
-          setCoins(parseInt(storedCoins, 10));
-        }
+          if (storedCoins) {
+            setCoins(parseInt(storedCoins, 10));
+          }
 
-        if (storedStreak) {
-          setStreak(parseInt(storedStreak, 10));
-        }
+          if (storedStreak) {
+            setStreak(parseInt(storedStreak, 10));
+          }
 
-        if (storedLastWorkoutDate) {
-          setLastWorkoutDate(storedLastWorkoutDate);
+          if (storedLastWorkoutDate) {
+            setLastWorkoutDate(storedLastWorkoutDate);
+          }
         }
+      } catch (error) {
+        console.error("Error in fetchUserData:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try refreshing the page.",
+          variant: "destructive",
+        });
       }
     };
 
@@ -162,19 +179,37 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // If authenticated, update Supabase
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        await supabase
-          .from('users')
-          .update({ 
-            character_type: character,
-            warrior_name: userName,
-            points,
-            coins,
-            streak,
-            last_workout_date: lastWorkoutDate
-          })
-          .eq('id', authData.user.id);
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData.user) {
+          const { error } = await supabase
+            .from('users')
+            .update({ 
+              character_type: character,
+              warrior_name: userName,
+              points,
+              coins,
+              streak,
+              last_workout_date: lastWorkoutDate
+            })
+            .eq('id', authData.user.id);
+            
+          if (error) {
+            console.error("Error updating user data:", error);
+            toast({
+              title: "Error",
+              description: "Failed to save your progress. Please try again.",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error in updateUserData:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while saving your data.",
+          variant: "destructive",
+        });
       }
     };
 
@@ -182,108 +217,219 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, [character, userName, points, coins, streak, lastWorkoutDate]);
 
   const addPoints = async (amount: number) => {
-    const newPoints = points + amount;
-    setPoints(newPoints);
-    
-    // Also add coins (10% of points earned)
-    const coinsToAdd = Math.floor(amount * 0.1);
-    if (coinsToAdd > 0) {
-      addCoins(coinsToAdd);
-    }
-    
-    // Update points in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ points: newPoints })
-        .eq('id', authData.user.id);
+    try {
+      const newPoints = points + amount;
+      setPoints(newPoints);
+      
+      // Also add coins (10% of points earned)
+      const coinsToAdd = Math.floor(amount * 0.1);
+      if (coinsToAdd > 0) {
+        addCoins(coinsToAdd);
+      }
+      
+      // Update points in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ points: newPoints })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating points:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update points. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in addPoints:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while adding points.",
+        variant: "destructive",
+      });
     }
   };
 
   const addCoins = async (amount: number) => {
-    const newCoins = coins + amount;
-    setCoins(newCoins);
-    
-    // Update coins in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ coins: newCoins })
-        .eq('id', authData.user.id);
+    try {
+      const newCoins = coins + amount;
+      setCoins(newCoins);
+      
+      // Update coins in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ coins: newCoins })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating coins:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update coins. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in addCoins:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while adding coins.",
+        variant: "destructive",
+      });
     }
   };
 
   const useCoins = async (amount: number): Promise<boolean> => {
-    if (coins < amount) return false;
-    
-    const newCoins = coins - amount;
-    setCoins(newCoins);
-    
-    // Update coins in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ coins: newCoins })
-        .eq('id', authData.user.id);
+    try {
+      if (coins < amount) return false;
+      
+      const newCoins = coins - amount;
+      setCoins(newCoins);
+      
+      // Update coins in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ coins: newCoins })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating coins:", error);
+          toast({
+            title: "Error",
+            description: "Failed to use coins. Please try again.",
+            variant: "destructive",
+          });
+          setCoins(coins); // Revert if update fails
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error in useCoins:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while using coins.",
+        variant: "destructive",
+      });
+      return false;
     }
-    
-    return true;
   };
 
   const incrementStreak = async () => {
-    const newStreak = streak + 1;
-    setStreak(newStreak);
-    
-    // Update streak in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ streak: newStreak })
-        .eq('id', authData.user.id);
+    try {
+      const newStreak = streak + 1;
+      setStreak(newStreak);
+      
+      // Update streak in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ streak: newStreak })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating streak:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update streak. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in incrementStreak:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating streak.",
+        variant: "destructive",
+      });
     }
   };
 
   const resetStreak = async () => {
-    setStreak(0);
-    
-    // Update streak in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ streak: 0 })
-        .eq('id', authData.user.id);
+    try {
+      setStreak(0);
+      
+      // Update streak in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ streak: 0 })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error resetting streak:", error);
+          toast({
+            title: "Error",
+            description: "Failed to reset streak. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in resetStreak:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while resetting streak.",
+        variant: "destructive",
+      });
     }
   };
 
   const updateLastWorkoutDate = async () => {
-    const today = new Date().toISOString();
-    setLastWorkoutDate(today);
-    
-    // If last workout was not today, increment streak
-    if (lastWorkoutDate) {
-      const lastDate = new Date(lastWorkoutDate);
-      const currentDate = new Date();
+    try {
+      const today = new Date().toISOString();
+      setLastWorkoutDate(today);
       
-      if (lastDate.toDateString() !== currentDate.toDateString()) {
+      // If last workout was not today, increment streak
+      if (lastWorkoutDate) {
+        const lastDate = new Date(lastWorkoutDate);
+        const currentDate = new Date();
+        
+        if (lastDate.toDateString() !== currentDate.toDateString()) {
+          incrementStreak();
+        }
+      } else {
+        // First workout, start streak
         incrementStreak();
       }
-    } else {
-      // First workout, start streak
-      incrementStreak();
-    }
-    
-    // Update last_workout_date in Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData.user) {
-      await supabase
-        .from('users')
-        .update({ last_workout_date: today })
-        .eq('id', authData.user.id);
+      
+      // Update last_workout_date in Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ last_workout_date: today })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating last workout date:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update workout date. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in updateLastWorkoutDate:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while updating workout date.",
+        variant: "destructive",
+      });
     }
   };
 
