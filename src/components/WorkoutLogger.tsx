@@ -1,12 +1,13 @@
-
 import React, { useState } from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
 import { Dumbbell, Timer, Repeat, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WorkoutLoggerProps {
-  onWorkoutLogged: (points: number) => void;
+  refreshWorkouts?: () => Promise<void>;
+  onWorkoutLogged?: (points: number) => void;
 }
 
 interface ExerciseOption {
@@ -16,13 +17,14 @@ interface ExerciseOption {
   icon: React.ReactNode;
 }
 
-const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
-  const { character, addPoints } = useUser();
+const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps) => {
+  const { character, addPoints, checkWorkoutCooldown, setLastWorkoutTime, canAddWorkout } = useUser();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [duration, setDuration] = useState(30);
   const [reps, setReps] = useState(10);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [cooldownError, setCooldownError] = useState(false);
 
   const exercises: ExerciseOption[] = [
     { id: 'pushups', name: 'Push-ups', points: 10, icon: <Dumbbell size={18} /> },
@@ -53,18 +55,63 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
     return totalPoints;
   };
 
-  const handleLogWorkout = () => {
+  const handleLogWorkout = async () => {
     if (!selectedExercise) return;
     
     setLoading(true);
+    setCooldownError(false);
     
-    const pointsEarned = calculatePoints();
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const canAdd = await checkWorkoutCooldown();
+      if (!canAdd) {
+        setCooldownError(true);
+        setLoading(false);
+        return;
+      }
+      
+      const pointsEarned = calculatePoints();
+      const exercise = getSelectedExercise();
+      
+      // Save to Supabase
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('workouts')
+          .insert({
+            user_id: authData.user.id,
+            exercise_type: exercise?.name,
+            duration: duration,
+            reps: reps,
+            points: pointsEarned
+          });
+          
+        if (error) {
+          console.error("Error logging workout:", error);
+          toast({
+            title: "Error",
+            description: "Failed to log workout. Please try again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Update last workout time
+      await setLastWorkoutTime(new Date().toISOString());
+      
+      // Add points
       addPoints(pointsEarned);
-      onWorkoutLogged(pointsEarned);
-      setLoading(false);
+      
+      if (onWorkoutLogged) {
+        onWorkoutLogged(pointsEarned);
+      }
+      
+      // Refresh workouts list if function provided
+      if (refreshWorkouts) {
+        await refreshWorkouts();
+      }
+      
       setSuccess(true);
       
       // Reset after a moment
@@ -74,7 +121,11 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
         setDuration(30);
         setReps(10);
       }, 2000);
-    }, 1000);
+    } catch (error) {
+      console.error("Error in handleLogWorkout:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -179,7 +230,7 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
           
           <AnimatedButton
             onClick={handleLogWorkout}
-            disabled={!selectedExercise || loading}
+            disabled={!selectedExercise || loading || cooldownError}
             character={character || undefined}
             className="w-full"
           >

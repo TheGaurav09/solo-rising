@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-type CharacterType = 'goku' | 'saitama' | 'jin-woo' | null;
+export type CharacterType = 'goku' | 'saitama' | 'jin-woo' | null;
 
 interface UserContextType {
   character: CharacterType;
