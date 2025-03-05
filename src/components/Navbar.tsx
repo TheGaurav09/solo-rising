@@ -117,7 +117,7 @@ const Navbar = () => {
             {navItems.map((item) => (
               <AnimatedButton
                 key={item.path}
-                variant={location.pathname === item.path ? "primary" : "ghost"}
+                variant={location.pathname === item.path ? "primary" : "outline"}
                 character={character}
                 size="sm"
                 onClick={() => navigate(item.path)}

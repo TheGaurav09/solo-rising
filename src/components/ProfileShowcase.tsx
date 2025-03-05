@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Json } from '@/integrations/supabase/types';
 
 // Make ShowcaseItem compatible with JSON serialization
 interface ShowcaseItem {
@@ -60,14 +61,14 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
       }
       
       if (data) {
-        // Convert the data to our Showcase type
+        // Convert the data to our Showcase type with proper type casting
         const showcaseData: Showcase = {
           id: data.id,
           user_id: data.user_id,
-          items: Array.isArray(data.items) ? data.items as ShowcaseItem[] : []
+          items: Array.isArray(data.items) ? (data.items as unknown as ShowcaseItem[]) : []
         };
         setShowcase(showcaseData);
-        setSelectedItems(Array.isArray(data.items) ? data.items as ShowcaseItem[] : []);
+        setSelectedItems(Array.isArray(data.items) ? (data.items as unknown as ShowcaseItem[]) : []);
       } else {
         setShowcase(null);
         setSelectedItems([]);
@@ -198,7 +199,7 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
         const { error } = await supabase
           .from('user_showcase')
           .update({ 
-            items: itemsToSave,
+            items: itemsToSave as unknown as Json,
             updated_at: new Date().toISOString()
           })
           .eq('id', showcase.id)
@@ -219,7 +220,7 @@ const ProfileShowcase = ({ userId, isViewingOtherUser = false }: ProfileShowcase
           .from('user_showcase')
           .insert({
             user_id: userData.user.id,
-            items: itemsToSave
+            items: itemsToSave as unknown as Json
           });
         
         if (error) {
