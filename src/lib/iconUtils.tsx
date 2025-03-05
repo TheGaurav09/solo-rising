@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Award, Star, Zap, Shield, Sparkles, Diamond, Trophy, 
@@ -40,6 +39,7 @@ export const getIconComponent = (iconName: string, size = 18) => {
     case 'arrow-up': return <ArrowUp size={size} />;
     case 'globe': return <Globe size={size} />;
     case 'map-pin': return <MapPin size={size} />;
+    case 'discord': return <MessageCircle size={size} />;
     default: return <Award size={size} />;
   }
 };

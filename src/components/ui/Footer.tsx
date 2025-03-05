@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Twitter, Instagram, Youtube, Discord } from 'lucide-react';
+import { Twitter, Instagram, Youtube, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 
@@ -67,7 +68,7 @@ const Footer = () => {
               className="text-white/60 hover:text-white transition-colors group"
               aria-label="Discord"
             >
-              <Discord className={`h-5 w-5 ${getColorClass('discord')}`} />
+              <MessageCircle className={`h-5 w-5 ${getColorClass('discord')}`} />
             </a>
           </div>
           
