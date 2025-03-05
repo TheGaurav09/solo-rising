@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-mobile';
-import { Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Share2, ChevronLeft, ChevronRight, Coffee } from 'lucide-react';
 
 // Updated sidebar component with collapsible functionality for all screen sizes
 export function Sidebar({
@@ -62,7 +62,7 @@ export function Sidebar({
             <span className={`mr-2 ${brandIconStyle}`}>
               {brandIcon}
             </span>
-            <span className="font-bold text-lg tracking-tight">Solo Prove</span>
+            <span className="font-bold text-lg tracking-tight">Solo Rising</span>
           </div>
           <button 
             onClick={toggleSidebar}
@@ -115,19 +115,35 @@ export function Sidebar({
         
         {/* Primary Actions */}
         <div className="px-3 py-4 border-t border-white/10">
+          {/* Filter out the logout button */}
           <ul className="space-y-1">
-            {primaryActions.map((action, index) => (
-              <li key={index}>
-                <button
-                  onClick={action.onClick}
-                  className="w-full flex items-center px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <span className="mr-3">{action.icon}</span>
-                  <span>{action.label}</span>
-                </button>
-              </li>
-            ))}
+            {primaryActions
+              .filter(action => action.label !== "Logout")
+              .map((action, index) => (
+                <li key={index}>
+                  <button
+                    onClick={action.onClick}
+                    className="w-full flex items-center px-3 py-2 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <span className="mr-3">{action.icon}</span>
+                    <span>{action.label}</span>
+                  </button>
+                </li>
+              ))}
           </ul>
+          
+          {/* Buy Me a Coffee Button */}
+          <div className="mt-4">
+            <a 
+              href="https://www.buymeacoffee.com/SoloRising" 
+              target="_blank" 
+              rel="noreferrer"
+              className="w-full flex items-center justify-center px-3 py-2 rounded-md bg-[#FFDD00] text-black hover:opacity-90 transition-colors"
+            >
+              <Coffee size={18} className="mr-2" />
+              <span className="font-medium">Buy me a coffee</span>
+            </a>
+          </div>
         </div>
       </aside>
     </>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Heart, Instagram, Twitter, MessageCircle, Github } from 'lucide-react';
+import { Heart, Instagram, Twitter, MessageCircle, Github, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-mobile';
 
@@ -43,7 +43,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start">
-              <span className="text-2xl font-bold text-gradient goku-gradient mr-2">SOLO PROVE</span>
+              <span className="text-2xl font-bold text-gradient goku-gradient mr-2">SOLO RISING</span>
             </div>
             <p className="text-white/60 text-sm mt-2">
               Train like your favorite anime character
@@ -66,12 +66,22 @@ const Footer = () => {
               ))}
             </div>
             
-            <p className="text-white/60 text-sm text-center md:text-right">
-              © {currentYear} Solo Prove. All rights reserved.
-            </p>
-            <p className="text-white/40 text-xs mt-1 flex items-center">
-              Made with <Heart size={12} className="mx-1 text-red-500" /> for anime and fitness fans
-            </p>
+            <div className="flex flex-col items-center">
+              <p className="text-white/60 text-sm text-center md:text-right">
+                © {currentYear} Solo Rising. All rights reserved.
+              </p>
+              <p className="text-white/40 text-xs mt-1 flex items-center">
+                Made with <Heart size={12} className="mx-1 text-red-500" /> for anime and fitness fans
+              </p>
+              <div className="mt-2">
+                <a href="https://www.buymeacoffee.com/SoloRising" target="_blank" rel="noreferrer">
+                  <button className="flex items-center gap-2 bg-[#FFDD00] text-black text-sm font-medium px-3 py-1 rounded-md">
+                    <Coffee size={16} />
+                    <span>Buy me a coffee</span>
+                  </button>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         

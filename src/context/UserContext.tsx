@@ -13,7 +13,9 @@ interface UserContextType {
   coins: number;
   streak: number;
   lastWorkoutDate: string | null;
+  lastWorkoutTime: string | null;
   hasSelectedCharacter: boolean;
+  canAddWorkout: boolean;
   setCharacter: (character: CharacterType) => void;
   setUserName: (name: string) => void;
   setCountry: (country: string) => void;
@@ -21,6 +23,8 @@ interface UserContextType {
   useCoins: (amount: number) => Promise<boolean>;
   checkForAchievements: () => Promise<void>;
   updateUserProfile: (name: string) => Promise<boolean>;
+  checkWorkoutCooldown: () => Promise<boolean>;
+  setLastWorkoutTime: (time: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -33,6 +37,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [coins, setCoins] = useState(0);
   const [streak, setStreak] = useState(0);
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
+  const [lastWorkoutTime, setLastWorkoutTime] = useState<string | null>(null);
+  const [canAddWorkout, setCanAddWorkout] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -44,6 +50,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const storedCoins = localStorage.getItem('coins');
     const storedStreak = localStorage.getItem('streak');
     const storedLastWorkoutDate = localStorage.getItem('lastWorkoutDate');
+    const storedLastWorkoutTime = localStorage.getItem('lastWorkoutTime');
     
     if (storedCharacter) setCharacter(storedCharacter as CharacterType);
     if (storedUserName) setUserName(storedUserName);
@@ -52,6 +59,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (storedCoins) setCoins(parseInt(storedCoins));
     if (storedStreak) setStreak(parseInt(storedStreak));
     if (storedLastWorkoutDate) setLastWorkoutDate(storedLastWorkoutDate);
+    if (storedLastWorkoutTime) setLastWorkoutTime(storedLastWorkoutTime);
+    
+    // Check workout cooldown on initial load
+    if (storedLastWorkoutTime) {
+      checkWorkoutCooldown();
+    }
     
     // Then check Supabase for the latest data
     const fetchUserData = async () => {
@@ -69,6 +82,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             setCoins(0);
             setStreak(0);
             setLastWorkoutDate(null);
+            setLastWorkoutTime(null);
           }
           setIsInitialized(true);
           return;
@@ -97,6 +111,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCoins(userData.coins || 0);
           setStreak(userData.streak || 0);
           setLastWorkoutDate(userData.last_workout_date);
+          setLastWorkoutTime(userData.last_workout_time || null);
           
           // Update localStorage for faster loading next time
           if (userData.character_type) {
@@ -109,6 +124,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('streak', String(userData.streak || 0));
           if (userData.last_workout_date) {
             localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
+          }
+          if (userData.last_workout_time) {
+            localStorage.setItem('lastWorkoutTime', userData.last_workout_time);
+            checkWorkoutCooldown();
           }
           
           // Check for achievements after fetching user data
@@ -139,6 +158,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setCoins(0);
         setStreak(0);
         setLastWorkoutDate(null);
+        setLastWorkoutTime(null);
       } else if (event === 'SIGNED_IN' && session) {
         // Refetch user data on sign in
         fetchUserData();
@@ -149,6 +169,51 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  const checkWorkoutCooldown = async (): Promise<boolean> => {
+    if (!lastWorkoutTime) {
+      setCanAddWorkout(true);
+      return true;
+    }
+    
+    const lastTime = new Date(lastWorkoutTime).getTime();
+    const currentTime = new Date().getTime();
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+    
+    const hasPassedCooldown = currentTime - lastTime >= thirtyMinutesInMs;
+    setCanAddWorkout(hasPassedCooldown);
+    
+    return hasPassedCooldown;
+  };
+
+  const updateLastWorkoutTime = async (time: string): Promise<void> => {
+    setLastWorkoutTime(time);
+    localStorage.setItem('lastWorkoutTime', time);
+    
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ last_workout_time: time })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating last workout time:", error);
+        }
+      }
+    } catch (error) {
+      console.error("Error in updateLastWorkoutTime:", error);
+    }
+    
+    // After setting the time, update the cooldown status
+    setCanAddWorkout(false);
+    
+    // Schedule a check in 30 minutes to update the cooldown status
+    setTimeout(() => {
+      checkWorkoutCooldown();
+    }, 30 * 60 * 1000);
+  };
 
   const handleCharacterUpdate = async (newCharacter: CharacterType) => {
     if (!newCharacter) return;
@@ -581,14 +646,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         coins,
         streak,
         lastWorkoutDate,
+        lastWorkoutTime,
         hasSelectedCharacter: !!character,
+        canAddWorkout,
         setCharacter: handleCharacterUpdate,
         setUserName,
         setCountry,
         addPoints,
         useCoins,
         checkForAchievements,
-        updateUserProfile
+        updateUserProfile,
+        checkWorkoutCooldown,
+        setLastWorkoutTime: updateLastWorkoutTime
       }}
     >
       {children}
