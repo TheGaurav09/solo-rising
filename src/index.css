@@ -41,6 +41,11 @@
   html {
     @apply scroll-smooth;
   }
+  
+  a.underline-link {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-current after:opacity-70 
+    hover:after:opacity-100 after:transition-opacity;
+  }
 }
 
 @layer utilities {
@@ -171,5 +176,17 @@
       linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 24px 24px;
     background-position: center center;
+  }
+  
+  /* Scrollable list container */
+  .scrollable-list {
+    max-height: 300px;
+    overflow-y: auto;
+    @apply scrollbar-none pr-2;
+  }
+  
+  /* Fix for dropdown text readability */
+  .dropdown-menu-item {
+    @apply bg-black/80 text-white hover:bg-white/20 hover:text-white;
   }
 }

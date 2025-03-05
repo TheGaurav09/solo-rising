@@ -184,51 +184,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     }
   };
 
-  const WorkoutButton = ({ onClick, isDisabled, isLogging, character }) => {
-    const getButtonClasses = () => {
-      let baseClasses = "w-full py-3 mt-4 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all hover:scale-105 hover-lift";
-      
-      if (isDisabled) {
-        return `${baseClasses} bg-gray-700 text-gray-400 cursor-not-allowed`;
-      }
-      
-      if (character) {
-        switch (character) {
-          case 'goku':
-            return `${baseClasses} bg-goku-primary text-black hover:bg-goku-primary/90`;
-          case 'saitama':
-            return `${baseClasses} bg-saitama-primary text-black hover:bg-saitama-primary/90`;
-          case 'jin-woo':
-            return `${baseClasses} bg-jin-woo-primary hover:bg-jin-woo-primary/90`;
-          default:
-            return `${baseClasses} bg-primary hover:bg-primary/90`;
-        }
-      }
-      
-      return `${baseClasses} bg-primary hover:bg-primary/90`;
-    };
-    
-    return (
-      <button
-        onClick={onClick}
-        disabled={isDisabled || isLogging}
-        className={getButtonClasses()}
-      >
-        {isLogging ? (
-          <>
-            <Loader2 className="animate-spin" size={20} />
-            <span>Logging Workout...</span>
-          </>
-        ) : (
-          <>
-            <Dumbbell size={20} />
-            <span>Log Workout</span>
-          </>
-        )}
-      </button>
-    );
-  };
-
   return (
     <AnimatedCard className="w-full p-6 max-w-md mx-auto">
       <h2 className="text-xl font-bold mb-4">Log Workout</h2>
@@ -349,12 +304,29 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
             </div>
           </div>
           
-          <WorkoutButton 
-            onClick={handleLogWorkout} 
-            isDisabled={!selectedExercise || loading || cooldownRemaining > 0} 
-            isLogging={loading} 
-            character={character}
-          />
+          <button
+            onClick={handleLogWorkout}
+            disabled={!selectedExercise || loading || cooldownRemaining > 0}
+            className={`w-full py-3 mt-4 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all hover:scale-105 hover-lift
+              ${!selectedExercise || loading || cooldownRemaining > 0 
+                ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                : character 
+                  ? `bg-${character}-primary ${character === 'jin-woo' ? 'text-white' : 'text-black'} hover:bg-${character}-primary/90` 
+                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+              }`}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>Logging Workout...</span>
+              </>
+            ) : (
+              <>
+                <Dumbbell size={20} />
+                <span>Log Workout</span>
+              </>
+            )}
+          </button>
         </>
       )}
     </AnimatedCard>

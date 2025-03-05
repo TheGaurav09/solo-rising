@@ -21,6 +21,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
@@ -29,10 +30,18 @@ const App = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Simple initialization to avoid infinite loading
+    // Initialize application
     const timer = setTimeout(() => {
       setIsInitialized(true);
     }, 500);
+    
+    // Load Supabase data when app initializes
+    const loadInitialData = async () => {
+      // You can preload initial data here
+      // This ensures data is ready when components mount
+    };
+    
+    loadInitialData();
     
     return () => clearTimeout(timer);
   }, []);
@@ -40,7 +49,10 @@ const App = () => {
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        <div className="flex flex-col items-center">
+          <div className="text-3xl font-bold mb-4 text-gradient goku-gradient">SOLO RISING</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
       </div>
     );
   }
