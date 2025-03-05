@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -6,7 +5,7 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
 
 const WorkoutPage = () => {
@@ -20,44 +19,10 @@ const WorkoutPage = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAllExercises, setShowAllExercises] = useState(false);
-  const [lastWorkoutTime, setLastWorkoutTime] = useState<Date | null>(null);
-  const [canAddWorkout, setCanAddWorkout] = useState(true);
-  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
 
   useEffect(() => {
     fetchWorkoutHistory();
   }, []);
-
-  useEffect(() => {
-    // Check if the user can add a workout
-    if (lastWorkoutTime) {
-      const now = new Date();
-      const timeDiff = now.getTime() - lastWorkoutTime.getTime();
-      const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-      
-      if (minutesDiff < 30) {
-        setCanAddWorkout(false);
-        const timeLeft = 30 - minutesDiff;
-        setCooldownTimeLeft(timeLeft);
-        
-        // Set up a timer to update the cooldown time
-        const timer = setInterval(() => {
-          setCooldownTimeLeft(prev => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              setCanAddWorkout(true);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 60000); // update every minute
-        
-        return () => clearInterval(timer);
-      } else {
-        setCanAddWorkout(true);
-      }
-    }
-  }, [lastWorkoutTime]);
 
   const fetchWorkoutHistory = async () => {
     setIsLoadingHistory(true);
@@ -73,11 +38,6 @@ const WorkoutPage = () => {
 
       if (error) throw error;
       setWorkoutHistory(data || []);
-      
-      // Set the last workout time
-      if (data && data.length > 0) {
-        setLastWorkoutTime(new Date(data[0].created_at));
-      }
     } catch (error) {
       console.error('Error fetching workout history:', error);
       toast({
@@ -126,21 +86,11 @@ const WorkoutPage = () => {
 
   const handleSubmitWorkout = () => {
     if (!selectedExercise) return;
-    
-    if (!canAddWorkout) {
-      toast({
-        title: 'Cooldown Period',
-        description: `You can add another workout in ${cooldownTimeLeft} minutes`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    
     setShowConfirmModal(true);
   };
 
   const handleAddWorkout = async () => {
-    if (!selectedExercise || !canAddWorkout) return;
+    if (!selectedExercise) return;
     
     setLoading(true);
     
@@ -268,9 +218,6 @@ const WorkoutPage = () => {
       });
       
       setSuccess(true);
-      setLastWorkoutTime(new Date());
-      setCanAddWorkout(false);
-      setCooldownTimeLeft(30);
       
       fetchWorkoutHistory();
       
@@ -310,12 +257,6 @@ const WorkoutPage = () => {
               </div>
             ) : (
               <>
-                {!canAddWorkout && (
-                  <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                    <p className="text-sm">Cooldown period active. You can add another workout in {cooldownTimeLeft} minutes.</p>
-                  </div>
-                )}
-                
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-white/80">
@@ -416,11 +357,11 @@ const WorkoutPage = () => {
                 
                 <AnimatedButton
                   onClick={handleSubmitWorkout}
-                  disabled={!selectedExercise || loading || !canAddWorkout}
+                  disabled={!selectedExercise || loading}
                   character={character || undefined}
                   className="w-full"
                 >
-                  {loading ? 'Adding...' : canAddWorkout ? 'Add Workout' : `Cooldown (${cooldownTimeLeft}m left)`}
+                  {loading ? 'Adding...' : 'Add Workout'}
                 </AnimatedButton>
               </>
             )}

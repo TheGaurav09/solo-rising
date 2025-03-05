@@ -1,11 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
-import { Dumbbell, Timer, Repeat, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Dumbbell, Timer, Repeat, CheckCircle2 } from 'lucide-react';
 
 interface WorkoutLoggerProps {
   onWorkoutLogged: (points: number) => void;
@@ -19,60 +17,12 @@ interface ExerciseOption {
 }
 
 const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
-  const { character, addPoints, userName } = useUser();
+  const { character, addPoints } = useUser();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [duration, setDuration] = useState(30);
   const [reps, setReps] = useState(10);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [checkingCooldown, setCheckingCooldown] = useState(true);
-
-  const COOLDOWN_MINUTES = 30;
-  
-  useEffect(() => {
-    checkWorkoutCooldown();
-  }, []);
-
-  const checkWorkoutCooldown = async () => {
-    setCheckingCooldown(true);
-    try {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const lastWorkoutTime = new Date(data[0].created_at);
-        const currentTime = new Date();
-        const timeDiff = currentTime.getTime() - lastWorkoutTime.getTime();
-        const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-        
-        if (minutesDiff < COOLDOWN_MINUTES) {
-          const remaining = COOLDOWN_MINUTES - minutesDiff;
-          setTimeRemaining(remaining);
-        } else {
-          setTimeRemaining(null);
-        }
-      } else {
-        // No previous workouts
-        setTimeRemaining(null);
-      }
-    } catch (error) {
-      console.error('Error checking workout cooldown:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to check workout cooldown',
-        variant: 'destructive',
-      });
-      setTimeRemaining(null);
-    } finally {
-      setCheckingCooldown(false);
-    }
-  };
 
   const exercises: ExerciseOption[] = [
     { id: 'pushups', name: 'Push-ups', points: 10, icon: <Dumbbell size={18} /> },
@@ -103,67 +53,19 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
     return totalPoints;
   };
 
-  const handleLogWorkout = async () => {
-    if (!selectedExercise || timeRemaining !== null) return;
+  const handleLogWorkout = () => {
+    if (!selectedExercise) return;
     
     setLoading(true);
     
-    try {
-      // Double-check cooldown before proceeding
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const lastWorkoutTime = new Date(data[0].created_at);
-        const currentTime = new Date();
-        const timeDiff = currentTime.getTime() - lastWorkoutTime.getTime();
-        const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-        
-        if (minutesDiff < COOLDOWN_MINUTES) {
-          const remaining = COOLDOWN_MINUTES - minutesDiff;
-          setTimeRemaining(remaining);
-          toast({
-            title: 'Cooldown Active',
-            description: `You need to wait ${remaining} more minutes before logging another workout.`,
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-      }
-      
-      const pointsEarned = calculatePoints();
-      const exercise = getSelectedExercise();
-      
-      // Insert workout into database
-      const { error: insertError } = await supabase
-        .from('workouts')
-        .insert([
-          {
-            user_id: (await supabase.auth.getUser()).data.user?.id,
-            exercise_type: exercise?.name || 'Unknown',
-            duration: duration,
-            reps: reps,
-            points: pointsEarned,
-          },
-        ]);
-      
-      if (insertError) throw insertError;
-      
-      // Update user points
+    const pointsEarned = calculatePoints();
+    
+    // Simulate API call
+    setTimeout(() => {
       addPoints(pointsEarned);
       onWorkoutLogged(pointsEarned);
-      
+      setLoading(false);
       setSuccess(true);
-      toast({
-        title: 'Workout Logged',
-        description: `You earned ${pointsEarned} points!`,
-      });
       
       // Reset after a moment
       setTimeout(() => {
@@ -171,49 +73,13 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
         setSelectedExercise(null);
         setDuration(30);
         setReps(10);
-        checkWorkoutCooldown();
       }, 2000);
-    } catch (error) {
-      console.error('Error logging workout:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to log workout. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+    }, 1000);
   };
-
-  if (checkingCooldown) {
-    return (
-      <AnimatedCard className="w-full p-6 max-w-md mx-auto">
-        <h2 className="text-xl font-bold mb-4">Log Workout</h2>
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mb-4"></div>
-          <p className="text-white/70">Checking workout cooldown...</p>
-        </div>
-      </AnimatedCard>
-    );
-  }
 
   return (
     <AnimatedCard className="w-full p-6 max-w-md mx-auto">
       <h2 className="text-xl font-bold mb-4">Log Workout</h2>
-      
-      {timeRemaining !== null && (
-        <div className="mb-6 bg-white/5 p-4 rounded-lg border border-white/20">
-          <div className="flex items-center gap-3">
-            <Clock size={24} className={`${character ? `text-${character}-primary` : 'text-primary'}`} />
-            <div>
-              <h3 className="font-medium">Cooldown Active</h3>
-              <p className="text-sm text-white/70">
-                Please wait {timeRemaining} more minute{timeRemaining !== 1 ? 's' : ''} before logging another workout.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
       
       {success ? (
         <div className="text-center py-8 animate-fade-in">
@@ -240,7 +106,7 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
                         ? `bg-${character}-primary/20 border-${character}-primary/40 border` 
                         : 'bg-primary/20 border-primary/40 border'
                       : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                  } ${timeRemaining !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  }`}
                 >
                   {exercise.icon}
                   <span className="text-sm">{exercise.name}</span>
@@ -260,8 +126,7 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
               step="5"
               value={duration}
               onChange={(e) => setDuration(parseInt(e.target.value))}
-              className={`w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer ${timeRemaining !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={timeRemaining !== null}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between mt-1 text-sm text-white/60">
               <span>5</span>
@@ -281,8 +146,7 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
               step="5"
               value={reps}
               onChange={(e) => setReps(parseInt(e.target.value))}
-              className={`w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer ${timeRemaining !== null ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={timeRemaining !== null}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between mt-1 text-sm text-white/60">
               <span>5</span>
@@ -315,15 +179,11 @@ const WorkoutLogger = ({ onWorkoutLogged }: WorkoutLoggerProps) => {
           
           <AnimatedButton
             onClick={handleLogWorkout}
-            disabled={!selectedExercise || loading || timeRemaining !== null}
+            disabled={!selectedExercise || loading}
             character={character || undefined}
             className="w-full"
           >
-            {timeRemaining !== null 
-              ? `Cooldown: ${timeRemaining}m remaining`
-              : loading 
-                ? 'Logging...' 
-                : 'Log Workout'}
+            {loading ? 'Logging...' : 'Log Workout'}
           </AnimatedButton>
         </>
       )}

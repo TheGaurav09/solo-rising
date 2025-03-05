@@ -4,7 +4,6 @@ import AnimatedCard from './ui/AnimatedCard';
 import { useUser } from '@/context/UserContext';
 import { User, Medal, TrendingUp, Clock, Share2 } from 'lucide-react';
 import AnimatedButton from './ui/AnimatedButton';
-import CollapsibleSection from './ui/CollapsibleSection';
 
 const Profile = () => {
   const { userName, character, points } = useUser();
@@ -100,28 +99,28 @@ const Profile = () => {
       </AnimatedCard>
       
       <AnimatedCard className="p-6">
-        <CollapsibleSection title="Achievements" defaultOpen={false}>
-          <div className="space-y-3">
-            {getAchievements().map((achievement, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${character ? `bg-${character}-primary/20` : 'bg-primary/20'}`}>
-                  {achievement.icon}
-                </div>
-                <div>
-                  <div className="font-medium">{achievement.name}</div>
-                  <div className="text-sm text-white/70">{achievement.description}</div>
-                </div>
+        <h3 className="text-lg font-bold mb-4">Achievements</h3>
+        
+        <div className="space-y-3">
+          {getAchievements().map((achievement, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${character ? `bg-${character}-primary/20` : 'bg-primary/20'}`}>
+                {achievement.icon}
               </div>
-            ))}
-            
-            {getAchievements().length === 0 && (
-              <div className="text-center py-6 text-white/50">
-                <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Complete workouts to earn achievements</p>
+              <div>
+                <div className="font-medium">{achievement.name}</div>
+                <div className="text-sm text-white/70">{achievement.description}</div>
               </div>
-            )}
-          </div>
-        </CollapsibleSection>
+            </div>
+          ))}
+          
+          {getAchievements().length === 0 && (
+            <div className="text-center py-6 text-white/50">
+              <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Complete workouts to earn achievements</p>
+            </div>
+          )}
+        </div>
       </AnimatedCard>
     </div>
   );
