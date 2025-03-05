@@ -6,6 +6,8 @@ import AnimatedButton from '../ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
 import { getIconComponent } from '@/lib/iconUtils';
 
+type CharacterType = 'goku' | 'saitama' | 'jin-woo' | null;
+
 interface Achievement {
   id: string;
   name: string;
@@ -19,6 +21,8 @@ interface Achievement {
 interface AchievementDetailModalProps {
   achievement: Achievement;
   onClose: () => void;
+  character?: CharacterType;
+  currentPoints?: number;
 }
 
 // List of motivational quotes
@@ -34,11 +38,15 @@ const motivationalQuotes = [
   "Your body can stand almost anything. It's your mind that you have to convince."
 ];
 
-const AchievementDetailModal = ({ achievement, onClose }: AchievementDetailModalProps) => {
-  const { character } = useUser();
+const AchievementDetailModal = ({ achievement, onClose, character, currentPoints = 0 }: AchievementDetailModalProps) => {
+  const userContext = useUser();
+  const characterToUse = character || userContext.character;
   
   // Get a random motivational quote
   const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+  
+  // Check if the achievement is unlocked
+  const isUnlocked = achievement.unlocked || (currentPoints >= achievement.points_required);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -53,7 +61,7 @@ const AchievementDetailModal = ({ achievement, onClose }: AchievementDetailModal
           
           <div className="flex items-center justify-center mb-4">
             <div className={`w-20 h-20 rounded-full ${
-              achievement.unlocked 
+              isUnlocked 
                 ? 'bg-green-500/20 text-green-400' 
                 : 'bg-white/10 text-white/40'
             } flex items-center justify-center`}>
@@ -65,11 +73,11 @@ const AchievementDetailModal = ({ achievement, onClose }: AchievementDetailModal
           
           <div className="flex items-center justify-center mb-4">
             <div className={`px-3 py-1 rounded-full text-sm ${
-              achievement.unlocked 
+              isUnlocked 
                 ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                 : 'bg-white/10 text-white/60 border border-white/20'
             }`}>
-              {achievement.unlocked ? 'Unlocked' : 'Locked'} 
+              {isUnlocked ? 'Unlocked' : 'Locked'} 
               {achievement.unlocked_at && <span> • {new Date(achievement.unlocked_at).toLocaleDateString()}</span>}
             </div>
           </div>
@@ -107,7 +115,7 @@ const AchievementDetailModal = ({ achievement, onClose }: AchievementDetailModal
           
           <AnimatedButton
             onClick={onClose}
-            character={character || undefined}
+            character={characterToUse || undefined}
             className="w-full"
           >
             Close

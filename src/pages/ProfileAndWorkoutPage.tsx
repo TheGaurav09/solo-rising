@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -127,7 +128,7 @@ const ProfileAndWorkoutPage = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Profile user={userData} isViewingOtherUser={isViewingOtherUser} />
+            <Profile userData={userData} isViewingOtherUser={isViewingOtherUser} />
             
             <AnimatedCard className="p-6 mt-6">
               <div className="flex items-center justify-between mb-4">
@@ -143,7 +144,7 @@ const ProfileAndWorkoutPage = () => {
                 </button>
               </div>
               
-              <WorkoutLogger onWorkoutAdded={refreshWorkouts} />
+              <WorkoutLogger refreshWorkouts={refreshWorkouts} />
             </AnimatedCard>
           </div>
           

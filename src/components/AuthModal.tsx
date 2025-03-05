@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -231,9 +232,9 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
                   } text-white`}
                 >
                   <option value="">Select your country</option>
-                  {countries.map((countryName) => (
-                    <option key={countryName} value={countryName}>
-                      {countryName}
+                  {countries.map((country) => (
+                    <option key={country.name} value={country.name}>
+                      {country.flag} {country.name}
                     </option>
                   ))}
                 </select>
