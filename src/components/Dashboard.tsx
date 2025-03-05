@@ -1,225 +1,133 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { Sidebar } from '@/components/ui/sidebar';
-import { supabase } from '@/integrations/supabase/client';
+
+import React from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import { Trophy, Users, ShoppingBag, MessageSquare, Award, UserCircle, LogOut, Settings } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake } from 'lucide-react';
-import { getIconComponent } from '@/lib/iconUtils';
-import { AnimatePresence } from 'framer-motion';
-import ShareModal from './modals/ShareModal';
-import CoinDisplay from './ui/CoinDisplay';
+import LogoutConfirmModal from './modals/LogoutConfirmModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
+  const { character, userName, points, removeUser } = useUser();
   const location = useLocation();
-  const { character, hasSelectedCharacter } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
   
-  const isAIChat = location.pathname.includes('/ai-chat');
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        
-        if (!data.user) {
-          navigate('/', { replace: true });
-          return;
-        }
-        
-        setIsAuthenticated(true);
-        
-        if (!hasSelectedCharacter) {
-          toast({
-            title: "Select Your Character",
-            description: "Please select a character to continue",
-            duration: 5000,
-          });
-          navigate('/', { replace: true });
-          return;
-        }
-        
-      } catch (error) {
-        console.error('Auth check error:', error);
-        navigate('/', { replace: true });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate, hasSelectedCharacter]);
-  
-  const getBackgroundClass = () => {
-    switch(character) {
-      case 'goku': return 'bg-goku';
-      case 'saitama': return 'bg-saitama';
-      case 'jin-woo': return 'bg-jin-woo';
-      default: return 'bg-black';
-    }
-  };
-  
-  useEffect(() => {
-    let title = 'Solo Prove';
-    
-    switch (location.pathname.split('/')[1]) {
-      case 'workout':
-        title = 'Solo Prove | Workout';
-        break;
-      case 'profile':
-        title = 'Solo Prove | Profile';
-        break;
-      case 'achievements':
-        title = 'Solo Prove | Achievements';
-        break;
-      case 'store':
-        title = 'Solo Prove | Store';
-        break;
-      case 'ai-chat':
-        title = 'Solo Prove | AI Chat';
-        break;
-      default:
-        title = 'Solo Prove';
-    }
-    
-    document.title = title;
-  }, [location]);
-  
-  const handleShareClick = () => {
-    setShowShareModal(true);
-  };
-  
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      removeUser();
+      navigate('/');
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
       });
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-  
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-  
-  useEffect(() => {
-    if (isAIChat && !document.fullscreenElement && document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+    } catch (error: any) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to logout",
+        variant: "destructive",
       });
     }
-  }, [isAIChat]);
+  };
   
-  const navigationItems = [
+  const navItems = [
     {
-      href: '/profile-workout',
-      icon: <User size={20} />,
+      path: '/profile-workout',
+      icon: <UserCircle size={20} />,
       label: 'Profile & Workout'
     },
     {
-      href: '/leaderboard',
+      path: '/leaderboard',
       icon: <Trophy size={20} />,
       label: 'Leaderboard'
     },
     {
-      href: '/store-achievements',
+      path: '/store-achievements',
       icon: <ShoppingBag size={20} />,
       label: 'Store & Achievements'
     },
     {
-      href: '/ai-chat',
-      icon: <MessageCircle size={20} />,
-      label: 'AI Chat'
+      path: '/ai-chat',
+      icon: <MessageSquare size={20} />,
+      label: 'AI Trainer Chat'
     },
     {
-      href: '/hall-of-fame',
-      icon: <HeartHandshake size={20} />,
+      path: '/hall-of-fame',
+      icon: <Award size={20} />,
       label: 'Hall of Fame'
-    }
-  ];
-  
-  const primaryActions = [
+    },
     {
-      icon: <Maximize size={20} />,
-      label: 'Fullscreen',
-      onClick: toggleFullscreen
+      path: '/settings',
+      icon: <Settings size={20} />,
+      label: 'Settings'
     }
   ];
-  
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex justify-center items-center ${getBackgroundClass()}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated || !hasSelectedCharacter) {
-    return null;
-  }
-  
-  const getSidebarAccentColor = () => {
-    switch(character) {
-      case 'goku': return 'bg-goku-primary text-white';
-      case 'saitama': return 'bg-saitama-primary text-white';
-      case 'jin-woo': return 'bg-jin-woo-primary text-white';
-      default: return 'bg-white text-black';
-    }
-  };
-  
-  const getBrandIconStyle = () => {
-    switch(character) {
-      case 'goku': return 'text-goku-primary/80';
-      case 'saitama': return 'text-saitama-primary/80';
-      case 'jin-woo': return 'text-jin-woo-primary/80';
-      default: return 'text-white/80';
-    }
-  };
-  
+
   return (
-    <div className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}>
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          navigationItems={navigationItems}
-          primaryActions={primaryActions}
-          accentClass={getSidebarAccentColor()}
-          brandIcon={getIconComponent('dumbbell', 24)}
-          brandIconStyle={getBrandIconStyle()}
-          handleShareClick={handleShareClick}
-        />
+    <div className={`min-h-screen bg-black ${character ? `bg-${character}` : 'animated-grid'}`}>
+      <div className="flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        <nav className="w-full lg:w-64 lg:min-h-screen bg-black/50 backdrop-blur-md lg:fixed">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-8">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${character ? `bg-${character}-primary/20` : 'bg-primary/20'}`}>
+                <UserCircle className={character ? `text-${character}-primary` : 'text-primary'} size={20} />
+              </div>
+              <div>
+                <div className="font-bold">{userName}</div>
+                <div className="text-xs text-white/70">{points} points</div>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    location.pathname === item.path 
+                      ? character 
+                        ? `bg-${character}-primary/20 text-${character}-primary` 
+                        : 'bg-primary/20 text-primary'
+                      : 'text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+              
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-white/80 hover:bg-white/10"
+              >
+                <LogOut size={20} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </nav>
         
-        <main className="flex-1 overflow-y-auto ml-0 md:ml-0 pb-0 md:pb-0 relative w-full">
-          <div className={`min-h-screen pt-4 px-4`}>
+        {/* Main content */}
+        <main className="flex-1 lg:pl-64">
+          <div className="min-h-screen">
             <Outlet />
           </div>
         </main>
       </div>
-
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareModal 
-            onClose={() => setShowShareModal(false)}
-            character={character}
-          />
-        )}
-      </AnimatePresence>
+      
+      {/* Logout confirmation modal */}
+      {showLogoutModal && (
+        <LogoutConfirmModal
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutModal(false)}
+        />
+      )}
     </div>
   );
 };

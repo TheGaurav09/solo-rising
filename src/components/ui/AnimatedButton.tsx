@@ -1,90 +1,68 @@
 
 import React from 'react';
-import { cn } from "@/lib/utils";
+import { Button } from './button';
+import { cva, VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
-interface AnimatedButtonProps {
-  children: React.ReactNode;
-  onClick?: () => void;
-  className?: string;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  character?: 'goku' | 'saitama' | 'jin-woo' | null;
-  disabled?: boolean;
-  type?: 'button' | 'submit' | 'reset';
-}
-
-const AnimatedButton = ({ 
-  children, 
-  onClick, 
-  className,
-  variant = 'primary',
-  size = 'md',
-  character = null,
-  disabled = false,
-  type = 'button'
-}: AnimatedButtonProps) => {
-  const getCharacterGradient = () => {
-    switch (character) {
-      case 'goku':
-        return 'bg-gradient-to-r from-goku-primary to-goku-secondary hover:from-goku-secondary hover:to-goku-primary';
-      case 'saitama':
-        return 'bg-gradient-to-r from-saitama-primary to-saitama-secondary hover:from-saitama-secondary hover:to-saitama-primary';
-      case 'jin-woo':
-        return 'bg-gradient-to-r from-jin-woo-primary to-jin-woo-secondary hover:from-jin-woo-secondary hover:to-jin-woo-primary';
-      default:
-        return '';
-    }
-  };
-
-  const getVariantClasses = () => {
-    if (character) {
-      return getCharacterGradient();
-    }
-    
-    switch (variant) {
-      case 'primary':
-        return 'bg-primary text-primary-foreground hover:bg-primary/90';
-      case 'secondary':
-        return 'bg-secondary text-secondary-foreground hover:bg-secondary/90';
-      case 'outline':
-        return 'border border-white/20 bg-transparent hover:bg-white/5 hover:border-white/40';
-      default:
-        return '';
-    }
-  };
-
-  const getSizeClasses = () => {
-    switch (size) {
-      case 'sm':
-        return 'py-1.5 px-3 text-sm';
-      case 'md':
-        return 'py-2 px-4';
-      case 'lg':
-        return 'py-3 px-6 text-lg';
-      default:
-        return '';
-    }
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      type={type}
-      className={cn(
-        'relative rounded-lg font-medium',
-        'transition-all duration-300 ease-out transform-gpu',
-        'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
-        'active:scale-[0.98] hover:border hover:border-white/20',
-        getVariantClasses(),
-        getSizeClasses(),
-        disabled && 'opacity-50 cursor-not-allowed',
-        className
-      )}
-    >
-      <span className="relative z-10">{children}</span>
-    </button>
-  );
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & {
+  character?: 'goku' | 'saitama' | 'jin-woo';
 };
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background duration-200 border',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        primary: 'border-transparent',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        outline: 'border border-white/20 bg-white/5 hover:bg-white/10',
+      },
+      size: {
+        default: 'h-10 py-2 px-4',
+        sm: 'h-9 px-3 rounded-md',
+        lg: 'h-11 px-8 rounded-md',
+        icon: 'h-10 w-10 p-2',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  }
+);
+
+const AnimatedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, character, children, ...props }, ref) => {
+    let variantClass = variant;
+    let textColorClass = '';
+
+    // If character is provided and variant is primary, override with character-specific styling
+    if (character && variant === 'primary') {
+      className = cn(
+        className,
+        `bg-${character}-primary hover:bg-${character}-primary/90 border-transparent`
+      );
+      
+      // Add black text for light background colors
+      textColorClass = 'text-black';
+    }
+
+    return (
+      <Button
+        className={cn(buttonVariants({ variant, size }), 'relative overflow-hidden group hover-lift transition-all', className, textColorClass)}
+        ref={ref}
+        {...props}
+      >
+        <span className="z-10 relative group-hover:scale-105 transition-transform duration-200">
+          {children}
+        </span>
+        <span className="absolute inset-0 z-0 opacity-0 group-hover:opacity-20 bg-white transition-opacity duration-200"></span>
+      </Button>
+    );
+  }
+);
+
+AnimatedButton.displayName = 'AnimatedButton';
 
 export default AnimatedButton;

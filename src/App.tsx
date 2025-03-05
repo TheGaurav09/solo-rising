@@ -14,6 +14,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import StoreAndAchievementsPage from "./pages/StoreAndAchievementsPage";
 import AIChatPage from "./pages/AIChatPage";
 import HallOfFamePage from "./pages/HallOfFamePage";
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
                 <Route path="ai-chat" element={<AIChatPage />} />
                 <Route path="hall-of-fame" element={<HallOfFamePage />} />
+                <Route path="settings" element={<SettingsPage />} />
                 {/* Redirect missing paths to profile-workout */}
                 <Route path="*" element={<Navigate to="/profile-workout" replace />} />
               </Route>
