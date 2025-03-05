@@ -5,7 +5,7 @@ import { cva, VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants> & {
-  character?: 'goku' | 'saitama' | 'jin-woo' | null;
+  character?: 'goku' | 'saitama' | 'jin-woo';
 };
 
 const buttonVariants = cva(
@@ -34,37 +34,23 @@ const buttonVariants = cva(
 
 const AnimatedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, character, children, ...props }, ref) => {
-    let characterClass = '';
+    let variantClass = variant;
     let textColorClass = '';
 
-    // If character is provided, override with character-specific styling
-    if (character) {
-      switch (character) {
-        case 'goku':
-          characterClass = 'bg-goku-primary hover:bg-goku-primary/90 border-transparent';
-          textColorClass = 'text-black';
-          break;
-        case 'saitama':
-          characterClass = 'bg-saitama-primary hover:bg-saitama-primary/90 border-transparent';
-          textColorClass = 'text-black';
-          break;
-        case 'jin-woo':
-          characterClass = 'bg-jin-woo-primary hover:bg-jin-woo-primary/90 border-transparent';
-          break;
-        default:
-          break;
-      }
+    // If character is provided and variant is primary, override with character-specific styling
+    if (character && variant === 'primary') {
+      className = cn(
+        className,
+        `bg-${character}-primary hover:bg-${character}-primary/90 border-transparent`
+      );
+      
+      // Add black text for light background colors
+      textColorClass = 'text-black';
     }
 
     return (
       <Button
-        className={cn(
-          buttonVariants({ variant, size }), 
-          'relative overflow-hidden group hover-lift transition-all', 
-          characterClass, 
-          textColorClass,
-          className
-        )}
+        className={cn(buttonVariants({ variant, size }), 'relative overflow-hidden group hover-lift transition-all', className, textColorClass)}
         ref={ref}
         {...props}
       >

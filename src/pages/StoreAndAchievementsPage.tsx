@@ -170,67 +170,6 @@ const StoreAndAchievementsPage = () => {
     }
   };
 
-  const renderAchievement = (achievement: any) => {
-    const isUnlocked = userAchievements.includes(achievement.id);
-    const progress = Math.min(100, Math.floor((points / achievement.points_required) * 100));
-    
-    return (
-      <div 
-        key={achievement.id}
-        onClick={() => handleAchievementClick(achievement)}
-        className={`p-4 rounded-lg cursor-pointer transition-all ${
-          isUnlocked 
-            ? character 
-              ? `bg-${character}-primary/20 border border-${character}-primary/40` 
-              : 'bg-primary/20 border border-primary/40'
-            : 'bg-white/5 border border-white/10 hover:border-white/20'
-        }`}
-      >
-        <div className="flex justify-between items-start mb-2">
-          <div className={`p-2 rounded-lg ${isUnlocked ? 'bg-black/30' : 'bg-black/30'}`}>
-            <Award 
-              size={24} 
-              className={isUnlocked 
-                ? character 
-                  ? `text-${character}-primary animate-pulse` 
-                  : 'text-primary animate-pulse' 
-                : 'text-white/40'} 
-            />
-          </div>
-          {isUnlocked && (
-            <CheckCircle 
-              size={20} 
-              className={character ? `text-${character}-primary` : 'text-primary'} 
-            />
-          )}
-        </div>
-        
-        <h3 className={`font-bold ${isUnlocked ? (character ? `text-${character}-primary` : 'text-primary') : 'text-white'}`}>
-          {achievement.name}
-        </h3>
-        <p className="text-sm text-white/70 mb-2">{achievement.description}</p>
-        
-        <div className="flex justify-between text-xs text-white/60 mb-1">
-          <span>Progress</span>
-          <span>{points}/{achievement.points_required} points</span>
-        </div>
-        
-        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div 
-            className={`h-full ${
-              isUnlocked 
-                ? character 
-                  ? `bg-${character}-primary` 
-                  : 'bg-primary' 
-                : 'bg-white/30'
-            }`}
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-      </div>
-    );
-  };
-
   const visibleAchievements = showAllAchievements ? achievements : achievements.slice(0, 6);
 
   if (loading) {
@@ -311,7 +250,62 @@ const StoreAndAchievementsPage = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visibleAchievements.map(renderAchievement)}
+              {visibleAchievements.map((achievement) => {
+                const isUnlocked = userAchievements.includes(achievement.id);
+                const progress = Math.min(100, Math.floor((points / achievement.points_required) * 100));
+                
+                return (
+                  <div 
+                    key={achievement.id}
+                    onClick={() => handleAchievementClick(achievement)}
+                    className={`p-4 rounded-lg cursor-pointer transition-all border ${
+                      isUnlocked 
+                        ? character 
+                          ? `bg-${character}-primary/20 border-${character}-primary/40` 
+                          : 'bg-primary/20 border-primary/40'
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="bg-black/30 p-2 rounded-lg">
+                        <Award 
+                          size={24} 
+                          className={isUnlocked ? character 
+                            ? `text-${character}-primary` 
+                            : 'text-primary' : 'text-white/40'} 
+                        />
+                      </div>
+                      {isUnlocked && (
+                        <CheckCircle 
+                          size={20} 
+                          className={character ? `text-${character}-primary` : 'text-primary'} 
+                        />
+                      )}
+                    </div>
+                    
+                    <h3 className="font-bold">{achievement.name}</h3>
+                    <p className="text-sm text-white/70 mb-2">{achievement.description}</p>
+                    
+                    <div className="flex justify-between text-xs text-white/60 mb-1">
+                      <span>Progress</span>
+                      <span>{points}/{achievement.points_required} points</span>
+                    </div>
+                    
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${
+                          isUnlocked 
+                            ? character 
+                              ? `bg-${character}-primary` 
+                              : 'bg-primary' 
+                            : 'bg-white/30'
+                        }`}
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </AnimatedCard>
         </TabsContent>
