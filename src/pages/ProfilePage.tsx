@@ -1,17 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
-import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle } from 'lucide-react';
+import { User, Medal, TrendingUp, Users, ExternalLink, Award, ChevronDown, ChevronUp, LogOut, Info, MoreVertical, Edit, X, Flame, Globe, MapPin, CheckCircle, Trophy } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 
-// List of countries
 const countries = [
   "Global", "United States", "Canada", "United Kingdom", "Australia", "Germany", 
   "France", "Japan", "China", "India", "Brazil", "Mexico", "South Africa", 
@@ -82,7 +80,6 @@ const ProfilePage = () => {
       if (achievementsError) throw achievementsError;
       setAchievements(userAchievements || []);
 
-      // Fetch leaderboard data based on type
       let query = supabase
         .from('users')
         .select('id, warrior_name, character_type, points, streak, country')
@@ -148,10 +145,7 @@ const ProfilePage = () => {
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <img src="/1st.png" alt="1st Place" className="w-5 h-5" onError={e => {
-      e.currentTarget.src = "/placeholder.svg";
-      e.currentTarget.onerror = null;
-    }} />;
+    if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
     if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
     if (rank === 3) return <Medal className="w-5 h-5 text-amber-700" />;
     return <span className="w-5 h-5 flex items-center justify-center">{rank}</span>;
@@ -294,7 +288,7 @@ const ProfilePage = () => {
               <div className={`w-16 h-16 rounded-full flex items-center justify-center overflow-hidden ${userData?.character_type ? `bg-${userData.character_type}-primary/30` : 'bg-primary/30'}`}>
                 {userData?.character_type ? (
                   <img 
-                    src={getCharacterImage(userData.character_type)} 
+                    src={`/${userData.character_type}.png`}
                     alt={userData.character_type}
                     className="w-full h-full object-cover"
                     onError={e => {
@@ -337,7 +331,9 @@ const ProfilePage = () => {
                     {userData?.warrior_name}
                   </h2>
                 )}
-                <p className="text-white/70">{getCharacterTitle(userData?.character_type)}</p>
+                <p className="text-white/70">{userData?.character_type === 'goku' ? 'Saiyan Warrior' : 
+                  userData?.character_type === 'saitama' ? 'Caped Baldy' : 
+                  userData?.character_type === 'jin-woo' ? 'Shadow Monarch' : 'Warrior'}</p>
                 <div className="flex items-center gap-2 text-white/70 text-sm mt-1">
                   <MapPin size={14} />
                   <span>{userData?.country || 'Global'}</span>
@@ -398,13 +394,13 @@ const ProfilePage = () => {
             
             <div className="mt-6">
               <div className="flex justify-between text-sm mb-2">
-                <span>Level {getLevel(userData?.points || 0)}</span>
-                <span>{userData?.points || 0} / {getNextLevelPoints(userData?.points || 0)} points</span>
+                <span>Level {Math.floor((userData?.points || 0) / 100) + 1}</span>
+                <span>{userData?.points || 0} / {(Math.floor((userData?.points || 0) / 100) + 1) * 100} points</span>
               </div>
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div 
                   className={`h-full ${userData?.character_type ? `bg-${userData.character_type}-primary` : 'bg-primary'}`}
-                  style={{ width: `${getProgressPercentage(userData?.points || 0)}%` }}
+                  style={{ width: `${(((userData?.points || 0) % 100) / 100) * 100}%` }}
                 ></div>
               </div>
             </div>
@@ -515,12 +511,20 @@ const ProfilePage = () => {
                       onClick={() => toggleUserExpand(entry.id)}
                     >
                       <div className="w-8 h-8 flex items-center justify-center mr-3 bg-white/10 rounded-full">
-                        {getRankIcon(entry.rank)}
+                        {entry.rank === 1 ? <Trophy className="w-5 h-5 text-yellow-500" /> :
+                         entry.rank === 2 ? <Medal className="w-5 h-5 text-gray-300" /> :
+                         entry.rank === 3 ? <Medal className="w-5 h-5 text-amber-700" /> :
+                         <span>{entry.rank}</span>}
                       </div>
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className={`font-medium ${getCharacterColor(entry.character_type)}`}>
+                          <span className={`font-medium ${
+                            entry.character_type === 'goku' ? 'text-goku-primary' :
+                            entry.character_type === 'saitama' ? 'text-saitama-primary' :
+                            entry.character_type === 'jin-woo' ? 'text-jin-woo-primary' :
+                            'text-white'
+                          }`}>
                             {entry.warrior_name}
                           </span>
                           {entry.id === userData?.id && (
@@ -528,7 +532,10 @@ const ProfilePage = () => {
                           )}
                         </div>
                         <div className="text-xs text-white/60 mt-0.5">
-                          {getCharacterTitle(entry.character_type)}
+                          {entry.character_type === 'goku' ? 'Saiyan Warrior' :
+                           entry.character_type === 'saitama' ? 'Caped Baldy' :
+                           entry.character_type === 'jin-woo' ? 'Shadow Monarch' :
+                           'Warrior'}
                         </div>
                       </div>
                       
@@ -537,8 +544,13 @@ const ProfilePage = () => {
                           <div className="font-medium">{entry.points || 0}</div>
                           <div className="text-xs text-white/60">points</div>
                         </div>
-                        <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${entry.character_type ? `bg-${entry.character_type}-primary/20` : 'bg-primary/20'}`}>
-                          <Flame size={10} className={entry.character_type ? `text-${entry.character_type}-primary` : 'text-primary'} />
+                        <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${
+                          entry.character_type === 'goku' ? 'bg-goku-primary/20 text-goku-primary' :
+                          entry.character_type === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary' :
+                          entry.character_type === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary' :
+                          'bg-primary/20 text-primary'
+                        }`}>
+                          <Flame size={10} />
                           <span>{entry.streak || 0}</span>
                         </div>
                         <Link to={`/profile/${entry.id}`} className="text-white/60 hover:text-white">
@@ -560,11 +572,16 @@ const ProfilePage = () => {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-white/60">Character:</span>
-                          <span className="font-medium">{getCharacterTitle(entry.character_type)}</span>
+                          <span className="font-medium">
+                            {entry.character_type === 'goku' ? 'Saiyan Warrior' :
+                             entry.character_type === 'saitama' ? 'Caped Baldy' :
+                             entry.character_type === 'jin-woo' ? 'Shadow Monarch' :
+                             'Warrior'}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-white/60">Level:</span>
-                          <span className="font-medium">{getLevel(entry.points || 0)}</span>
+                          <span className="font-medium">{Math.floor((entry.points || 0) / 100) + 1}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-white/60">Country:</span>
@@ -577,7 +594,12 @@ const ProfilePage = () => {
                         <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
                           <Link 
                             to={`/profile/${entry.id}`}
-                            className={`text-xs px-2 py-1 rounded ${entry.character_type ? `bg-${entry.character_type}-primary/20 text-${entry.character_type}-primary` : 'bg-primary/20 text-primary'}`}
+                            className={`text-xs px-2 py-1 rounded ${
+                              entry.character_type === 'goku' ? 'bg-goku-primary/20 text-goku-primary' :
+                              entry.character_type === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary' :
+                              entry.character_type === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary' :
+                              'bg-primary/20 text-primary'
+                            }`}
                           >
                             View Profile
                           </Link>

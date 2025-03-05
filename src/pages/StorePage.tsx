@@ -247,13 +247,15 @@ const StorePage = () => {
         
         setShowDetail(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error purchasing item:', error);
       toast({
         title: 'Purchase Failed',
         description: 'There was an error completing your purchase',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 

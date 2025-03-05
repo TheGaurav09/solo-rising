@@ -219,6 +219,7 @@ export type Database = {
         Row: {
           character_type: string
           coins: number | null
+          country: string | null
           created_at: string
           email: string
           id: string
@@ -231,6 +232,7 @@ export type Database = {
         Insert: {
           character_type: string
           coins?: number | null
+          country?: string | null
           created_at?: string
           email: string
           id?: string
@@ -243,6 +245,7 @@ export type Database = {
         Update: {
           character_type?: string
           coins?: number | null
+          country?: string | null
           created_at?: string
           email?: string
           id?: string

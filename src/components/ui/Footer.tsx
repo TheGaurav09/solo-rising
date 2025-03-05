@@ -1,55 +1,79 @@
 
 import React from 'react';
+import { GitHub, Twitter, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Instagram, Twitter, Youtube, MessageCircle } from 'lucide-react';
+import { useUser } from '@/context/UserContext';
 
 const Footer = () => {
+  const { character } = useUser();
+  
+  const getColorClass = (platform: string) => {
+    switch (platform) {
+      case 'twitter': 
+        return 'group-hover:text-blue-400';
+      case 'instagram':
+        return 'group-hover:text-rose-500';
+      case 'github':
+        return 'group-hover:text-purple-400';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <footer className="w-full py-6 bg-black/40 backdrop-blur-md border-t border-white/10 mt-auto">
-      <div className="container mx-auto px-4">
+    <footer className="mt-auto py-6 px-4 border-t border-white/10">
+      <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-white/60 text-sm">
-            © {new Date().getFullYear()} Workout Wars. All rights reserved.
+          <div>
+            <p className="text-white/60 text-sm">
+              © {new Date().getFullYear()} Workout Wars. All rights reserved.
+            </p>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="text-white/60 mr-2">Join us on:</span>
+          <div className="flex items-center gap-6">
+            <span className="text-white/70 text-sm">Join us on:</span>
             <a 
-              href="https://instagram.com/thegaurav.r" 
+              href="https://twitter.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/10 hover:bg-instagram/20 transition-colors hover:scale-110 group"
-              aria-label="Instagram"
-            >
-              <Instagram size={20} className="text-white/80 group-hover:text-instagram" />
-            </a>
-            <a 
-              href="https://twitter.com/thegaurav_r" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/10 hover:bg-twitter/20 transition-colors hover:scale-110 group"
+              className="text-white/60 hover:text-white transition-colors group"
               aria-label="Twitter"
             >
-              <Twitter size={20} className="text-white/80 group-hover:text-twitter" />
+              <Twitter className={`h-5 w-5 ${getColorClass('twitter')}`} />
             </a>
             <a 
-              href="https://youtube.com/thegaurav.r" 
+              href="https://instagram.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/10 hover:bg-youtube/20 transition-colors hover:scale-110 group"
-              aria-label="YouTube"
+              className="text-white/60 hover:text-white transition-colors group"
+              aria-label="Instagram"
             >
-              <Youtube size={20} className="text-white/80 group-hover:text-youtube" />
+              <Instagram className={`h-5 w-5 ${getColorClass('instagram')}`} />
             </a>
             <a 
-              href="https://discord.com/users/thegaurav.r" 
+              href="https://github.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 rounded-full bg-white/10 hover:bg-discord/20 transition-colors hover:scale-110 group"
-              aria-label="Discord"
+              className="text-white/60 hover:text-white transition-colors group"
+              aria-label="GitHub"
             >
-              <MessageCircle size={20} className="text-white/80 group-hover:text-discord" />
+              <GitHub className={`h-5 w-5 ${getColorClass('github')}`} />
             </a>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm">
+            <Link 
+              to="/terms" 
+              className={`text-white/60 hover:${character ? `text-${character}-primary` : 'text-primary'} transition-colors`}
+            >
+              Terms
+            </Link>
+            <Link 
+              to="/privacy" 
+              className={`text-white/60 hover:${character ? `text-${character}-primary` : 'text-primary'} transition-colors`}
+            >
+              Privacy
+            </Link>
           </div>
         </div>
       </div>

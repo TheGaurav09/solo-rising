@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -38,7 +37,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
   const [country, setCountry] = useState<string>('Global');
 
-  // Load user data from Supabase on initial render
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -57,7 +55,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             setCoins(data.coins || 0);
             setStreak(data.streak || 0);
             setLastWorkoutDate(data.last_workout_date || null);
-            // Handle country field with a fallback to 'Global'
             setCountry(data.country || 'Global');
             setHasSelectedCharacter(true);
           } else if (error) {
@@ -69,7 +66,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             });
           }
         } else {
-          // Fallback to localStorage if not authenticated
           const storedCharacter = localStorage.getItem('character');
           const storedUserName = localStorage.getItem('userName');
           const storedPoints = localStorage.getItem('points');
@@ -119,10 +115,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     fetchUserData();
 
-    // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Fetch user data when signed in
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -133,15 +127,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCharacter(data.character_type as CharacterType);
           setUserName(data.warrior_name);
           setPoints(data.points || 0);
-          setCoins(data.coins || 0); 
+          setCoins(data.coins || 0);
           setStreak(data.streak || 0);
           setLastWorkoutDate(data.last_workout_date || null);
-          // Handle country field with a fallback to 'Global'
           setCountry(data.country || 'Global');
           setHasSelectedCharacter(true);
         }
       } else if (event === 'SIGNED_OUT') {
-        // Clear user data when signed out
         setCharacter(null);
         setUserName('');
         setPoints(0);
@@ -153,7 +145,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Streak check
     const checkStreak = () => {
       if (lastWorkoutDate) {
         const lastDate = new Date(lastWorkoutDate);
@@ -161,7 +152,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         
-        // If last workout was more than a day ago (not yesterday or today), reset streak
         if (lastDate.toDateString() !== today.toDateString() && 
             lastDate.toDateString() !== yesterday.toDateString()) {
           resetStreak();
@@ -171,18 +161,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     
     checkStreak();
 
-    // Cleanup
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
 
-  // Save user data to localStorage and Supabase when state changes
   useEffect(() => {
     const updateUserData = async () => {
       if (!character || !userName) return;
 
-      // Save to localStorage
       localStorage.setItem('character', character);
       localStorage.setItem('userName', userName);
       localStorage.setItem('points', points.toString());
@@ -193,39 +180,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('lastWorkoutDate', lastWorkoutDate);
       }
 
-      // If authenticated, update Supabase
-      try {
-        const { data: authData } = await supabase.auth.getUser();
-        if (authData.user) {
-          const { error } = await supabase
-            .from('users')
-            .update({ 
-              character_type: character,
-              warrior_name: userName,
-              points,
-              coins,
-              streak,
-              last_workout_date: lastWorkoutDate,
-              country
-            })
-            .eq('id', authData.user.id);
-            
-          if (error) {
-            console.error("Error updating user data:", error);
-            toast({
-              title: "Error",
-              description: "Failed to save your progress. Please try again.",
-              variant: "destructive",
-            });
-          }
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { error } = await supabase
+          .from('users')
+          .update({ 
+            character_type: character,
+            warrior_name: userName,
+            points,
+            coins,
+            streak,
+            last_workout_date: lastWorkoutDate,
+            country
+          })
+          .eq('id', authData.user.id);
+          
+        if (error) {
+          console.error("Error updating user data:", error);
+          toast({
+            title: "Error",
+            description: "Failed to save your progress. Please try again.",
+            variant: "destructive",
+          });
         }
-      } catch (error) {
-        console.error("Error in updateUserData:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred while saving your data.",
-          variant: "destructive",
-        });
       }
     };
 
@@ -237,13 +214,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const newPoints = points + amount;
       setPoints(newPoints);
       
-      // Also add coins (10% of points earned)
       const coinsToAdd = Math.floor(amount * 0.1);
       if (coinsToAdd > 0) {
         addCoins(coinsToAdd);
       }
       
-      // Update points in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -275,7 +250,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const newCoins = coins + amount;
       setCoins(newCoins);
       
-      // Update coins in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -309,7 +283,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const newCoins = coins - amount;
       setCoins(newCoins);
       
-      // Update coins in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -324,7 +297,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             description: "Failed to use coins. Please try again.",
             variant: "destructive",
           });
-          setCoins(coins); // Revert if update fails
+          setCoins(coins);
           return false;
         }
       }
@@ -346,7 +319,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const newStreak = streak + 1;
       setStreak(newStreak);
       
-      // Update streak in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -377,7 +349,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       setStreak(0);
       
-      // Update streak in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -409,7 +380,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const today = new Date().toISOString();
       setLastWorkoutDate(today);
       
-      // If last workout was not today, increment streak
       if (lastWorkoutDate) {
         const lastDate = new Date(lastWorkoutDate);
         const currentDate = new Date();
@@ -418,11 +388,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           incrementStreak();
         }
       } else {
-        // First workout, start streak
         incrementStreak();
       }
       
-      // Update last_workout_date in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
@@ -462,7 +430,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       setUserName(newName);
       
-      // Update name in Supabase
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
         const { error } = await supabase
