@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Github, Twitter, Instagram } from 'lucide-react';
+import { Twitter, Instagram, Youtube, Discord } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 
@@ -13,8 +13,10 @@ const Footer = () => {
         return 'group-hover:text-blue-400';
       case 'instagram':
         return 'group-hover:text-rose-500';
-      case 'github':
-        return 'group-hover:text-purple-400';
+      case 'youtube':
+        return 'group-hover:text-red-500';
+      case 'discord':
+        return 'group-hover:text-indigo-400';
       default:
         return '';
     }
@@ -51,13 +53,22 @@ const Footer = () => {
               <Instagram className={`h-5 w-5 ${getColorClass('instagram')}`} />
             </a>
             <a 
-              href="https://github.com" 
+              href="https://youtube.com" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-white/60 hover:text-white transition-colors group"
-              aria-label="GitHub"
+              aria-label="YouTube"
             >
-              <Github className={`h-5 w-5 ${getColorClass('github')}`} />
+              <Youtube className={`h-5 w-5 ${getColorClass('youtube')}`} />
+            </a>
+            <a 
+              href="https://discord.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-white/60 hover:text-white transition-colors group"
+              aria-label="Discord"
+            >
+              <Discord className={`h-5 w-5 ${getColorClass('discord')}`} />
             </a>
           </div>
           

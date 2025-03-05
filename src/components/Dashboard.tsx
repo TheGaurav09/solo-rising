@@ -1,28 +1,32 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import { 
   Dumbbell, Trophy, User, LogOut, Award, 
   ShoppingBag, ChevronLeft, ChevronRight, Flame, Info, 
-  ArrowUp
+  ArrowUp, Menu, X
 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import LogoutConfirmModal from './modals/LogoutConfirmModal';
 import Footer from './ui/Footer';
 import { format } from 'date-fns';
+import { useMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
-  const { character, userName, setCharacter, setUserName, streak, lastWorkoutDate, updateLastWorkoutDate } = useUser();
+  const { character, userName, setCharacter, setUserName, streak, lastWorkoutDate } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showStreakInfo, setShowStreakInfo] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
+  const streakModalRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMobile();
 
   useEffect(() => {
     checkAuth();
@@ -48,6 +52,20 @@ const Dashboard = () => {
     const intervalId = setInterval(calculateTimeUntilReset, 60 * 1000);
     
     return () => clearInterval(intervalId);
+  }, []);
+
+  // Close streak modal when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (streakModalRef.current && !streakModalRef.current.contains(event.target as Node)) {
+        setShowStreakInfo(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -129,9 +147,17 @@ const Dashboard = () => {
   };
 
   const toggleNav = () => {
-    setIsNavCollapsed(!isNavCollapsed);
+    const newState = !isNavCollapsed;
+    setIsNavCollapsed(newState);
     // Store preference in localStorage
-    localStorage.setItem('navCollapsed', (!isNavCollapsed).toString());
+    localStorage.setItem('navCollapsed', newState.toString());
+  };
+
+  const toggleMobileNav = () => {
+    const newState = !isMobileNavOpen;
+    setIsMobileNavOpen(newState);
+    // Store preference in localStorage
+    localStorage.setItem('mobileNavOpen', newState.toString());
   };
 
   useEffect(() => {
@@ -140,7 +166,18 @@ const Dashboard = () => {
     if (savedCollapsed !== null) {
       setIsNavCollapsed(savedCollapsed === 'true');
     }
+    
+    // Load mobile nav preference
+    const savedMobileNavOpen = localStorage.getItem('mobileNavOpen');
+    if (savedMobileNavOpen !== null) {
+      setIsMobileNavOpen(savedMobileNavOpen === 'true');
+    }
   }, []);
+
+  // Close mobile nav when changing routes
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [location.pathname]);
 
   if (loading) {
     return (
@@ -162,41 +199,46 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Mobile Nav Toggle */}
+            <button
+              className="md:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20" 
+              onClick={toggleMobileNav}
+              aria-label="Toggle navigation"
+            >
+              {isMobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+
+            {/* Streak Button */}
             <div className="relative">
-              <div 
-                className={`px-4 py-2 flex items-center gap-2 rounded-lg ${
+              <button 
+                className={`p-2 flex items-center justify-center rounded-lg ${
                   character ? `bg-${character}-primary/20 border-${character}-primary/40 border` 
                   : 'bg-primary/20 border-primary/40 border'
                 }`}
+                onClick={() => setShowStreakInfo(!showStreakInfo)}
+                aria-label="Streak information"
               >
                 <Flame size={20} className={`${character ? `text-${character}-primary` : 'text-primary'} animate-pulse`} />
-                <div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold">{streak} day streak</span>
-                    <button 
-                      onClick={() => setShowStreakInfo(!showStreakInfo)}
-                      className="text-white/60 hover:text-white"
-                    >
-                      <Info size={14} />
-                    </button>
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Resets in: {timeUntilReset}
-                  </div>
-                </div>
-              </div>
+              </button>
               
               {showStreakInfo && (
-                <div className="absolute right-0 mt-2 w-64 p-3 rounded-lg bg-black/80 border border-white/10 shadow-lg z-50 backdrop-blur-sm">
-                  <h4 className="font-medium mb-2">Streak System</h4>
+                <div 
+                  ref={streakModalRef}
+                  className="absolute right-0 mt-2 w-64 p-3 rounded-lg bg-black/80 border border-white/10 shadow-lg z-50 backdrop-blur-sm"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Flame size={18} className={`${character ? `text-${character}-primary` : 'text-primary'}`} />
+                    <h4 className="font-medium">{streak} day streak</h4>
+                  </div>
                   <p className="text-sm text-white/70 mb-2">
                     Your streak increases each day when you log a workout. If you miss a day, your streak will reset to zero.
                   </p>
                   <div className="text-xs text-white/60 pt-2 border-t border-white/10">
+                    <p>Resets in: {timeUntilReset}</p>
                     {lastWorkoutDate ? (
-                      <p>Last workout: {format(new Date(lastWorkoutDate), 'MMM d, yyyy')}</p>
+                      <p className="mt-1">Last workout: {format(new Date(lastWorkoutDate), 'MMM d, yyyy')}</p>
                     ) : (
-                      <p>No workouts recorded yet</p>
+                      <p className="mt-1">No workouts recorded yet</p>
                     )}
                   </div>
                 </div>
@@ -207,8 +249,60 @@ const Dashboard = () => {
       </header>
       
       <main className="container mx-auto px-4 flex flex-col md:flex-row gap-6 flex-grow">
-        {/* Sidebar Navigation */}
-        <div className={`transition-all duration-300 ease-in-out ${isNavCollapsed ? 'md:w-16' : 'md:w-64'} flex-shrink-0`}>
+        {/* Mobile Sidebar Navigation - Overlay */}
+        {isMobile && isMobileNavOpen && (
+          <div className="fixed inset-0 bg-black/80 z-40 md:hidden" onClick={toggleMobileNav}>
+            <div className="absolute top-0 left-0 h-full w-3/4 max-w-xs bg-background p-4" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Menu</h2>
+                <button onClick={toggleMobileNav} className="p-2 rounded-lg hover:bg-white/10">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <nav className="space-y-2 mt-4">
+                <div 
+                  className={getNavItemClass('/workout')}
+                  onClick={() => navigate('/workout')}
+                >
+                  <Dumbbell size={20} />
+                  <span>Workouts</span>
+                </div>
+                <div 
+                  className={getNavItemClass('/profile/me')}
+                  onClick={() => navigate('/profile/me')}
+                >
+                  <User size={20} />
+                  <span>Profile & Leaderboard</span>
+                </div>
+                <div 
+                  className={getNavItemClass('/achievements')}
+                  onClick={() => navigate('/achievements')}
+                >
+                  <Award size={20} />
+                  <span>Achievements</span>
+                </div>
+                <div 
+                  className={getNavItemClass('/store')}
+                  onClick={() => navigate('/store')}
+                >
+                  <ShoppingBag size={20} />
+                  <span>Store</span>
+                </div>
+                <div 
+                  className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-white/5 text-red-400"
+                  onClick={() => setShowLogoutConfirm(true)}
+                >
+                  <LogOut size={20} />
+                  <span>Logout</span>
+                </div>
+              </nav>
+            </div>
+          </div>
+        )}
+      
+        {/* Desktop Sidebar Navigation */}
+        <div className={`hidden md:block transition-all duration-300 ease-in-out ${isNavCollapsed ? 'md:w-16' : 'md:w-64'} flex-shrink-0`}>
           <AnimatedCard className="p-2 relative">
             <button 
               onClick={toggleNav}

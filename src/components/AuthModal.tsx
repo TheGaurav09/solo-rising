@@ -7,11 +7,59 @@ import { toast } from './ui/use-toast';
 import { X, Mail, Lock, User, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// List of countries for selection
+// List of countries for selection in alphabetical order with flags
 const countries = [
-  "Global", "United States", "Canada", "United Kingdom", "Australia", "Germany", 
-  "France", "Japan", "China", "India", "Brazil", "Mexico", "South Africa", 
-  "Russia", "Italy", "Spain", "South Korea", "Netherlands", "Sweden", "Norway"
+  { name: "Global", flag: "🌎" },
+  { name: "Afghanistan", flag: "🇦🇫" },
+  { name: "Albania", flag: "🇦🇱" },
+  { name: "Algeria", flag: "🇩🇿" },
+  { name: "Argentina", flag: "🇦🇷" },
+  { name: "Australia", flag: "🇦🇺" },
+  { name: "Austria", flag: "🇦🇹" },
+  { name: "Bangladesh", flag: "🇧🇩" },
+  { name: "Belgium", flag: "🇧🇪" },
+  { name: "Brazil", flag: "🇧🇷" },
+  { name: "Canada", flag: "🇨🇦" },
+  { name: "China", flag: "🇨🇳" },
+  { name: "Colombia", flag: "🇨🇴" },
+  { name: "Denmark", flag: "🇩🇰" },
+  { name: "Egypt", flag: "🇪🇬" },
+  { name: "Finland", flag: "🇫🇮" },
+  { name: "France", flag: "🇫🇷" },
+  { name: "Germany", flag: "🇩🇪" },
+  { name: "Greece", flag: "🇬🇷" },
+  { name: "India", flag: "🇮🇳" },
+  { name: "Indonesia", flag: "🇮🇩" },
+  { name: "Ireland", flag: "🇮🇪" },
+  { name: "Israel", flag: "🇮🇱" },
+  { name: "Italy", flag: "🇮🇹" },
+  { name: "Japan", flag: "🇯🇵" },
+  { name: "Kenya", flag: "🇰🇪" },
+  { name: "Malaysia", flag: "🇲🇾" },
+  { name: "Mexico", flag: "🇲🇽" },
+  { name: "Netherlands", flag: "🇳🇱" },
+  { name: "New Zealand", flag: "🇳🇿" },
+  { name: "Nigeria", flag: "🇳🇬" },
+  { name: "Norway", flag: "🇳🇴" },
+  { name: "Pakistan", flag: "🇵🇰" },
+  { name: "Philippines", flag: "🇵🇭" },
+  { name: "Poland", flag: "🇵🇱" },
+  { name: "Portugal", flag: "🇵🇹" },
+  { name: "Russia", flag: "🇷🇺" },
+  { name: "Saudi Arabia", flag: "🇸🇦" },
+  { name: "Singapore", flag: "🇸🇬" },
+  { name: "South Africa", flag: "🇿🇦" },
+  { name: "South Korea", flag: "🇰🇷" },
+  { name: "Spain", flag: "🇪🇸" },
+  { name: "Sweden", flag: "🇸🇪" },
+  { name: "Switzerland", flag: "🇨🇭" },
+  { name: "Thailand", flag: "🇹🇭" },
+  { name: "Turkey", flag: "🇹🇷" },
+  { name: "Ukraine", flag: "🇺🇦" },
+  { name: "United Arab Emirates", flag: "🇦🇪" },
+  { name: "United Kingdom", flag: "🇬🇧" },
+  { name: "United States", flag: "🇺🇸" },
+  { name: "Vietnam", flag: "🇻🇳" }
 ];
 
 const AuthModal = ({ isOpen, onClose, initialView = 'login' }: { 
@@ -86,15 +134,15 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: {
       if (error) throw error;
 
       if (data.user) {
-        // Insert user data into our database - fix the insert method
+        // Insert user data into our database - fixing the character_type constraint issue
         const { error: insertError } = await supabase
           .from('users')
           .insert({
             id: data.user.id,
             email,
             warrior_name: name,
-            character_type: '', // Empty string instead of null
-            password: '', // Placeholder for password since it's required
+            character_type: 'none', // Set a valid default value that matches the constraint
+            password: password,  // Include the password field as required
             country: country,
             points: 0,
             coins: 10, // Start with 10 coins
@@ -291,7 +339,9 @@ const SignupForm = ({ onSubmit, loading, character }: {
               className="bg-white/5 border border-white/10 text-white focus:ring-primary focus:border-primary block w-full pl-10 py-3 rounded-lg appearance-none"
             >
               {countries.map((countryOption) => (
-                <option key={countryOption} value={countryOption}>{countryOption}</option>
+                <option key={countryOption.name} value={countryOption.name}>
+                  {countryOption.flag} {countryOption.name}
+                </option>
               ))}
             </select>
           </div>
