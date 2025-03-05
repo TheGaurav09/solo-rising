@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Share, Link as LinkIcon, Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,7 +10,6 @@ interface ShareModalProps {
 const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) => {
   const [copied, setCopied] = useState(false);
   
-  // Get theme colors based on character
   const getThemeColor = () => {
     switch(character) {
       case 'goku': return 'bg-goku-primary text-white';
@@ -39,7 +37,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
     }
   };
   
-  // Function to copy link to clipboard
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -50,7 +47,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
     }
   };
   
-  // Share via native share API if available
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -93,7 +89,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
         </div>
         
         <div className="space-y-6">
-          {/* Share button */}
           <button
             className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${getThemeColor()} transition-transform hover:scale-105`}
             onClick={handleShare}
@@ -102,7 +97,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
             <span className="font-medium">Share with friends</span>
           </button>
           
-          {/* Copy link section */}
           <div className="space-y-2">
             <label className="text-sm text-white/70">Or copy this link:</label>
             <div className="flex items-center gap-2">
@@ -120,7 +114,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
             </div>
           </div>
           
-          {/* Install app suggestion */}
           <div className={`rounded-lg ${getBgColor()} border border-white/20 p-4 mt-4`}>
             <h3 className={`font-medium ${getTextColor()} mb-2`}>Install Solo Prove App</h3>
             <p className="text-sm text-white/70 mb-3">Install the app for quick access to your workouts and progress tracking.</p>

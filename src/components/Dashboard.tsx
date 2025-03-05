@@ -1,13 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
-import Sidebar from '@/components/ui/sidebar';
+// Fix: Use named imports instead of default import
+import { Sidebar } from '@/components/ui/sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Award, User, ShoppingBag, LogOut, MessageCircle } from 'lucide-react';
-import { getIconComponent } from '@/lib/iconUtils';
+import { getIconComponent } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-mobile';
+// Add framer-motion import
 import { AnimatePresence } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
 import { useIsMobile } from '@/hooks/use-mobile';
