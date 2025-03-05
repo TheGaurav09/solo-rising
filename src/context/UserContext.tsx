@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -42,7 +41,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Load from localStorage first for faster UI display
     const storedCharacter = localStorage.getItem('character');
     const storedUserName = localStorage.getItem('userName');
     const storedCountry = localStorage.getItem('country');
@@ -61,20 +59,17 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (storedLastWorkoutDate) setLastWorkoutDate(storedLastWorkoutDate);
     if (storedLastWorkoutTime) setLastWorkoutTime(storedLastWorkoutTime);
     
-    // Check workout cooldown on initial load
     if (storedLastWorkoutTime) {
       checkWorkoutCooldown();
     }
     
-    // Then check Supabase for the latest data
     const fetchUserData = async () => {
       try {
         const { data: authData } = await supabase.auth.getUser();
         if (!authData || !authData.user) {
           console.log("No authenticated user found");
-          // Clear context if no user is found
           if (storedCharacter || storedUserName) {
-            localStorage.clear(); // Clear all localStorage if there's stale data
+            localStorage.clear();
             setCharacter(null);
             setUserName('');
             setCountry('Global');
@@ -111,9 +106,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           setCoins(userData.coins || 0);
           setStreak(userData.streak || 0);
           setLastWorkoutDate(userData.last_workout_date);
-          setLastWorkoutTime(userData.last_workout_time || null);
           
-          // Update localStorage for faster loading next time
+          const lastWorkoutTimeValue = (userData as any).last_workout_time || null;
+          setLastWorkoutTime(lastWorkoutTimeValue);
+          
           if (userData.character_type) {
             localStorage.setItem('character', userData.character_type);
           }
@@ -125,12 +121,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           if (userData.last_workout_date) {
             localStorage.setItem('lastWorkoutDate', userData.last_workout_date);
           }
-          if (userData.last_workout_time) {
-            localStorage.setItem('lastWorkoutTime', userData.last_workout_time);
+          
+          if ((userData as any).last_workout_time) {
+            localStorage.setItem('lastWorkoutTime', (userData as any).last_workout_time);
             checkWorkoutCooldown();
           }
           
-          // Check for achievements after fetching user data
           await checkForAchievements();
         } else {
           console.log("No user data found for ID:", authData.user.id);
@@ -145,11 +141,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     
     fetchUserData();
     
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session?.user?.id);
       if (event === 'SIGNED_OUT') {
-        // Clear all user data on sign out
         localStorage.clear();
         setCharacter(null);
         setUserName('');
@@ -160,7 +154,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setLastWorkoutDate(null);
         setLastWorkoutTime(null);
       } else if (event === 'SIGNED_IN' && session) {
-        // Refetch user data on sign in
         fetchUserData();
       }
     });
@@ -195,7 +188,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (authData.user) {
         const { error } = await supabase
           .from('users')
-          .update({ last_workout_time: time })
+          .update({ 
+            last_workout_time: time 
+          } as any)
           .eq('id', authData.user.id);
           
         if (error) {
@@ -206,10 +201,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error in updateLastWorkoutTime:", error);
     }
     
-    // After setting the time, update the cooldown status
     setCanAddWorkout(false);
     
-    // Schedule a check in 30 minutes to update the cooldown status
     setTimeout(() => {
       checkWorkoutCooldown();
     }, 30 * 60 * 1000);
@@ -239,7 +232,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
-        // Update character count in database
         const { data, error: countError } = await supabase
           .from('character_counts')
           .select('*')
@@ -251,7 +243,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         }
         
         if (data) {
-          // Update existing count
           const { error: updateError } = await supabase
             .from('character_counts')
             .update({ count: data.count + 1 })
@@ -261,7 +252,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             console.error("Error updating character count:", updateError);
           }
         } else {
-          // Insert new count
           const { error: insertError } = await supabase
             .from('character_counts')
             .insert({ character_type: newCharacter, count: 1 });
@@ -284,7 +274,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
-        // Manually increment points
         const { error } = await supabase
           .from('users')
           .update({ points: newPoints })
@@ -302,10 +291,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
-        // Update streak
         const today = new Date().toISOString().split('T')[0];
         
-        // Only update streak if lastWorkoutDate is from a different day
         if (!lastWorkoutDate || lastWorkoutDate !== today) {
           let newStreak = streak;
           
@@ -314,16 +301,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             
-            // Check if the last workout was yesterday
             if (lastDate.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]) {
-              // Continue streak
               newStreak = streak + 1;
             } else if (lastDate.toISOString().split('T')[0] !== today) {
-              // Reset streak if last workout wasn't yesterday or today
               newStreak = 1;
             }
           } else {
-            // First workout ever
             newStreak = 1;
           }
           
@@ -332,7 +315,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('streak', String(newStreak));
           localStorage.setItem('lastWorkoutDate', today);
           
-          // Update streak in database
           const { error: streakError } = await supabase
             .from('users')
             .update({ 
@@ -346,11 +328,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Add some coins for gaining points (1 coin per 10 points)
         if (amount > 0) {
           const coinsToAdd = Math.floor(amount / 10);
           if (coinsToAdd > 0) {
-            // Update coins
             const newCoins = coins + coinsToAdd;
             setCoins(newCoins);
             localStorage.setItem('coins', String(newCoins));
@@ -374,7 +354,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Check for achievement unlocks
         await checkForAchievements();
       }
     } catch (error) {
@@ -409,10 +388,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           return false;
         }
 
-        // Log the transaction for debugging
         console.log(`Successfully used ${amount} coins. New balance: ${newCoins}`);
         
-        // Check for achievement unlocks based on spending coins
         await checkForAchievements();
       }
       
@@ -433,7 +410,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) return;
       
-      // Get all achievements
       const { data: achievements, error: achievementsError } = await supabase
         .from('achievements')
         .select('*')
@@ -444,7 +420,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // Get currently unlocked achievements
       const { data: existingAchievements, error: existingError } = await supabase
         .from('user_achievements')
         .select('achievement_id')
@@ -455,18 +430,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // Create a set of unlocked achievement IDs for faster lookup
       const unlockedAchievementIds = new Set(
         existingAchievements?.map(ua => ua.achievement_id) || []
       );
       
-      // Check for new achievements to unlock
       const achievementsToUnlock = achievements?.filter(achievement => 
         !unlockedAchievementIds.has(achievement.id) && 
         points >= achievement.points_required
       ) || [];
       
-      // Unlock any newly qualified achievements
       for (const achievement of achievementsToUnlock) {
         const { error: unlockError } = await supabase
           .from('user_achievements')
@@ -480,18 +452,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           continue;
         }
         
-        // Notify user
         toast({
           title: "Achievement Unlocked!",
           description: `${achievement.name}: ${achievement.description}`,
           duration: 5000,
         });
         
-        // Log for debugging
         console.log(`Achievement unlocked: ${achievement.name}`);
       }
       
-      // Now check for badges
       const { data: workoutsData, error: workoutsError } = await supabase
         .from('workouts')
         .select('id')
@@ -504,7 +473,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       
       const workoutsCount = workoutsData ? workoutsData.length : 0;
       
-      // Get existing badges
       const { data: existingBadges, error: badgesError } = await supabase
         .from('user_badges')
         .select('badge_id')
@@ -519,7 +487,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         existingBadges?.map(ub => ub.badge_id) || []
       );
       
-      // Get all available badges
       const { data: badges, error: allBadgesError } = await supabase
         .from('badges')
         .select('*');
@@ -529,7 +496,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      // Check each badge's requirements
       for (const badge of badges || []) {
         if (unlockedBadgeIds.has(badge.id)) continue;
         
@@ -564,14 +530,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             continue;
           }
           
-          // Notify user
           toast({
             title: "Badge Earned!",
             description: `You've earned the ${badge.name} badge!`,
             duration: 5000,
           });
           
-          // Give bonus points for earning a badge
           await addPoints(50);
         }
       }
@@ -630,8 +594,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // We need to make sure we don't show things too quickly before authentication
-  // is checked, which would cause flickering or inconsistent state
   if (!isInitialized) {
     return null;
   }

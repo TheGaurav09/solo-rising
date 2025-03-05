@@ -224,6 +224,7 @@ export type Database = {
           email: string
           id: string
           last_workout_date: string | null
+          last_workout_time: string | null
           password: string
           points: number
           streak: number | null
@@ -237,6 +238,7 @@ export type Database = {
           email: string
           id?: string
           last_workout_date?: string | null
+          last_workout_time?: string | null
           password: string
           points?: number
           streak?: number | null
@@ -250,6 +252,7 @@ export type Database = {
           email?: string
           id?: string
           last_workout_date?: string | null
+          last_workout_time?: string | null
           password?: string
           points?: number
           streak?: number | null
