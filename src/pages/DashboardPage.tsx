@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,21 +14,21 @@ const DashboardPage = () => {
   const { data: workoutStats } = useQuery({
     queryKey: ['workoutStats', userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('exercise_type, count')
-        .eq('user_id', userId)
-        .select(`
-          exercise_type,
-          count:count(*)
-        `, { count: 'exact' })
-        .group('exercise_type');
+      try {
+        // Using raw SQL query to perform the group by operation
+        const { data, error } = await supabase
+          .rpc('get_workout_stats_by_type', { user_id_param: userId });
+
+        if (error) {
+          console.error('Error fetching workout stats:', error);
+          return [];
+        }
         
-      if (error) {
-        console.error('Error fetching workout stats:', error);
+        return data || [];
+      } catch (err) {
+        console.error('Exception fetching workout stats:', err);
         return [];
       }
-      return data || [];
     },
   });
 
