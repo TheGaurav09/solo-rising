@@ -1,5 +1,7 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 export type CharacterType = 'goku' | 'saitama' | 'jin-woo';
 
@@ -13,6 +15,9 @@ export type UserContextType = {
   streak: number;
   xp: number;
   level: number;
+  country: string;
+  lastWorkoutDate: string | null;
+  canAddWorkout: boolean;
   setCharacter: (character: CharacterType) => void;
   updateUserProfile: (newName: string) => Promise<boolean>;
   updateCharacter: (newCharacter: CharacterType) => Promise<boolean>;
@@ -22,6 +27,9 @@ export type UserContextType = {
   useCoins: (coinsToUse: number) => void;
   addStreak: (newStreak: number) => void;
   resetStreak: () => void;
+  setUserData: (name: string, char: CharacterType, pts: number, strk: number, cns: number, cntry: string) => void;
+  checkWorkoutCooldown: () => boolean;
+  setLastWorkoutTime: (date: string) => Promise<boolean>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -36,6 +44,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [streak, setStreak] = useState<number>(0);
   const [xp, setXp] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
+  const [country, setCountry] = useState<string>('');
+  const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
+  const [canAddWorkout, setCanAddWorkout] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -52,14 +63,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) {
           console.error("Error fetching user profile:", error);
         } else if (profile) {
-          setUserName(profile.user_name || '');
-          setCharacterType(profile.character_type || null);
+          setUserName(profile.warrior_name || '');
+          if (profile.character_type) {
+            setCharacterType(profile.character_type as CharacterType);
+          }
           setHasSelectedCharacter(!!profile.character_type);
           setPoints(profile.points || 0);
           setCoins(profile.coins || 0);
           setStreak(profile.streak || 0);
           setXp(profile.xp || 0);
           setLevel(profile.level || 1);
+          setCountry(profile.country || '');
+          setLastWorkoutDate(profile.last_workout_date || null);
+          
+          // Check if user can add a workout
+          if (profile.last_workout_date) {
+            const canAdd = checkWorkoutCooldown();
+            setCanAddWorkout(canAdd);
+          }
         }
       }
     };
@@ -77,11 +98,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStreak(0);
         setXp(0);
         setLevel(1);
+        setCountry('');
+        setLastWorkoutDate(null);
+        setCanAddWorkout(true);
       } else if (session?.user) {
         fetchInitialData();
       }
     });
   }, []);
+
+  const setUserData = (name: string, char: CharacterType, pts: number, strk: number, cns: number, cntry: string) => {
+    setUserName(name);
+    setCharacterType(char);
+    setHasSelectedCharacter(true);
+    setPoints(pts);
+    setStreak(strk);
+    setCoins(cns);
+    setCountry(cntry);
+  };
 
   const setCharacter = (character: CharacterType) => {
     setCharacterType(character);
@@ -93,7 +127,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { error } = await supabase
       .from('users')
-      .update({ user_name: newName })
+      .update({ warrior_name: newName })
       .eq('id', userId);
 
     if (error) {
@@ -146,6 +180,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStreak(0);
   };
 
+  const checkWorkoutCooldown = () => {
+    if (!lastWorkoutDate) return true;
+    
+    const now = new Date();
+    const lastWorkout = new Date(lastWorkoutDate);
+    const hoursSinceLastWorkout = (now.getTime() - lastWorkout.getTime()) / (1000 * 60 * 60);
+    
+    // Allow a new workout if more than 3 hours have passed
+    return hoursSinceLastWorkout >= 3;
+  };
+
+  const setLastWorkoutTime = async (date: string): Promise<boolean> => {
+    if (!userId) return false;
+    
+    const { error } = await supabase
+      .from('users')
+      .update({ last_workout_date: date })
+      .eq('id', userId);
+      
+    if (error) {
+      console.error("Error updating last workout time:", error);
+      return false;
+    } else {
+      setLastWorkoutDate(date);
+      setCanAddWorkout(false);
+      
+      // Schedule the cooldown reset
+      setTimeout(() => {
+        setCanAddWorkout(true);
+      }, 3 * 60 * 60 * 1000); // 3 hours
+      
+      return true;
+    }
+  };
+
   const value: UserContextType = {
     userId,
     userName,
@@ -156,6 +225,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     streak,
     xp,
     level,
+    country,
+    lastWorkoutDate,
+    canAddWorkout,
     setCharacter,
     updateUserProfile,
     updateCharacter,
@@ -165,6 +237,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useCoins,
     addStreak,
     resetStreak,
+    setUserData,
+    checkWorkoutCooldown,
+    setLastWorkoutTime,
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -92,6 +93,8 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
             points: 0,
             streak: 0,
             coins: 100,
+            xp: 0,
+            level: 1,
             password: '******'
           });
         

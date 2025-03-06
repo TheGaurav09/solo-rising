@@ -81,6 +81,7 @@ const AnimatedButton = ({
         'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
         'active:scale-[0.98] hover:border hover:border-white/20',
         'max-w-full break-words whitespace-normal', // Fixes the text wrapping issue
+        'transform hover:scale-[1.02]', // Reduce the hover scale effect to prevent overflow
         getVariantClasses(),
         getSizeClasses(),
         disabled && 'opacity-50 cursor-not-allowed',
