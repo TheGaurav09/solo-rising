@@ -36,6 +36,8 @@ const HallOfFameList = () => {
   const [showHallOfFameDialog, setShowHallOfFameDialog] = useState(false);
   const [showUserSearchDialog, setShowUserSearchDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false);
+  const [supporterToDelete, setSupporterToDelete] = useState<Supporter | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -106,22 +108,23 @@ const HallOfFameList = () => {
     setIsProcessing(true);
     
     try {
-      // Use the admin function to bypass RLS policies
-      const { data, error } = await supabase.functions.invoke('auth-admin', {
-        body: { 
-          action: 'add_to_hall_of_fame',
+      const { data, error } = await supabase
+        .from('hall_of_fame')
+        .insert([{ 
           name: newSupporterName,
           amount: amount,
-          userId: newSupporterUserId || null
-        }
-      });
+          user_id: newSupporterUserId || null
+        }])
+        .select();
       
-      if (error || (data && data.error)) {
-        throw new Error(error?.message || data?.error || 'Failed to add supporter');
+      if (error) {
+        throw new Error(error.message || 'Failed to add supporter');
       }
       
-      // Refresh the supporters list
-      fetchSupporters();
+      // Update the supporters list with the new entry
+      if (data && data.length > 0) {
+        setSupporters([...supporters, data[0]]);
+      }
       
       setNewSupporterName('');
       setNewSupporterAmount('');
@@ -132,11 +135,11 @@ const HallOfFameList = () => {
         title: "Success",
         description: `${newSupporterName} has been added to the Hall of Fame`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding supporter:', error);
       toast({
         title: "Error",
-        description: "Failed to add supporter. Make sure you have proper permissions and the service role key is configured.",
+        description: error.message || "Failed to add supporter",
         variant: "destructive",
       });
     } finally {
@@ -144,10 +147,13 @@ const HallOfFameList = () => {
     }
   };
 
-  const handleDeleteSupporter = async (supporterId: string) => {
-    if (!confirm("Are you sure you want to remove this supporter from the Hall of Fame?")) {
-      return;
-    }
+  const handleDeleteClick = (supporter: Supporter) => {
+    setSupporterToDelete(supporter);
+    setDeleteConfirmDialogOpen(true);
+  };
+
+  const handleDeleteSupporter = async () => {
+    if (!supporterToDelete) return;
     
     setIsProcessing(true);
     
@@ -156,23 +162,27 @@ const HallOfFameList = () => {
       const { error } = await supabase
         .from('hall_of_fame')
         .delete()
-        .eq('id', supporterId);
+        .eq('id', supporterToDelete.id);
       
       if (error) {
         throw new Error(error.message || 'Failed to delete supporter');
       }
       
-      setSupporters(supporters.filter(supporter => supporter.id !== supporterId));
+      // Update local state to reflect the deletion
+      setSupporters(supporters.filter(supporter => supporter.id !== supporterToDelete.id));
       
       toast({
         title: "Success",
         description: "Supporter has been removed from the Hall of Fame",
       });
-    } catch (error) {
+      
+      setDeleteConfirmDialogOpen(false);
+      setSupporterToDelete(null);
+    } catch (error: any) {
       console.error('Error removing supporter:', error);
       toast({
         title: "Error",
-        description: "Failed to remove supporter",
+        description: error.message || "Failed to remove supporter",
         variant: "destructive",
       });
     } finally {
@@ -188,7 +198,7 @@ const HallOfFameList = () => {
 
   const handleUserClick = (userId: string | null) => {
     if (userId) {
-      navigate(`/profile/${userId}`);
+      navigate(`/profile/${userId}`, { replace: true });
     }
   };
 
@@ -228,11 +238,14 @@ const HallOfFameList = () => {
                     </button>
                   )}
                   <button 
-                    onClick={() => handleDeleteSupporter(supporter.id)}
+                    onClick={() => handleDeleteClick(supporter)}
                     className="p-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500"
                     disabled={isProcessing}
                   >
-                    {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                    {isProcessing && supporterToDelete?.id === supporter.id ? 
+                      <Loader2 size={18} className="animate-spin" /> : 
+                      <Trash2 size={18} />
+                    }
                   </button>
                 </div>
               </div>
@@ -333,6 +346,42 @@ const HallOfFameList = () => {
                   <Plus size={16} className="mr-2" />
                   Add Supporter
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmDialogOpen} onOpenChange={setDeleteConfirmDialogOpen}>
+        <DialogContent className="bg-black/90 border border-red-900/50 text-white">
+          <DialogHeader>
+            <DialogTitle>Delete From Hall of Fame</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to remove this supporter from the Hall of Fame? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              onClick={() => setDeleteConfirmDialogOpen(false)}
+              className="border border-white/20 text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDeleteSupporter}
+              className="bg-red-800 hover:bg-red-700"
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
               )}
             </Button>
           </DialogFooter>

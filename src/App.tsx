@@ -18,6 +18,7 @@ import HallOfFamePage from "./pages/HallOfFamePage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminPage from "./pages/AdminPage";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,10 +31,54 @@ const queryClient = new QueryClient({
 
 const App = () => {
   const [isInitialized, setIsInitialized] = useState(false);
-
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasCharacter, setHasCharacter] = useState(false);
+  
   useEffect(() => {
-    // Immediate initialization to avoid blank screen
-    setIsInitialized(true);
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser();
+      const isAuth = !!data.user;
+      setIsAuthenticated(isAuth);
+
+      // If user is authenticated, check if they have selected a character
+      if (isAuth) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('character_type')
+          .eq('id', data.user.id)
+          .single();
+          
+        setHasCharacter(!!userData?.character_type);
+      }
+      
+      // Set initialized after checking auth status
+      setIsInitialized(true);
+    };
+
+    checkAuth();
+    
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const isAuth = !!session?.user;
+      setIsAuthenticated(isAuth);
+      
+      // If user is authenticated, check if they have selected a character
+      if (isAuth) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('character_type')
+          .eq('id', session.user.id)
+          .single();
+          
+        setHasCharacter(!!userData?.character_type);
+      } else {
+        setHasCharacter(false);
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   if (!isInitialized) {
@@ -53,7 +98,13 @@ const App = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                {/* Redirect authenticated users with character directly to dashboard */}
+                <Route path="/" element={
+                  isAuthenticated && hasCharacter ? 
+                    <Navigate to="/profile-workout" replace /> : 
+                    <Index />
+                } />
+                
                 <Route path="/admin" element={<AdminPage />} />
                 
                 {/* Protected Dashboard Routes */}

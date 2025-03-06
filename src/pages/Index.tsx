@@ -13,6 +13,7 @@ const Index = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,6 +22,7 @@ const Index = () => {
         
         if (error) {
           console.error("Auth check error:", error);
+          setLoading(false);
           return;
         }
         
@@ -36,16 +38,21 @@ const Index = () => {
           
           if (userError) {
             console.error("User data check error:", userError);
+            setLoading(false);
             return;
           }
           
           // If user exists in DB and has selected a character, redirect to workout page
           if (userData && userData.character_type) {
-            navigate('/workout');
+            navigate('/profile-workout', { replace: true });
+            return;
           }
         }
+        
+        setLoading(false);
       } catch (err) {
         console.error("Error checking authentication:", err);
+        setLoading(false);
       }
     };
     
@@ -53,7 +60,6 @@ const Index = () => {
 
     // Add listener for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event);
       if (event === 'SIGNED_IN' && session) {
         setCurrentUserId(session.user.id);
         
@@ -72,19 +78,13 @@ const Index = () => {
           
           // If user exists in DB and has selected a character, redirect to workout page
           if (userData && userData.character_type) {
-            navigate('/workout');
+            navigate('/profile-workout', { replace: true });
           }
         };
         
         checkUserCharacter();
       } else if (event === 'SIGNED_OUT') {
         setCurrentUserId(null);
-      } else if (event === 'USER_UPDATED' && event.toString() === 'SIGNED_UP') {
-        toast({
-          title: "Account created successfully!",
-          description: "Please select a character to continue your journey.",
-          duration: 5000,
-        });
       }
     });
     
@@ -102,6 +102,14 @@ const Index = () => {
     setAuthView('signup');
     setShowAuthModal(true);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="animated-grid min-h-screen bg-gradient-to-b from-black to-gray-900">
