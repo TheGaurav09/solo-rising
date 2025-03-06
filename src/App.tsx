@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import StoreAndAchievementsPage from "./pages/StoreAndAchievementsPage";
 import AIChatPage from "./pages/AIChatPage";
 import HallOfFamePage from "./pages/HallOfFamePage";
 import SettingsPage from "./pages/SettingsPage";
+import DashboardPage from "./pages/DashboardPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +55,7 @@ const App = () => {
                 
                 {/* Protected Dashboard Routes */}
                 <Route path="/" element={<Dashboard />}>
+                  <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
                   <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
                   <Route path="leaderboard" element={<LeaderboardPage />} />

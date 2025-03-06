@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
 import CoinDisplay from './ui/CoinDisplay';
 import { useAudio } from '@/context/AudioContext';
+import { LayoutDashboard } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,7 +25,6 @@ const Dashboard = () => {
   const isAIChat = location.pathname.includes('/ai-chat');
 
   useEffect(() => {
-    // Load sidebar state from localStorage
     const savedSidebarHiddenState = localStorage.getItem('sidebar-hidden');
     if (savedSidebarHiddenState) {
       setSidebarHidden(savedSidebarHiddenState === 'true');
@@ -32,11 +32,9 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // Save sidebar states to localStorage
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
   }, [sidebarHidden]);
 
-  // Update background music based on character selection
   useEffect(() => {
     const audio = document.querySelector('audio');
     if (audio && character) {
@@ -179,6 +177,11 @@ const Dashboard = () => {
   };
   
   const navigationItems = [
+    {
+      href: '/dashboard',
+      icon: <LayoutDashboard size={20} />,
+      label: 'Dashboard'
+    },
     {
       href: '/profile-workout',
       icon: <User size={20} />,

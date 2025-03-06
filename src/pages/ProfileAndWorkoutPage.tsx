@@ -72,6 +72,8 @@ const ProfileAndWorkoutPage = () => {
         }
 
         setProfileData(data);
+      } else {
+        setProfileData(null);
       }
     };
 
@@ -186,11 +188,11 @@ const ProfileAndWorkoutPage = () => {
           </div>
         </AnimatedCard>
 
-        {isOwnProfile && (
+        {isOwnProfile ? (
           <AnimatedCard className="p-6 col-span-1 lg:col-span-2 h-auto">
             <WorkoutLogger />
           </AnimatedCard>
-        )}
+        ) : null}
 
         <AnimatedCard className="p-6 col-span-1 h-auto">
           <div className="flex items-center justify-between mb-4">
