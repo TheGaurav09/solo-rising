@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -152,7 +153,7 @@ const StoreAndAchievementsPage = () => {
       if (updateError) throw updateError;
       
       setUserItems([...userItems, item.id]);
-      useCoins(-item.price);
+      useCoins(item.price); // Fixed: Pass positive value since useCoins functions subtracts
       
       toast({
         title: 'Purchase Successful',
@@ -235,18 +236,6 @@ const StoreAndAchievementsPage = () => {
                 <div className="text-sm text-white/70">
                   {userAchievements.length}/{achievements.length} unlocked
                 </div>
-                {achievements.length > 6 && (
-                  <button 
-                    onClick={() => setShowAllAchievements(!showAllAchievements)}
-                    className="text-sm flex items-center gap-1 text-white/60 hover:text-white"
-                  >
-                    {showAllAchievements ? (
-                      <>Show Less <ChevronUp size={14} /></>
-                    ) : (
-                      <>Show All <ChevronDown size={14} /></>
-                    )}
-                  </button>
-                )}
               </div>
             </div>
             
@@ -308,6 +297,22 @@ const StoreAndAchievementsPage = () => {
                 );
               })}
             </div>
+
+            {/* Show All/Less button moved to after the cards */}
+            {achievements.length > 6 && (
+              <div className="flex justify-center mt-6">
+                <button 
+                  onClick={() => setShowAllAchievements(!showAllAchievements)}
+                  className="text-sm flex items-center gap-1 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md transition-all"
+                >
+                  {showAllAchievements ? (
+                    <>Show Less <ChevronUp size={14} /></>
+                  ) : (
+                    <>Show All <ChevronDown size={14} /></>
+                  )}
+                </button>
+              </div>
+            )}
           </AnimatedCard>
         </TabsContent>
       </Tabs>

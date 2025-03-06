@@ -1,5 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useUser } from '@/context/UserContext';
 
 type AudioContextType = {
   isPlaying: boolean;
@@ -13,10 +14,37 @@ type AudioContextType = {
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [audio] = useState(new Audio('/background-music.mp3'));
+  const [audio] = useState(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(0.5);
   const [isLooping, setIsLooping] = useState(false);
+  const { character } = useUser();
+
+  // Set the audio source based on character
+  useEffect(() => {
+    if (character) {
+      switch (character) {
+        case 'goku':
+          audio.src = '/goku-bgm.mp3';
+          break;
+        case 'saitama':
+          audio.src = '/saitama.mp3';
+          break;
+        case 'jin-woo':
+          audio.src = '/jinwoo.mp3';
+          break;
+        default:
+          audio.src = '/background-music.mp3';
+          break;
+      }
+      
+      if (isPlaying) {
+        audio.play().catch(e => console.error("Audio playback error:", e));
+      }
+    } else {
+      audio.src = '/background-music.mp3';
+    }
+  }, [character, audio, isPlaying]);
 
   // Load preferences from localStorage on mount
   useEffect(() => {

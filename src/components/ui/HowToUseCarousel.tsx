@@ -40,22 +40,13 @@ const howToUseSteps = [
 
 const HowToUseCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(3);
   const carouselRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isTablet = useMediaQuery("(max-width: 1024px) and (min-width: 769px)");
 
-  useEffect(() => {
-    if (isMobile) {
-      setVisibleCards(1);
-    } else if (isTablet) {
-      setVisibleCards(2);
-    } else {
-      setVisibleCards(3);
-    }
-  }, [isMobile, isTablet]);
-
-  const maxIndex = Math.max(0, howToUseSteps.length - visibleCards);
+  // Always show just one card per slide
+  const visibleCards = 1;
+  const maxIndex = howToUseSteps.length - 1;
 
   const handleNext = () => {
     setCurrentIndex(prevIndex => Math.min(prevIndex + 1, maxIndex));
@@ -106,24 +97,22 @@ const HowToUseCarousel = () => {
       >
         <motion.div
           className="flex"
-          animate={{ x: `calc(-${currentIndex * 100}% / ${visibleCards})` }}
+          animate={{ x: `calc(-${currentIndex * 100}%)` }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <div className={`grid grid-flow-col auto-cols-fr gap-6`} style={{ width: `calc(100% * ${howToUseSteps.length / visibleCards})` }}>
-            {howToUseSteps.map((step, index) => (
-              <div key={index} className="px-2">
-                <AnimatedCard className="p-6 border border-white/10 animated-border h-full">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-4 p-3 rounded-full bg-white/10">
-                      {step.icon}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
-                    <p className="text-white/70">{step.description}</p>
+          {howToUseSteps.map((step, index) => (
+            <div key={index} className="min-w-full px-4">
+              <AnimatedCard className="p-6 border border-white/10 animated-border h-full">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 p-3 rounded-full bg-white/10">
+                    {step.icon}
                   </div>
-                </AnimatedCard>
-              </div>
-            ))}
-          </div>
+                  <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
+                  <p className="text-white/70">{step.description}</p>
+                </div>
+              </AnimatedCard>
+            </div>
+          ))}
         </motion.div>
       </div>
 
@@ -137,7 +126,7 @@ const HowToUseCarousel = () => {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div className="flex gap-1 items-center">
-          {Array.from({ length: maxIndex + 1 }).map((_, index) => (
+          {Array.from({ length: howToUseSteps.length }).map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}

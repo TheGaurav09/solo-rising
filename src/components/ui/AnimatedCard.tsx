@@ -24,7 +24,7 @@ const AnimatedCard = ({
       case 'glow':
         return 'hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-shadow duration-300';
       case 'scale':
-        return 'hover:scale-[1.02] transition-transform duration-300';
+        return 'hover:scale-[1.01] transition-transform duration-300';
       case 'border':
         return 'border border-white/10 hover:border-white/30 transition-colors duration-300';
       case 'none':
@@ -48,7 +48,7 @@ const AnimatedCard = ({
       onMouseLeave={() => setIsHovered(false)}
       style={{
         transform: isHovered 
-          ? 'perspective(1000px) rotateX(2deg) rotateY(0deg)'
+          ? 'perspective(1000px) rotateX(1deg) rotateY(0deg)' // Reduced rotation
           : 'perspective(1000px) rotateX(0deg) rotateY(0deg)',
       }}
     >

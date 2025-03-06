@@ -8,6 +8,7 @@ import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence, motion } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
 import CoinDisplay from './ui/CoinDisplay';
+import { useAudio } from '@/context/AudioContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Dashboard = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const { togglePlay, isPlaying, setVolume } = useAudio();
   
   const isAIChat = location.pathname.includes('/ai-chat');
 
@@ -33,6 +35,35 @@ const Dashboard = () => {
     // Save sidebar states to localStorage
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
   }, [sidebarHidden]);
+
+  // Update background music based on character selection
+  useEffect(() => {
+    const audio = document.querySelector('audio');
+    if (audio && character) {
+      let musicPath = '';
+      
+      switch (character) {
+        case 'goku':
+          musicPath = '/goku-bgm.mp3';
+          break;
+        case 'saitama':
+          musicPath = '/saitama.mp3';
+          break;
+        case 'jin-woo':
+          musicPath = '/jinwoo.mp3';
+          break;
+        default:
+          musicPath = '/background-music.mp3';
+          break;
+      }
+      
+      audio.src = musicPath;
+      
+      if (isPlaying) {
+        audio.play().catch(e => console.error("Audio playback error:", e));
+      }
+    }
+  }, [character, isPlaying]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -314,18 +345,16 @@ const Dashboard = () => {
           </div>
         </motion.div>
         
-        <motion.button 
-          onClick={toggleSidebar}
-          className="sidebar-toggle fixed z-20 top-4 left-4 bg-black/30 hover:bg-black/50 transition-all p-2 rounded-md"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {sidebarHidden ? (
+        {sidebarHidden && (
+          <motion.button 
+            onClick={toggleSidebar}
+            className="sidebar-toggle fixed z-20 top-4 left-4 bg-black/30 hover:bg-black/50 transition-all p-2 rounded-md"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <Menu size={20} className="text-white/80" />
-          ) : (
-            <X size={20} className="text-white/80" />
-          )}
-        </motion.button>
+          </motion.button>
+        )}
         
         <main className="flex-1 overflow-y-auto pb-0 relative w-full transition-all">
           <div className="min-h-screen pt-4 px-4">

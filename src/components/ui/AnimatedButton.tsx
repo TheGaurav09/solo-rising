@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from '@/hooks/use-mobile';
 
@@ -15,7 +15,7 @@ interface AnimatedButtonProps {
   style?: React.CSSProperties;
 }
 
-const AnimatedButton = ({ 
+const AnimatedButton = forwardRef<HTMLButtonElement, AnimatedButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>>(({
   children, 
   onClick, 
   className,
@@ -26,7 +26,7 @@ const AnimatedButton = ({
   type = 'button',
   style,
   ...props
-}: AnimatedButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
+}, ref) => {
   const isMobile = useMediaQuery("(max-width: 768px)");
   
   const getCharacterGradient = () => {
@@ -73,10 +73,11 @@ const AnimatedButton = ({
   };
 
   // Adjust scale for mobile to prevent overflow issues
-  const hoverScaleClass = isMobile ? 'hover:scale-[1.01]' : 'hover:scale-[1.02]';
+  const hoverScaleClass = isMobile ? 'hover:scale-[1.005]' : 'hover:scale-[1.01]';
 
   return (
     <button
+      ref={ref}
       onClick={onClick}
       disabled={disabled}
       type={type}
@@ -85,7 +86,7 @@ const AnimatedButton = ({
         'relative rounded-lg font-medium',
         'transition-all duration-300 ease-out transform-gpu',
         'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
-        'active:scale-[0.98] hover:border hover:border-white/20',
+        'active:scale-[0.99] hover:border hover:border-white/20',
         'max-w-full break-words whitespace-normal', // Fixes the text wrapping issue
         hoverScaleClass, // Dynamic scale based on device
         getVariantClasses(),
@@ -98,6 +99,8 @@ const AnimatedButton = ({
       <span className="relative z-10 flex items-center justify-center">{children}</span>
     </button>
   );
-};
+});
+
+AnimatedButton.displayName = 'AnimatedButton';
 
 export default AnimatedButton;
