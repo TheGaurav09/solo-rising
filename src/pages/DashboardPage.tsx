@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,11 +13,20 @@ const DashboardPage = () => {
   const { data: workoutStats } = useQuery({
     queryKey: ['workoutStats', userId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('workouts')
-        .select('exercise_type, count(*)')
+        .select('exercise_type, count')
         .eq('user_id', userId)
+        .select(`
+          exercise_type,
+          count:count(*)
+        `, { count: 'exact' })
         .group('exercise_type');
+        
+      if (error) {
+        console.error('Error fetching workout stats:', error);
+        return [];
+      }
       return data || [];
     },
   });
