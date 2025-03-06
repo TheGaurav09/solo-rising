@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -7,30 +7,23 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Timer, Dumbbell, History, Clock, Award, ChevronDown, ChevronUp, RefreshCw, Share2 } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Timer, Dumbbell, History, Clock, Award, ChevronDown, ChevronUp } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Footer from '@/components/ui/Footer';
-import { Button } from '@/components/ui/button';
 import WorkoutLogger from '@/components/WorkoutLogger';
 
 const ProfileAndWorkoutPage = () => {
-  const { userName, character, points, streak, coins, level, xp } = useUser();
+  const { id } = useParams();
+  const { userName, character, points, streak, coins, level, xp, userId } = useUser();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [workoutHistory, setWorkoutHistory] = useState([]);
-
-  // Weekly schedule
-  const weeklySchedule = [
-    { day: "Monday", workout: "Upper Body", completed: false },
-    { day: "Tuesday", workout: "Lower Body", completed: false },
-    { day: "Wednesday", workout: "Rest Day", completed: true },
-    { day: "Thursday", workout: "Cardio", completed: false },
-    { day: "Friday", workout: "Full Body", completed: false },
-    { day: "Saturday", workout: "Flexible Training", completed: false },
-    { day: "Sunday", workout: "Rest Day", completed: true }
-  ];
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [profileRank, setProfileRank] = useState<number | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
+  const [profileData, setProfileData] = useState<any>(null);
 
   const characterImages: Record<string, string> = {
     'goku': 'https://avatars.akamai.steamstatic.com/fef49e7fa7e1997a76c7d1039373b5a62359ca63_full.jpg',
@@ -56,19 +49,70 @@ const ProfileAndWorkoutPage = () => {
     return progress;
   };
 
-  const progress = calculateLevelProgress();
+  useEffect(() => {
+    setIsOwnProfile(!id || id === userId);
+  }, [id, userId]);
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (id && id !== userId) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Could not fetch profile data",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setProfileData(data);
+      }
+    };
+
+    fetchProfileData();
+  }, [id, userId]);
+
+  useEffect(() => {
+    const fetchRank = async () => {
+      const targetId = id || userId;
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, points')
+        .order('points', { ascending: false });
+
+      if (users) {
+        const rank = users.findIndex(user => user.id === targetId) + 1;
+        setProfileRank(rank);
+      }
+    };
+
+    fetchRank();
+  }, [id, userId]);
+
+  const weeklySchedule = [
+    { day: "Monday", workout: "Upper Body", completed: false },
+    { day: "Tuesday", workout: "Lower Body", completed: false },
+    { day: "Wednesday", workout: "Rest Day", completed: true },
+    { day: "Thursday", workout: "Cardio", completed: false },
+    { day: "Friday", workout: "Full Body", completed: false },
+    { day: "Saturday", workout: "Flexible Training", completed: false },
+    { day: "Sunday", workout: "Rest Day", completed: true }
+  ];
 
   const fetchWorkoutHistory = async () => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData || !userData.user) return;
-
+      const targetId = id || userId;
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
-        .eq('user_id', userData.user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .eq('user_id', targetId)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching workout history:", error);
@@ -83,84 +127,92 @@ const ProfileAndWorkoutPage = () => {
 
   useEffect(() => {
     fetchWorkoutHistory();
-  }, []);
+  }, [id, userId]);
 
-  const refreshWorkouts = () => {
-    fetchWorkoutHistory();
-  };
+  const visibleHistory = showAllHistory ? workoutHistory : workoutHistory.slice(0, 5);
 
   return (
     <div className="container mx-auto px-4 py-8 pt-16 md:pt-8">
       <h1 className="text-2xl font-bold mb-6">Profile & Workout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
         <AnimatedCard className="p-6 col-span-1 h-auto">
           <div className="flex flex-col items-center">
             <Avatar className={`w-24 h-24 border-4 ${getCharacterColor()} mb-4`}>
-              <AvatarImage src={characterImages[character || ''] || ''} alt={character || ''} />
-              <AvatarFallback>{character?.slice(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarImage 
+                src={characterImages[profileData?.character_type || character || '']} 
+                alt={profileData?.character_type || character || ''} 
+              />
+              <AvatarFallback>
+                {(profileData?.character_type || character || '').slice(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             
-            <h2 className="text-xl font-bold">{userName}</h2>
-            <p className="text-sm opacity-70">Caped Baldy</p>
+            <h2 className="text-xl font-bold">{profileData?.warrior_name || userName}</h2>
+            <p className="text-sm opacity-70">
+              {profileData?.character_type === 'goku' ? 'Saiyan Warrior' :
+               profileData?.character_type === 'saitama' ? 'Caped Baldy' :
+               profileData?.character_type === 'jin-woo' ? 'Shadow Monarch' : 'Warrior'}
+            </p>
+            
+            {profileRank && (
+              <div className="mt-2 px-3 py-1 bg-white/10 rounded-full text-sm">
+                Rank #{profileRank}
+              </div>
+            )}
             
             <div className="w-full mt-4">
               <div className="flex justify-between items-center mb-1">
-                <p className="text-sm font-medium">Level {level}</p>
-                <p className="text-sm">{xp} / {(level + 1) * 100} XP</p>
+                <p className="text-sm font-medium">Level {profileData?.level || level}</p>
+                <p className="text-sm">{profileData?.xp || xp} / {((profileData?.level || level) + 1) * 100} XP</p>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={calculateLevelProgress()} className="h-2" />
             </div>
             
             <div className="flex justify-between w-full mt-4">
               <div className="text-center">
-                <p className="text-lg font-bold">{points}</p>
+                <p className="text-lg font-bold">{profileData?.points || points}</p>
                 <p className="text-xs opacity-70">Total Points</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold">{streak}</p>
+                <p className="text-lg font-bold">{profileData?.streak || streak}</p>
                 <p className="text-xs opacity-70">Streak</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold">{coins}</p>
+                <p className="text-lg font-bold">{isOwnProfile ? coins : '***'}</p>
                 <p className="text-xs opacity-70">Coins</p>
               </div>
             </div>
           </div>
         </AnimatedCard>
 
-        {/* Workout Logger */}
-        <AnimatedCard className="p-6 col-span-1 lg:col-span-2 h-auto">
-          <div className="flex justify-between items-center mb-4">
+        {isOwnProfile && (
+          <AnimatedCard className="p-6 col-span-1 lg:col-span-2 h-auto">
+            <WorkoutLogger />
+          </AnimatedCard>
+        )}
+
+        <AnimatedCard className="p-6 col-span-1 h-auto">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <Dumbbell size={20} />
-              Workout Logger
+              <History size={20} />
+              Workout History
             </h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshWorkouts}
-              className="flex items-center gap-1"
+            <button 
+              onClick={() => setShowAllHistory(!showAllHistory)}
+              className="text-sm flex items-center gap-1 text-white/60 hover:text-white"
             >
-              <RefreshCw size={14} />
-              Refresh
-            </Button>
+              {showAllHistory ? (
+                <>Show Less <ChevronUp size={14} /></>
+              ) : (
+                <>Show All <ChevronDown size={14} /></>
+              )}
+            </button>
           </div>
           
-          <WorkoutLogger />
-        </AnimatedCard>
-
-        {/* Workout History */}
-        <AnimatedCard className="p-6 col-span-1 h-auto">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <History size={20} />
-            Workout History
-          </h2>
-          
           {workoutHistory && workoutHistory.length > 0 ? (
-            <div className="space-y-3">
-              {workoutHistory.map((workout: any) => (
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+              {visibleHistory.map((workout: any) => (
                 <div key={workout.id} className="border border-white/10 rounded-lg p-3">
                   <div className="flex justify-between items-start">
                     <div>
@@ -185,7 +237,6 @@ const ProfileAndWorkoutPage = () => {
           )}
         </AnimatedCard>
 
-        {/* Training Schedule */}
         <AnimatedCard className="p-6 col-span-1 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <CalendarIcon size={20} />
@@ -216,7 +267,6 @@ const ProfileAndWorkoutPage = () => {
           </div>
         </AnimatedCard>
 
-        {/* Achievements */}
         <AnimatedCard className="p-6 col-span-1 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Award size={20} />
