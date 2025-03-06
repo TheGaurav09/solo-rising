@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,7 @@ import WarningNotification from './WarningNotification';
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { character, hasSelectedCharacter, user } = useUser();
+  const { character, hasSelectedCharacter, userId } = useUser();
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -376,7 +377,7 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
       
-      {user && <WarningNotification userId={user.id} />}
+      {userId && <WarningNotification userId={userId} />}
     </div>
   );
 };
