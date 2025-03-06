@@ -1,8 +1,8 @@
-
 import React from 'react';
-import { Heart, Instagram, Twitter, MessageCircle, Discord, Coffee } from 'lucide-react';
+import { Heart, Instagram, Twitter, MessageCircle, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-mobile';
+import { getIconComponent } from '@/lib/iconUtils';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const Footer = () => {
     {
       name: "Discord",
       url: "https://discord.gg/solorising",
-      icon: <Discord size={isMobile ? 18 : 20} />,
+      icon: getIconComponent('discord', isMobile ? 18 : 20),
       hoverColor: "hover:text-[#5865F2]"
     },
     {
