@@ -6,7 +6,7 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface AuthFormProps {
   onAuthenticated: () => void;
@@ -68,20 +68,26 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    authenticate();
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-gray-900 p-4">
       <AnimatedCard className="w-full max-w-md p-6">
         <h1 className="text-2xl font-bold mb-6 text-center text-white">Admin Authentication</h1>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-950/40 border border-red-800/50 rounded-md text-red-400 text-sm">
+          <div className="mb-4 p-3 bg-red-950/40 border border-red-800/50 rounded-md text-red-400 text-sm flex items-center gap-2">
+            <AlertTriangle size={16} />
             {error}
           </div>
         )}
         
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-white">Name</Label>
+            <Label htmlFor="name" className="text-white block mb-1">Name</Label>
             <Input 
               id="name" 
               type="text" 
@@ -92,7 +98,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
             />
           </div>
           <div>
-            <Label htmlFor="email" className="text-white">Email</Label>
+            <Label htmlFor="email" className="text-white block mb-1">Email</Label>
             <Input 
               id="email" 
               type="email" 
@@ -103,7 +109,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
             />
           </div>
           <div>
-            <Label htmlFor="password" className="text-white">Password</Label>
+            <Label htmlFor="password" className="text-white block mb-1">Password</Label>
             <Input 
               id="password" 
               type="password" 
@@ -114,8 +120,8 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
             />
           </div>
           <Button 
-            onClick={authenticate} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
             disabled={loading}
           >
             {loading ? (
@@ -125,7 +131,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
               </>
             ) : 'Login'}
           </Button>
-        </div>
+        </form>
       </AnimatedCard>
     </div>
   );

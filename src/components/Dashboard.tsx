@@ -10,11 +10,12 @@ import ShareModal from './modals/ShareModal';
 import CoinDisplay from './ui/CoinDisplay';
 import { useAudio } from '@/context/AudioContext';
 import { LayoutDashboard } from 'lucide-react';
+import WarningNotification from './WarningNotification';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { character, hasSelectedCharacter } = useUser();
+  const { character, hasSelectedCharacter, user } = useUser();
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -374,6 +375,8 @@ const Dashboard = () => {
           />
         )}
       </AnimatePresence>
+      
+      {user && <WarningNotification userId={user.id} />}
     </div>
   );
 };

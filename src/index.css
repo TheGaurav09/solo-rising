@@ -325,3 +325,41 @@
   height: 32px;
   object-fit: contain;
 }
+
+/* Fix mobile responsiveness for store items */
+@media (max-width: 768px) {
+  .animated-border:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .store-item-container {
+    padding-bottom: 6rem; /* Add extra padding at bottom for mobile */
+    overflow-x: hidden;
+  }
+}
+
+/* Responsive styles for better visibility on mobile */
+@media (max-width: 640px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Apply to specific elements as needed */
+.store-item-card {
+  transition: transform 0.3s ease;
+}
+
+/* Prevent hover effects on mobile that may cause layout issues */
+@media (hover: hover) {
+  .store-item-card:hover {
+    transform: translateY(-5px);
+  }
+}
+
+@media (hover: none) {
+  .store-item-card:hover {
+    transform: none;
+  }
+}
