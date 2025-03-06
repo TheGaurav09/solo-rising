@@ -66,26 +66,25 @@ const ProfileAndWorkoutPage = () => {
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (id && id !== userId) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', id)
-          .single();
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-        if (error) {
-          toast({
-            title: "Error",
-            description: "Could not fetch profile data",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        setProfileData(data);
-      } else {
-        setProfileData(null);
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Could not fetch profile data",
+          variant: "destructive",
+        });
+        return;
       }
+
+      setProfileData(data);
+      setIsOwnProfile(data.id === userId);
     };
 
     fetchProfileData();
