@@ -26,7 +26,7 @@ interface Warning {
   user?: {
     warrior_name: string;
     email: string;
-  };
+  } | null;
 }
 
 const MessagesList = () => {
@@ -58,17 +58,43 @@ const MessagesList = () => {
   const fetchWarnings = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch all warnings
+      const { data: warningsData, error: warningsError } = await supabase
         .from('warnings')
-        .select('*, user:user_id(warrior_name, email)')
+        .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        throw error;
+      if (warningsError) {
+        throw warningsError;
       }
       
-      setWarnings(data || []);
-      setFilteredWarnings(data || []);
+      // If we have warnings, fetch the user details separately
+      const enhancedWarnings: Warning[] = await Promise.all((warningsData || []).map(async (warning) => {
+        // For each warning, fetch the corresponding user information
+        if (warning.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('warrior_name, email')
+            .eq('id', warning.user_id)
+            .single();
+            
+          if (!userError && userData) {
+            return {
+              ...warning,
+              user: userData
+            };
+          }
+        }
+        
+        // If no user was found or there was an error, return the warning without user info
+        return {
+          ...warning,
+          user: null
+        };
+      }));
+      
+      setWarnings(enhancedWarnings);
+      setFilteredWarnings(enhancedWarnings);
     } catch (error) {
       console.error('Error fetching warnings:', error);
       toast({
@@ -172,7 +198,7 @@ const MessagesList = () => {
                       <User size={14} className="text-white/50" />
                       <span className="font-medium text-white">{warning.user?.warrior_name || 'Unknown User'}</span>
                     </div>
-                    <span className="text-xs text-white/50">{warning.user?.email}</span>
+                    <span className="text-xs text-white/50">{warning.user?.email || warning.user_id}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="max-w-xs overflow-hidden text-ellipsis">
