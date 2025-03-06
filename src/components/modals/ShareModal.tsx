@@ -22,7 +22,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
   };
   
   const getShareText = () => {
-    return encodeURIComponent("Check out SoloRising! I'm training like an anime character and tracking my progress. Join me!");
+    return encodeURIComponent("Check out SoloRising! I'm training like an anime character and tracking my progress. Join me on my fitness journey!");
   };
   
   const url = encodeURIComponent(window.location.origin);

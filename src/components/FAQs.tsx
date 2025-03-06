@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Accordion,
@@ -55,7 +54,7 @@ const FAQs = () => {
               <AccordionTrigger className="text-left text-lg text-white hover:text-white/90 py-4">
                 {item.question}
               </AccordionTrigger>
-              <AccordionContent className="text-white/90 pb-4">
+              <AccordionContent className="text-white/80 pb-4">
                 {item.answer}
               </AccordionContent>
             </AccordionItem>

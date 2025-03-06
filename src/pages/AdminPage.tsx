@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Search, Trash2, AlertTriangle, Send, Plus, ExternalLink, Trophy } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate, Link } from 'react-router-dom';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
+import { Share2, Plus, Search, Trash2, AlertTriangle, Send, ExternalLink, Trophy, Menu, X } from 'lucide-react';
+import AnimatedCard from '@/components/ui/AnimatedCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -59,8 +59,14 @@ const AdminPage = () => {
   const [newSupporterUserId, setNewSupporterUserId] = useState('');
   const [showHallOfFameDialog, setShowHallOfFameDialog] = useState(false);
 
-  const authenticate = () => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD && name === ADMIN_NAME) {
+  const authenticate = async () => {
+    const { data: secrets } = await supabase.functions.invoke('auth-admin', {
+      body: { action: 'get_secrets' }
+    });
+
+    if (email === secrets.ADMIN_EMAIL && 
+        password === secrets.ADMIN_PASSWORD && 
+        name === secrets.ADMIN_NAME) {
       setAuthenticated(true);
       localStorage.setItem('admin_authenticated', 'true');
       toast({
@@ -123,8 +129,12 @@ const AdminPage = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    const { data: secrets } = await supabase.functions.invoke('auth-admin', {
+      body: { action: 'get_secrets' }
+    });
+    
     const password = prompt("Please enter the admin delete password to confirm:");
-    if (password !== DELETE_USER_PASSWORD) {
+    if (password !== secrets.DELETE_USER_PASSWORD) {
       toast({
         title: "Unauthorized",
         description: "Incorrect delete password",

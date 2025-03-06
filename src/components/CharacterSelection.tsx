@@ -180,7 +180,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           <div className="mt-4 text-center">
             <button 
               onClick={onLoginClick} 
-              className="text-white/70 hover:text-white transition-colors border-b border-white/20 hover:border-white/70"
+              className="text-white/70 hover:text-white transition-colors border-b-2 border-white/20 hover:border-white/70"
             >
               Already have an account? Login
             </button>

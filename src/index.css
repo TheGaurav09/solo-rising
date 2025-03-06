@@ -99,7 +99,24 @@
 
 .animated-border {
   position: relative;
-  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: border-shine 2s linear infinite;
+}
+
+@keyframes border-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .animated-border:hover {
