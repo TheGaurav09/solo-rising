@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -183,7 +182,6 @@ const StoreAndAchievementsPage = () => {
     }
     
     try {
-      // First, add the item to user_items
       const { error: purchaseError } = await supabase
         .from('user_items')
         .insert([
@@ -192,7 +190,6 @@ const StoreAndAchievementsPage = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Then, update the user's coins
       const { error: updateCoinsError } = await supabase
         .from('users')
         .update({ coins: coins - item.price })
@@ -200,7 +197,6 @@ const StoreAndAchievementsPage = () => {
       
       if (updateCoinsError) throw updateCoinsError;
       
-      // Update local state
       setUserItems([...userItems, { item_id: item, user_id: userId, purchased_at: new Date().toISOString() }]);
       
       toast({
@@ -227,7 +223,6 @@ const StoreAndAchievementsPage = () => {
       <h1 className="text-2xl font-bold mb-6">Store & Achievements</h1>
       
       <div className="flex justify-end mb-4">
-        {/* Fixed: Removed coins prop since CoinDisplay gets it from UserContext */}
         <CoinDisplay className="" />
       </div>
       
@@ -279,7 +274,7 @@ const StoreAndAchievementsPage = () => {
                       key={item.id}
                       item={item}
                       onClick={() => handleItemClick(item)}
-                      owned={isItemPurchased(item.id)} {/* Fixed: isPurchased → owned */}
+                      owned={isItemPurchased(item.id)}
                       character={character}
                     />
                   ))}
@@ -439,7 +434,7 @@ const StoreAndAchievementsPage = () => {
       {showItemModal && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          owned={isItemPurchased(selectedItem.id)} {/* Fixed: isOwned → owned */}
+          owned={isItemPurchased(selectedItem.id)}
           onClose={() => setShowItemModal(false)}
           onPurchase={() => purchaseItem(selectedItem)}
           character={character}
@@ -449,7 +444,7 @@ const StoreAndAchievementsPage = () => {
       {showAchievementModal && selectedAchievement && (
         <AchievementDetailModal
           achievement={selectedAchievement}
-          unlocked={isAchievementUnlocked(selectedAchievement.id)} {/* Fixed: isUnlocked → unlocked */}
+          unlocked={isAchievementUnlocked(selectedAchievement.id)}
           onClose={() => setShowAchievementModal(false)}
           character={character}
         />
