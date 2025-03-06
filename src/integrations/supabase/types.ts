@@ -366,7 +366,15 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_workout_stats_by_type: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: {
+          exercise_type: string
+          count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

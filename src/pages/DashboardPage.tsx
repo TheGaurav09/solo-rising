@@ -15,7 +15,7 @@ const DashboardPage = () => {
     queryKey: ['workoutStats', userId],
     queryFn: async () => {
       try {
-        // Using raw SQL query to perform the group by operation
+        // Using the database function to perform the group by operation
         const { data, error } = await supabase
           .rpc('get_workout_stats_by_type', { user_id_param: userId });
 
