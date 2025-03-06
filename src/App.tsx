@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import HallOfFamePage from "./pages/HallOfFamePage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminPage from "./pages/AdminPage";
+import { ThemeProvider } from "./context/ThemeContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,37 +46,39 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <AudioProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/admin" element={<AdminPage />} />
-                
-                {/* Protected Dashboard Routes */}
-                <Route path="/" element={<Dashboard />}>
-                  <Route path="dashboard" element={<DashboardPage />} />
-                  <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
-                  <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
-                  <Route path="leaderboard" element={<LeaderboardPage />} />
-                  <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
-                  <Route path="ai-chat" element={<AIChatPage />} />
-                  <Route path="hall-of-fame" element={<HallOfFamePage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  {/* Redirect missing paths to profile-workout */}
-                  <Route path="*" element={<Navigate to="/profile-workout" replace />} />
-                </Route>
-                
-                {/* Catch-all route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AudioProvider>
-      </UserProvider>
+      <ThemeProvider>
+        <UserProvider>
+          <AudioProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  
+                  {/* Protected Dashboard Routes */}
+                  <Route path="/" element={<Dashboard />}>
+                    <Route path="dashboard" element={<DashboardPage />} />
+                    <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
+                    <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
+                    <Route path="leaderboard" element={<LeaderboardPage />} />
+                    <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
+                    <Route path="ai-chat" element={<AIChatPage />} />
+                    <Route path="hall-of-fame" element={<HallOfFamePage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    {/* Redirect missing paths to profile-workout */}
+                    <Route path="*" element={<Navigate to="/profile-workout" replace />} />
+                  </Route>
+                  
+                  {/* Catch-all route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AudioProvider>
+        </UserProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
