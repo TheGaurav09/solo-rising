@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -27,6 +28,7 @@ const StorePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [userItems, setUserItems] = useState<any[]>([]);
 
   useEffect(() => {
     const mockItems: StoreItem[] = [
@@ -177,7 +179,33 @@ const StorePage = () => {
     ];
     setItems(mockItems);
     setFilteredItems(mockItems);
+    
+    // Fetch user's purchased items
+    fetchUserItems();
   }, []);
+
+  const fetchUserItems = async () => {
+    const { userId } = useUser();
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_items')
+        .select('*, item_id(*)')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      setUserItems(data || []);
+    } catch (error) {
+      console.error('Error fetching user items:', error);
+    }
+  };
+
+  // Function to check if an item is already purchased by the user
+  const isItemPurchased = (itemId: string) => {
+    return userItems.some(userItem => userItem.item_id.id === itemId);
+  };
 
   useEffect(() => {
     let result = items;
@@ -269,7 +297,8 @@ const StorePage = () => {
           <StoreItemsList 
             items={filteredItems} 
             onSelect={handleItemSelect} 
-            character={character} 
+            character={character}
+            isItemPurchased={isItemPurchased}
           />
         </div>
       </AnimatedCard>
@@ -287,7 +316,14 @@ const StorePage = () => {
   );
 };
 
-const StoreItemsList = ({ items, onSelect, character }: { items: StoreItem[]; onSelect: (item: StoreItem) => void; character: string | null }) => {
+interface StoreItemsListProps {
+  items: StoreItem[];
+  onSelect: (item: StoreItem) => void;
+  character: string | null;
+  isItemPurchased: (itemId: string) => boolean;
+}
+
+const StoreItemsList = ({ items, onSelect, character, isItemPurchased }: StoreItemsListProps) => {
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
       {items.length === 0 ? (
