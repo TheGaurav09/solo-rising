@@ -9,6 +9,8 @@ type AudioContextType = {
   togglePlay: () => void;
   setVolume: (volume: number) => void;
   toggleLoop: () => void;
+  playAudio: () => void;
+  pauseAudio: () => void;
 };
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -16,7 +18,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [audio] = useState(new Audio());
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(0.5);
+  const [volume, setVolumeState] = useState(0.3); // Default to a lower volume
   const [isLooping, setIsLooping] = useState(false);
   const { character } = useUser();
 
@@ -85,6 +87,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsPlaying(!isPlaying);
   };
 
+  const playAudio = () => {
+    setIsPlaying(true);
+  };
+
+  const pauseAudio = () => {
+    setIsPlaying(false);
+  };
+
   const setVolume = (newVolume: number) => {
     setVolumeState(newVolume);
   };
@@ -102,6 +112,8 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         togglePlay,
         setVolume,
         toggleLoop,
+        playAudio,
+        pauseAudio,
       }}
     >
       {children}

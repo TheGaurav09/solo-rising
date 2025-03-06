@@ -5,11 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Activity, Award, Dumbbell, Timer, TrendingUp } from 'lucide-react';
+import { Activity, Award, Dumbbell, Timer, TrendingUp, Play, Pause } from 'lucide-react';
 import Footer from '@/components/ui/Footer';
+import { useAudio } from '@/context/AudioContext';
 
 const DashboardPage = () => {
   const { userId } = useUser();
+  const { isPlaying, togglePlay } = useAudio();
 
   const { data: workoutStats } = useQuery({
     queryKey: ['workoutStats', userId],
@@ -41,7 +43,26 @@ const DashboardPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        
+        <button 
+          onClick={togglePlay}
+          className="flex items-center gap-2 bg-black/30 hover:bg-black/50 px-3 py-2 rounded-lg transition-colors"
+        >
+          {isPlaying ? (
+            <>
+              <Pause size={16} />
+              <span className="text-sm">Pause Music</span>
+            </>
+          ) : (
+            <>
+              <Play size={16} />
+              <span className="text-sm">Play Music</span>
+            </>
+          )}
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <AnimatedCard className="p-6">

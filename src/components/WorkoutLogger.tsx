@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import AnimatedButton from './ui/AnimatedButton';
@@ -7,6 +6,7 @@ import { Dumbbell, Timer, Repeat, CheckCircle2, ChevronDown, ChevronUp, MoreHori
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
+import WorkoutConfirmDialog from './modals/WorkoutConfirmDialog';
 
 interface WorkoutLoggerProps {
   refreshWorkouts?: () => Promise<void>;
@@ -31,6 +31,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const basicExercises: ExerciseOption[] = [
     { id: 'pushups', name: 'Push-ups', points: 10, icon: <Dumbbell size={18} /> },
@@ -50,7 +51,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     { id: 'yoga', name: 'Yoga', points: 12, icon: <Timer size={18} /> },
   ];
 
-  // Timer for workout
   useEffect(() => {
     let interval: number | null = null;
     
@@ -71,7 +71,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     };
   }, [isTimerActive, timeRemaining]);
 
-  // Format time as mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -79,7 +78,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
   };
 
   const startTimer = () => {
-    setTimeRemaining(30 * 60); // 30 minutes in seconds
+    setTimeRemaining(30 * 60);
     setIsTimerActive(true);
   };
 
@@ -109,6 +108,18 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     return totalPoints;
   };
 
+  const handleLogWorkoutRequest = async () => {
+    if (!selectedExercise) return;
+    
+    const canAdd = await checkWorkoutCooldown();
+    if (!canAdd) {
+      setCooldownError(true);
+      return;
+    }
+    
+    setShowConfirmDialog(true);
+  };
+
   const handleLogWorkout = async () => {
     if (!selectedExercise) return;
     
@@ -116,13 +127,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
     setCooldownError(false);
     
     try {
-      const canAdd = await checkWorkoutCooldown();
-      if (!canAdd) {
-        setCooldownError(true);
-        setLoading(false);
-        return;
-      }
-      
       const pointsEarned = calculatePoints();
       const exercise = getSelectedExercise();
       
@@ -191,7 +195,6 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
         </div>
       ) : (
         <>
-          {/* Workout Timer */}
           <div className="mb-6 p-4 rounded-lg bg-white/5 border border-white/10">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium flex items-center gap-2">
@@ -357,7 +360,7 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
           </div>
           
           <AnimatedButton
-            onClick={handleLogWorkout}
+            onClick={handleLogWorkoutRequest}
             disabled={!selectedExercise || loading || cooldownError}
             character={character || undefined}
             className="w-full"
@@ -370,6 +373,13 @@ const WorkoutLogger = ({ refreshWorkouts, onWorkoutLogged }: WorkoutLoggerProps)
               You've recently logged a workout. Please wait before logging another.
             </p>
           )}
+
+          <WorkoutConfirmDialog 
+            isOpen={showConfirmDialog}
+            onClose={() => setShowConfirmDialog(false)}
+            onConfirm={handleLogWorkout}
+            character={character}
+          />
         </>
       )}
     </AnimatedCard>

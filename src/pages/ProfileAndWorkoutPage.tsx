@@ -8,12 +8,14 @@ import AnimatedButton from '@/components/ui/AnimatedButton';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Timer, Dumbbell, History, Clock, Award, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarIcon, Timer, Dumbbell, History, Clock, Award, ChevronDown, ChevronUp, Music, Pause, Play, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Footer from '@/components/ui/Footer';
 import WorkoutLogger from '@/components/WorkoutLogger';
+import { getTrainingScheduleForCharacter, TrainingDay } from '@/data/trainingSchedules';
+import { useAudio } from '@/context/AudioContext';
 
 const ProfileAndWorkoutPage = () => {
   const { id } = useParams();
@@ -24,6 +26,8 @@ const ProfileAndWorkoutPage = () => {
   const [profileRank, setProfileRank] = useState<number | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
+  const [weeklySchedule, setWeeklySchedule] = useState(getTrainingScheduleForCharacter(character));
+  const { isPlaying, togglePlay } = useAudio();
 
   const characterImages: Record<string, string> = {
     'goku': 'https://avatars.akamai.steamstatic.com/fef49e7fa7e1997a76c7d1039373b5a62359ca63_full.jpg',
@@ -52,6 +56,13 @@ const ProfileAndWorkoutPage = () => {
   useEffect(() => {
     setIsOwnProfile(!id || id === userId);
   }, [id, userId]);
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      setWeeklySchedule(getTrainingScheduleForCharacter(character));
+      loadSavedSchedule();
+    }
+  }, [character, isOwnProfile]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -97,15 +108,96 @@ const ProfileAndWorkoutPage = () => {
     fetchRank();
   }, [id, userId]);
 
-  const weeklySchedule = [
-    { day: "Monday", workout: "Upper Body", completed: false },
-    { day: "Tuesday", workout: "Lower Body", completed: false },
-    { day: "Wednesday", workout: "Rest Day", completed: true },
-    { day: "Thursday", workout: "Cardio", completed: false },
-    { day: "Friday", workout: "Full Body", completed: false },
-    { day: "Saturday", workout: "Flexible Training", completed: false },
-    { day: "Sunday", workout: "Rest Day", completed: true }
-  ];
+  const getDayNumber = (dayName: string) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days.indexOf(dayName);
+  };
+
+  const toggleDayCompletion = async (dayId: string) => {
+    if (!isOwnProfile) return;
+    
+    try {
+      const updatedSchedule = weeklySchedule.map(day => {
+        if (day.id === dayId) {
+          return { ...day, completed: !day.completed };
+        }
+        return day;
+      });
+      
+      setWeeklySchedule(updatedSchedule);
+      
+      const day = updatedSchedule.find(d => d.id === dayId);
+      if (day) {
+        const dayNumber = getDayNumber(day.day);
+        const date = new Date();
+        date.setDate(date.getDate() - date.getDay() + dayNumber);
+        
+        const { data: existingTasks } = await supabase
+          .from('scheduled_tasks')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('task', day.workout)
+          .eq('scheduled_for', date.toISOString().split('T')[0]);
+          
+        if (existingTasks && existingTasks.length > 0) {
+          await supabase
+            .from('scheduled_tasks')
+            .update({ completed: day.completed })
+            .eq('id', existingTasks[0].id);
+        } else {
+          await supabase
+            .from('scheduled_tasks')
+            .insert({
+              user_id: userId,
+              task: day.workout,
+              scheduled_for: date.toISOString().split('T')[0],
+              completed: day.completed
+            });
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling completion:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update training schedule",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadSavedSchedule = async () => {
+    try {
+      if (!isOwnProfile) return;
+      
+      const { data, error } = await supabase
+        .from('scheduled_tasks')
+        .select('*')
+        .eq('user_id', userId);
+        
+      if (error) {
+        console.error("Error loading training schedule:", error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const updatedSchedule = weeklySchedule.map(day => {
+          const savedTask = data.find(task => 
+            task.task === day.workout && 
+            task.scheduled_for && new Date(task.scheduled_for).getDay() === getDayNumber(day.day)
+          );
+          
+          if (savedTask) {
+            return { ...day, completed: savedTask.completed };
+          }
+          return day;
+        });
+        
+        setWeeklySchedule(updatedSchedule);
+      }
+    } catch (err) {
+      console.error("Error in loadSavedSchedule:", err);
+    }
+  };
 
   const fetchWorkoutHistory = async () => {
     try {
@@ -136,6 +228,27 @@ const ProfileAndWorkoutPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 pt-16 md:pt-8">
       <h1 className="text-2xl font-bold mb-6">Profile & Workout</h1>
+      
+      {isOwnProfile && (
+        <div className="mb-4 flex justify-end">
+          <button 
+            onClick={togglePlay}
+            className="flex items-center gap-2 bg-black/30 hover:bg-black/50 px-3 py-2 rounded-lg transition-colors"
+          >
+            {isPlaying ? (
+              <>
+                <Pause size={16} />
+                <span className="text-sm">Pause Music</span>
+              </>
+            ) : (
+              <>
+                <Play size={16} />
+                <span className="text-sm">Play Music</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AnimatedCard className="p-6 col-span-1 h-auto">
@@ -190,7 +303,7 @@ const ProfileAndWorkoutPage = () => {
 
         {isOwnProfile ? (
           <AnimatedCard className="p-6 col-span-1 lg:col-span-2 h-auto">
-            <WorkoutLogger />
+            <WorkoutLogger refreshWorkouts={fetchWorkoutHistory} />
           </AnimatedCard>
         ) : null}
 
@@ -248,7 +361,7 @@ const ProfileAndWorkoutPage = () => {
           <div className="space-y-2">
             {weeklySchedule.map((day) => (
               <div 
-                key={day.day} 
+                key={day.id} 
                 className={`border border-white/10 rounded-lg p-3 flex justify-between items-center ${
                   day.completed ? 'bg-green-950/20 border-green-800/30' : ''
                 }`}
@@ -257,11 +370,24 @@ const ProfileAndWorkoutPage = () => {
                   <h3 className="font-medium">{day.day}</h3>
                   <p className="text-xs opacity-70">{day.workout}</p>
                 </div>
-                {day.completed && (
+                {isOwnProfile ? (
+                  <button 
+                    onClick={() => toggleDayCompletion(day.id)}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                      day.completed 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    {day.completed ? (
+                      <Check size={14} className="text-white" />
+                    ) : (
+                      <X size={14} className="text-white/70" />
+                    )}
+                  </button>
+                ) : day.completed && (
                   <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <Check size={14} className="text-white" />
                   </div>
                 )}
               </div>
