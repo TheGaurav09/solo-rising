@@ -10,6 +10,7 @@ serve(async (req) => {
 
   try {
     const { action } = await req.json();
+    console.log(`Received action: ${action}`);
 
     if (action === 'get_secrets') {
       console.log('Fetching admin secrets...');
@@ -21,10 +22,25 @@ serve(async (req) => {
         DELETE_USER_PASSWORD: Deno.env.get('DELETE_USER_PASSWORD'),
       };
 
+      // Log securely without exposing actual values
+      console.log(`ADMIN_EMAIL present: ${Boolean(secrets.ADMIN_EMAIL)}`);
+      console.log(`ADMIN_PASSWORD present: ${Boolean(secrets.ADMIN_PASSWORD)}`);
+      console.log(`ADMIN_NAME present: ${Boolean(secrets.ADMIN_NAME)}`);
+      console.log(`DELETE_USER_PASSWORD present: ${Boolean(secrets.DELETE_USER_PASSWORD)}`);
+
       // Validate that all required secrets are present
       if (!secrets.ADMIN_EMAIL || !secrets.ADMIN_PASSWORD || !secrets.ADMIN_NAME) {
         console.error('Missing required admin secrets');
-        throw new Error('Admin credentials not properly configured');
+        return new Response(
+          JSON.stringify({ 
+            error: 'Admin credentials not properly configured', 
+            details: 'Please configure ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_NAME environment variables' 
+          }), 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
       }
 
       return new Response(JSON.stringify(secrets), {
@@ -39,7 +55,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in auth-admin function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });

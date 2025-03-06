@@ -119,7 +119,6 @@ const UsersList = () => {
         return;
       }
 
-      // Also delete the user from the public.users table
       const { error: publicUserError } = await supabase
         .from('users')
         .delete()
@@ -230,11 +229,11 @@ const UsersList = () => {
                   <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setWarningDialogOpen(false)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      variant="destructive"
                       onClick={() => {
                         setWarningDialogOpen(false);
                         setDeleteDialogOpen(true);
                       }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                       Continue
                     </AlertDialogAction>
@@ -271,9 +270,9 @@ const UsersList = () => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={handleDeleteUser}
               disabled={!deleteUserPassword}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete User
             </AlertDialogAction>
