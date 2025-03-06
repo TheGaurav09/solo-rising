@@ -9,7 +9,9 @@ import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Music, VolumeX, Volume1, Volume2, Moon, Sun, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Music, VolumeX, Volume1, Volume2, Moon, Sun, LogOut, Pause, Play } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const SettingsPage = () => {
@@ -89,13 +91,14 @@ const SettingsPage = () => {
               />
             </div>
             
-            <AnimatedButton
+            <Button
               onClick={handleUpdateName}
               disabled={isUpdating || !newName.trim() || newName === userName}
-              character={character || undefined}
+              variant="outline"
+              className="w-full"
             >
               {isUpdating ? 'Updating...' : 'Update Name'}
-            </AnimatedButton>
+            </Button>
           </div>
         </AnimatedCard>
         
@@ -108,10 +111,9 @@ const SettingsPage = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <Label>Background Music</Label>
-              <AnimatedButton 
+              <Button 
                 onClick={togglePlay} 
                 size="sm" 
-                character={character || undefined}
                 variant="outline"
                 className="w-24"
               >
@@ -126,7 +128,7 @@ const SettingsPage = () => {
                     <span>Play</span>
                   </div>
                 )}
-              </AnimatedButton>
+              </Button>
             </div>
             
             <div className="space-y-2">
@@ -184,15 +186,15 @@ const SettingsPage = () => {
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <AnimatedButton
-                  variant="outline"
-                  className="bg-red-950/20 border-red-800/30 hover:bg-red-900/30 text-red-400"
+                <Button
+                  variant="destructive"
+                  className="w-full"
                 >
                   <div className="flex items-center gap-2">
                     <LogOut size={16} />
                     Logout
                   </div>
-                </AnimatedButton>
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
