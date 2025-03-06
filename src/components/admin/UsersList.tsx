@@ -92,12 +92,17 @@ const UsersList = () => {
     if (!selectedUser || !warningMessage.trim()) return;
     
     try {
+      const { data: secrets } = await supabase.functions.invoke('auth-admin', {
+        body: { action: 'get_secrets' }
+      });
+
       const { error } = await supabase
         .from('warnings')
         .insert({
           user_id: selectedUser.id,
           message: warningMessage,
-          read: false
+          read: false,
+          admin_email: secrets.ADMIN_EMAIL // Add the admin_email from secrets
         });
 
       if (error) throw error;
