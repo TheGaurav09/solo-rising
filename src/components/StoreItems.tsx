@@ -7,7 +7,6 @@ import ItemDetailModal from './modals/ItemDetailModal';
 import AnimatedCard from './ui/AnimatedCard';
 import { getIconComponent } from '@/lib/iconUtils';
 
-// Update the StoreItem interface to match the actual data structure
 export interface StoreItem {
   id: string;
   name: string;
@@ -15,8 +14,8 @@ export interface StoreItem {
   icon: string;
   price: number;
   item_type: string;
-  type?: string; // Make it optional to match existing data
-  effect_value?: number; // Make it optional to match existing data
+  type?: string;
+  effect_value?: number;
   image_path?: string;
 }
 
@@ -30,7 +29,6 @@ const StorePage = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data for store items
     const mockItems: StoreItem[] = [
       {
         id: '1',
@@ -184,7 +182,6 @@ const StorePage = () => {
   useEffect(() => {
     let result = items;
     
-    // Apply search filter
     if (searchTerm) {
       result = result.filter(item => 
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -192,7 +189,6 @@ const StorePage = () => {
       );
     }
     
-    // Apply category filter
     if (activeFilter) {
       result = result.filter(item => item.item_type === activeFilter);
     }
@@ -211,7 +207,6 @@ const StorePage = () => {
   };
 
   const handlePurchase = () => {
-    // Implement purchase logic here
     console.log('Purchasing item:', selectedItem);
     handleCloseModal();
   };
@@ -282,6 +277,7 @@ const StorePage = () => {
       {isModalOpen && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
+          owned={isItemPurchased(selectedItem.id)}
           onClose={handleCloseModal}
           onPurchase={handlePurchase}
           character={character}

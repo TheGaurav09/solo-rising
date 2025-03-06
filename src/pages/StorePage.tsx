@@ -1,285 +1,451 @@
-
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
-import { Coins, Filter, Search } from 'lucide-react';
-import ItemDetailModal from '@/components/modals/ItemDetailModal';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { getIconComponent } from '@/lib/iconUtils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShoppingBag, Trophy, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
+import StoreItemCard from '@/components/ui/StoreItemCard';
+import CoinDisplay from '@/components/ui/CoinDisplay';
+import ItemDetailModal from '@/components/modals/ItemDetailModal';
+import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
+import Footer from '@/components/ui/Footer';
 
-interface StoreItem {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  price: number;
-  item_type: string;
-  image_path?: string;
-}
-
-const StorePage = () => {
-  const { character } = useUser();
-  const [items, setItems] = useState<StoreItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<StoreItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<StoreItem | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Mock data for store items
-    const mockItems: StoreItem[] = [
-      {
-        id: '1',
-        name: 'Double Points Boost',
-        description: 'Earn double points for 24 hours.',
-        icon: 'zap',
-        price: 50,
-        item_type: 'boost',
-        image_path: '/images/store/double-points.png'
-      },
-      {
-        id: '2',
-        name: 'Streak Saver',
-        description: 'Automatically maintain your streak for one day.',
-        icon: 'shield',
-        price: 75,
-        item_type: 'consumable',
-        image_path: '/images/store/streak-saver.png'
-      },
-      {
-        id: '3',
-        name: 'Custom Title',
-        description: 'Equip a custom title on your profile.',
-        icon: 'tag',
-        price: 100,
-        item_type: 'cosmetic',
-        image_path: '/images/store/custom-title.png'
-      },
-      {
-        id: '4',
-        name: 'Extra Life',
-        description: 'Continue workout even if you fail.',
-        icon: 'heart',
-        price: 120,
-        item_type: 'powerup',
-        image_path: '/images/store/extra-life.png'
-      },
-      {
-        id: '5',
-        name: 'XP Multiplier',
-        description: 'Get 1.5x XP for your next 3 workouts.',
-        icon: 'trending-up',
-        price: 90,
-        item_type: 'boost',
-        image_path: '/images/store/xp-multiplier.png'
-      },
-      {
-        id: '6',
-        name: 'Profile Background',
-        description: 'Unlock a special profile background.',
-        icon: 'image',
-        price: 150,
-        item_type: 'cosmetic',
-        image_path: '/images/store/profile-bg.png'
-      },
-      {
-        id: '7',
-        name: 'Energy Drink',
-        description: 'Instantly recover energy and continue your workout.',
-        icon: 'battery-charging',
-        price: 60,
-        item_type: 'consumable',
-        image_path: '/images/store/energy-drink.png'
-      },
-      {
-        id: '8',
-        name: 'Workout Skip',
-        description: 'Skip a workout while still earning points and maintaining streak.',
-        icon: 'skip-forward',
-        price: 200,
-        item_type: 'powerup',
-        image_path: '/images/store/workout-skip.png'
-      },
-      {
-        id: '9',
-        name: 'Power Gloves',
-        description: 'Increase strength for your next workout by 20%.',
-        icon: 'clipboard-list',
-        price: 80,
-        item_type: 'boost',
-        image_path: '/images/store/power-gloves.png'
-      },
-      {
-        id: '10',
-        name: 'Animated Avatar',
-        description: 'Add special animation effects to your profile avatar.',
-        icon: 'user',
-        price: 180,
-        item_type: 'cosmetic',
-        image_path: '/images/store/animated-avatar.png'
-      },
-      {
-        id: '11',
-        name: 'Mystery Box',
-        description: 'Contains a random item or bonus.',
-        icon: 'box',
-        price: 100,
-        item_type: 'consumable',
-        image_path: '/images/store/mystery-box.png'
-      },
-      {
-        id: '12',
-        name: 'Special Badge',
-        description: 'Exclusive badge to show off on your profile.',
-        icon: 'award',
-        price: 250,
-        item_type: 'cosmetic',
-        image_path: '/images/store/special-badge.png'
-      },
-      {
-        id: '13',
-        name: 'Super Protein',
-        description: 'Gives a 15% bonus to all points earned for 2 days.',
-        icon: 'activity',
-        price: 120,
-        item_type: 'boost',
-        image_path: '/images/store/super-protein.png'
-      },
-      {
-        id: '14',
-        name: 'Task Automator',
-        description: 'Automatically complete daily tasks for one day.',
-        icon: 'cpu',
-        price: 170,
-        item_type: 'powerup',
-        image_path: '/images/store/task-automator.png'
-      },
-      {
-        id: '15',
-        name: 'Training Program',
-        description: 'Unlock a specialized training program for optimal results.',
-        icon: 'calendar',
-        price: 300,
-        item_type: 'powerup',
-        image_path: '/images/store/training-program.png'
-      },
-      {
-        id: '16',
-        name: 'Friend Boost',
-        description: 'Increase points earned when working out with friends.',
-        icon: 'users',
-        price: 110,
-        item_type: 'boost',
-        image_path: '/images/store/friend-boost.png'
-      },
-    ];
-    setItems(mockItems);
-    setFilteredItems(mockItems);
-  }, []);
+const StoreAndAchievementsPage = () => {
+  const { character, coins, userId } = useUser();
+  const [storeItems, setStoreItems] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [userAchievements, setUserAchievements] = useState<any[]>([]);
+  const [userItems, setUserItems] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [storeSearchTerm, setStoreSearchTerm] = useState('');
+  const [achievementsSearchTerm, setAchievementsSearchTerm] = useState('');
+  const [isLoadingStore, setIsLoadingStore] = useState(true);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(true);
+  const [filteredStoreItems, setFilteredStoreItems] = useState<any[]>([]);
+  const [filteredAchievements, setFilteredAchievements] = useState<any[]>([]);
+  const [showAllStore, setShowAllStore] = useState(false);
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
 
   useEffect(() => {
-    let result = items;
-    
-    // Apply search filter
-    if (searchTerm) {
-      result = result.filter(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    fetchStoreItems();
+    fetchAchievements();
+    fetchUserItems();
+    fetchUserAchievements();
+  }, [userId]);
+
+  useEffect(() => {
+    if (storeSearchTerm.trim() === '') {
+      setFilteredStoreItems(storeItems);
+    } else {
+      const filtered = storeItems.filter(item => 
+        item.name.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+        item.item_type.toLowerCase().includes(storeSearchTerm.toLowerCase())
       );
+      setFilteredStoreItems(filtered);
     }
-    
-    // Apply category filter
-    if (activeFilter) {
-      result = result.filter(item => item.item_type === activeFilter);
-    }
-    
-    setFilteredItems(result);
-  }, [searchTerm, activeFilter, items]);
+  }, [storeSearchTerm, storeItems]);
 
-  const handleItemSelect = (item: StoreItem) => {
+  useEffect(() => {
+    if (achievementsSearchTerm.trim() === '') {
+      setFilteredAchievements(achievements);
+    } else {
+      const filtered = achievements.filter(achievement => 
+        achievement.name.toLowerCase().includes(achievementsSearchTerm.toLowerCase()) ||
+        achievement.description.toLowerCase().includes(achievementsSearchTerm.toLowerCase())
+      );
+      setFilteredAchievements(filtered);
+    }
+  }, [achievementsSearchTerm, achievements]);
+
+  const fetchStoreItems = async () => {
+    setIsLoadingStore(true);
+    try {
+      const { data, error } = await supabase
+        .from('store_items')
+        .select('*')
+        .order('price', { ascending: true });
+      
+      if (error) throw error;
+      
+      setStoreItems(data || []);
+      setFilteredStoreItems(data || []);
+    } catch (error) {
+      console.error('Error fetching store items:', error);
+    } finally {
+      setIsLoadingStore(false);
+    }
+  };
+
+  const fetchAchievements = async () => {
+    setIsLoadingAchievements(true);
+    try {
+      const { data, error } = await supabase
+        .from('achievements')
+        .select('*')
+        .order('points_required', { ascending: true });
+      
+      if (error) throw error;
+      
+      setAchievements(data || []);
+      setFilteredAchievements(data || []);
+    } catch (error) {
+      console.error('Error fetching achievements:', error);
+    } finally {
+      setIsLoadingAchievements(false);
+    }
+  };
+
+  const fetchUserItems = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_items')
+        .select('*, item_id(*)')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      setUserItems(data || []);
+    } catch (error) {
+      console.error('Error fetching user items:', error);
+    }
+  };
+
+  const fetchUserAchievements = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_achievements')
+        .select('*, achievement_id(*)')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      setUserAchievements(data || []);
+    } catch (error) {
+      console.error('Error fetching user achievements:', error);
+    }
+  };
+
+  const handleItemClick = (item: any) => {
     setSelectedItem(item);
-    setIsModalOpen(true);
+    setShowItemModal(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedItem(null);
+  const handleAchievementClick = (achievement: any) => {
+    setSelectedAchievement(achievement);
+    setShowAchievementModal(true);
   };
 
-  const handlePurchase = () => {
-    // Implement purchase logic here
-    console.log('Purchasing item:', selectedItem);
-    handleCloseModal();
+  const isItemPurchased = (itemId: string) => {
+    return userItems.some(userItem => userItem.item_id.id === itemId);
   };
 
-  const filterCategories = [
-    { id: 'boost', name: 'Boosts' },
-    { id: 'consumable', name: 'Consumables' },
-    { id: 'cosmetic', name: 'Cosmetics' },
-    { id: 'powerup', name: 'Power Ups' },
-  ];
+  const isAchievementUnlocked = (achievementId: string) => {
+    return userAchievements.some(userAchievement => userAchievement.achievement_id.id === achievementId);
+  };
+
+  const purchaseItem = async (item: any) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to purchase items",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isItemPurchased(item.id)) {
+      toast({
+        title: "Already Owned",
+        description: "You already own this item",
+        variant: "default",
+      });
+      return;
+    }
+    
+    if (coins < item.price) {
+      toast({
+        title: "Insufficient Coins",
+        description: "You don't have enough coins to purchase this item",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { error: purchaseError } = await supabase
+        .from('user_items')
+        .insert([
+          { user_id: userId, item_id: item.id }
+        ]);
+      
+      if (purchaseError) throw purchaseError;
+      
+      const { error: updateCoinsError } = await supabase
+        .from('users')
+        .update({ coins: coins - item.price })
+        .eq('id', userId);
+      
+      if (updateCoinsError) throw updateCoinsError;
+      
+      setUserItems([...userItems, { item_id: item, user_id: userId, purchased_at: new Date().toISOString() }]);
+      
+      toast({
+        title: "Purchase Successful",
+        description: `You have purchased ${item.name}`,
+        variant: "default",
+      });
+      
+    } catch (error) {
+      console.error('Error purchasing item:', error);
+      toast({
+        title: "Purchase Failed",
+        description: "There was an error processing your purchase",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const visibleStoreItems = showAllStore ? filteredStoreItems : filteredStoreItems.slice(0, 6);
+  const visibleAchievements = showAllAchievements ? filteredAchievements : filteredAchievements.slice(0, 6);
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Store</h2>
-      <AnimatedCard>
-        <div className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={16} />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-1 focus:ring-white/30"
-              />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Store & Achievements</h1>
+      
+      <div className="flex justify-end mb-4">
+        <CoinDisplay className="" />
+      </div>
+      
+      <Tabs defaultValue="store">
+        <TabsList className="w-full mb-4">
+          <TabsTrigger value="store" className="flex-1">
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={16} />
+              <span>Store</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="flex-1">
+            <div className="flex items-center gap-2">
+              <Trophy size={16} />
+              <span>Achievements</span>
+            </div>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="store" className="focus-visible:outline-none focus-visible:ring-0">
+          <AnimatedCard className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-xl font-bold">Available Items</h2>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                <Input
+                  placeholder="Search items..."
+                  value={storeSearchTerm}
+                  onChange={(e) => setStoreSearchTerm(e.target.value)}
+                  className="pl-8 bg-black/20 border-white/20 text-white"
+                />
+              </div>
             </div>
             
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setActiveFilter(null)}
-                className={`px-3 py-1 rounded-full text-sm border flex items-center gap-1 ${
-                  activeFilter === null
-                    ? character ? `bg-${character}-primary/20 text-${character}-primary border-${character}-primary/40` 
-                      : 'bg-primary/20 text-primary border-primary/40'
-                    : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                <Filter size={14} />
-                <span>All</span>
-              </button>
-              
-              {filterCategories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setActiveFilter(category.id)}
-                  className={`px-3 py-1 rounded-full text-sm border ${
-                    activeFilter === category.id
-                      ? character ? `bg-${character}-primary/20 text-${character}-primary border-${character}-primary/40` 
-                        : 'bg-primary/20 text-primary border-primary/40'
-                      : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
+            {isLoadingStore ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : filteredStoreItems.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No items found</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+                  {visibleStoreItems.map((item) => (
+                    <StoreItemCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => handleItemClick(item)}
+                      owned={isItemPurchased(item.id)}
+                      character={character}
+                    />
+                  ))}
+                </div>
+                
+                {filteredStoreItems.length > 6 && (
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={() => setShowAllStore(!showAllStore)}
+                      className={`text-sm flex items-center gap-1 px-4 py-2 rounded-md transition-all ${
+                        character === 'goku' ? 'bg-goku-primary/20 text-goku-primary hover:bg-goku-primary/30' :
+                        character === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary hover:bg-saitama-primary/30' :
+                        character === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary hover:bg-jin-woo-primary/30' :
+                        'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      {showAllStore ? (
+                        <>Show Less <ChevronUp size={14} /></>
+                      ) : (
+                        <>Show All <ChevronDown size={14} /></>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </AnimatedCard>
+        </TabsContent>
+        
+        <TabsContent value="achievements" className="focus-visible:outline-none focus-visible:ring-0">
+          <AnimatedCard className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-xl font-bold">Achievements</h2>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                <Input
+                  placeholder="Search achievements..."
+                  value={achievementsSearchTerm}
+                  onChange={(e) => setAchievementsSearchTerm(e.target.value)}
+                  className="pl-8 bg-black/20 border-white/20 text-white"
+                />
+              </div>
             </div>
-          </div>
-          
-          <StoreItemsList 
-            items={filteredItems} 
-            onSelect={handleItemSelect} 
-            character={character} 
-          />
-        </div>
-      </AnimatedCard>
-
-      {isModalOpen && selectedItem && (
+            
+            {isLoadingAchievements ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : filteredAchievements.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No achievements found</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+                  {visibleAchievements.map((achievement) => (
+                    <div
+                      key={achievement.id}
+                      className={`relative p-4 rounded-lg cursor-pointer transition-all ${
+                        isAchievementUnlocked(achievement.id)
+                          ? character === 'goku' 
+                              ? 'bg-goku-primary/20 border border-goku-primary/30' 
+                              : character === 'saitama'
+                                ? 'bg-saitama-primary/20 border border-saitama-primary/30'
+                                : character === 'jin-woo'
+                                  ? 'bg-jin-woo-primary/20 border border-jin-woo-primary/30'
+                                  : 'bg-green-900/20 border border-green-500/30'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
+                      onClick={() => handleAchievementClick(achievement)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isAchievementUnlocked(achievement.id)
+                            ? character === 'goku' 
+                                ? 'bg-goku-primary/30 text-goku-primary' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary/30 text-saitama-primary'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary/30 text-jin-woo-primary'
+                                    : 'bg-green-900/30 text-green-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}>
+                          <span className="text-lg">
+                            {achievement.icon && (
+                              <span dangerouslySetInnerHTML={{ __html: achievement.icon }} />
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold">{achievement.name}</h3>
+                          <p className="text-sm opacity-70 line-clamp-2">{achievement.description}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-right text-sm">
+                        <span className={`px-2 py-0.5 rounded-full ${
+                          isAchievementUnlocked(achievement.id)
+                            ? character === 'goku' 
+                                ? 'bg-goku-primary/30 text-goku-primary' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary/30 text-saitama-primary'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary/30 text-jin-woo-primary'
+                                    : 'bg-green-900/30 text-green-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}>
+                          {achievement.points_required} points
+                        </span>
+                      </div>
+                      {isAchievementUnlocked(achievement.id) && (
+                        <div className="absolute top-2 right-2">
+                          <span className={`p-1 rounded-full ${
+                            character === 'goku' 
+                                ? 'bg-goku-primary text-white' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary text-white'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary text-white'
+                                    : 'bg-green-600 text-white'
+                          }`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {filteredAchievements.length > 6 && (
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={() => setShowAllAchievements(!showAllAchievements)}
+                      className={`text-sm flex items-center gap-1 px-4 py-2 rounded-md transition-all ${
+                        character === 'goku' ? 'bg-goku-primary/20 text-goku-primary hover:bg-goku-primary/30' :
+                        character === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary hover:bg-saitama-primary/30' :
+                        character === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary hover:bg-jin-woo-primary/30' :
+                        'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      {showAllAchievements ? (
+                        <>Show Less <ChevronUp size={14} /></>
+                      ) : (
+                        <>Show All <ChevronDown size={14} /></>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </AnimatedCard>
+        </TabsContent>
+      </Tabs>
+      
+      <Footer />
+      
+      {showItemModal && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          onClose={handleCloseModal}
-          onPurchase={handlePurchase}
+          owned={isItemPurchased(selectedItem.id)}
+          onClose={() => setShowItemModal(false)}
+          onPurchase={() => purchaseItem(selectedItem)}
+          character={character}
+        />
+      )}
+      
+      {showAchievementModal && selectedAchievement && (
+        <AchievementDetailModal
+          achievement={selectedAchievement}
+          unlocked={isAchievementUnlocked(selectedAchievement.id)}
+          onClose={() => setShowAchievementModal(false)}
           character={character}
         />
       )}
@@ -287,38 +453,4 @@ const StorePage = () => {
   );
 };
 
-const StoreItemsList = ({ items, onSelect, character }: { items: StoreItem[]; onSelect: (item: StoreItem) => void; character: string | null }) => {
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-      {items.length === 0 ? (
-        <div className="col-span-full text-center py-6 text-white/50">
-          <p>No items found</p>
-        </div>
-      ) : (
-        items.map((item) => (
-          <div 
-            key={item.id} 
-            className="bg-white/5 rounded-lg p-2 border border-white/10 hover:border-white/20 transition-colors cursor-pointer flex flex-col"
-            onClick={() => onSelect(item)}
-          >
-            <div className="flex-1 flex items-center justify-center py-2">
-              <div className={`w-10 h-10 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
-                {getIconComponent(item.icon, 20)}
-              </div>
-            </div>
-            
-            <div className="mt-1 text-center">
-              <h3 className="font-medium text-xs truncate px-1">{item.name}</h3>
-              <div className="flex items-center justify-center gap-1 mt-1">
-                <Coins size={12} className="text-yellow-500" />
-                <span className="font-bold text-xs">{item.price}</span>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-};
-
-export default StorePage;
+export default StoreAndAchievementsPage;

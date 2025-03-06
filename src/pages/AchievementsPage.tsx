@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -40,6 +39,7 @@ const AchievementsPage = () => {
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
 
   useEffect(() => {
     fetchAchievements();
@@ -347,6 +347,10 @@ const AchievementsPage = () => {
     }
   };
 
+  const isAchievementUnlocked = (achievementId: string) => {
+    return achievements.some(a => a.id === achievementId && a.unlocked);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -621,7 +625,8 @@ const AchievementsPage = () => {
       {selectedAchievement && (
         <AchievementDetailModal
           achievement={selectedAchievement}
-          onClose={() => setSelectedAchievement(null)}
+          unlocked={isAchievementUnlocked(selectedAchievement.id)}
+          onClose={() => setShowAchievementModal(false)}
         />
       )}
       
