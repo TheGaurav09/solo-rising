@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import AIChatPage from "./pages/AIChatPage";
 import HallOfFamePage from "./pages/HallOfFamePage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +54,7 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/admin" element={<AdminPage />} />
                 
                 {/* Protected Dashboard Routes */}
                 <Route path="/" element={<Dashboard />}>

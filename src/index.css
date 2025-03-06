@@ -126,3 +126,117 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Character backgrounds */
+.bg-goku {
+  background: linear-gradient(to bottom, #0A1424, #1A2C56);
+  color: white;
+}
+
+.bg-saitama {
+  background: linear-gradient(to bottom, #1A0F0E, #402218);
+  color: white;
+}
+
+.bg-jin-woo {
+  background: linear-gradient(to bottom, #0F172A, #1E293B);
+  color: white;
+}
+
+/* Character-specific colors */
+.text-goku-primary {
+  color: #FF6B00;
+}
+
+.bg-goku-primary {
+  background-color: #FF6B00;
+}
+
+.bg-goku-primary\/10 {
+  background-color: rgba(255, 107, 0, 0.1);
+}
+
+.bg-goku-primary\/20 {
+  background-color: rgba(255, 107, 0, 0.2);
+}
+
+.hover\:bg-goku-primary\/80:hover {
+  background-color: rgba(255, 107, 0, 0.8);
+}
+
+.border-goku-primary\/40 {
+  border-color: rgba(255, 107, 0, 0.4);
+}
+
+.text-saitama-primary {
+  color: #F9C22E;
+}
+
+.bg-saitama-primary {
+  background-color: #F9C22E;
+}
+
+.bg-saitama-primary\/10 {
+  background-color: rgba(249, 194, 46, 0.1);
+}
+
+.bg-saitama-primary\/20 {
+  background-color: rgba(249, 194, 46, 0.2);
+}
+
+.hover\:bg-saitama-primary\/80:hover {
+  background-color: rgba(249, 194, 46, 0.8);
+}
+
+.border-saitama-primary\/40 {
+  border-color: rgba(249, 194, 46, 0.4);
+}
+
+.text-jin-woo-primary {
+  color: #8B5CF6;
+}
+
+.bg-jin-woo-primary {
+  background-color: #8B5CF6;
+}
+
+.bg-jin-woo-primary\/10 {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.bg-jin-woo-primary\/20 {
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+.hover\:bg-jin-woo-primary\/80:hover {
+  background-color: rgba(139, 92, 246, 0.8);
+}
+
+.border-jin-woo-primary\/40 {
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Warning notification styles */
+.notification-badge {
+  position: relative;
+  display: inline-flex;
+}
+
+.notification-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background-color: #f43f5e;
+  border-radius: 50%;
+  transform: translate(25%, -25%);
+}
+
+/* Rank images for leaderboard */
+.rank-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}

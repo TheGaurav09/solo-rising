@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Users, Globe, MapPin, User, Medal, Trophy, ExternalLink, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Users, Globe, MapPin, User, Trophy, ExternalLink, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import InfoTooltip from '@/components/ui/InfoTooltip';
 import Footer from '@/components/ui/Footer';
@@ -78,15 +79,6 @@ const LeaderboardPage = () => {
       setExpandedUser(null);
     } else {
       setExpandedUser(userId);
-    }
-  };
-
-  const getCharacterColor = (char: string) => {
-    switch(char) {
-      case 'goku': return 'text-goku-primary';
-      case 'saitama': return 'text-saitama-primary';
-      case 'jin-woo': return 'text-jin-woo-primary';
-      default: return 'text-white';
     }
   };
 
@@ -179,18 +171,6 @@ const LeaderboardPage = () => {
           </h2>
           <div className="flex items-center gap-2">
             <Users size={20} className="text-white/60" />
-            {leaderboardData.length > 20 && (
-              <button 
-                onClick={() => setShowAllLeaderboard(!showAllLeaderboard)}
-                className="text-sm flex items-center gap-1 text-white/60 hover:text-white"
-              >
-                {showAllLeaderboard ? (
-                  <>Show Less <ChevronUp size={14} /></>
-                ) : (
-                  <>Show All <ChevronDown size={14} /></>
-                )}
-              </button>
-            )}
           </div>
         </div>
         
@@ -218,11 +198,16 @@ const LeaderboardPage = () => {
                   }`}
                   onClick={() => toggleUserExpand(entry.id)}
                 >
-                  <div className="w-8 h-8 flex items-center justify-center mr-3 bg-white/10 rounded-full">
-                    {entry.rank === 1 ? <Trophy className="w-5 h-5 text-yellow-500" /> :
-                     entry.rank === 2 ? <Medal className="w-5 h-5 text-gray-300" /> :
-                     entry.rank === 3 ? <Medal className="w-5 h-5 text-amber-700" /> :
-                     <span>{entry.rank}</span>}
+                  <div className="w-10 h-10 flex items-center justify-center mr-3">
+                    {entry.rank === 1 ? 
+                      <img src="/1st.webp" alt="1st place" className="rank-image" /> :
+                     entry.rank === 2 ? 
+                      <img src="/2nd.webp" alt="2nd place" className="rank-image" /> :
+                     entry.rank === 3 ? 
+                      <img src="/3rd.webp" alt="3rd place" className="rank-image" /> :
+                     <div className="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full">
+                       <span>{entry.rank}</span>
+                     </div>}
                   </div>
                   
                   <div className="flex-1">
@@ -315,6 +300,26 @@ const LeaderboardPage = () => {
                 )}
               </div>
             ))}
+            {/* Show All/Less button moved to after the cards */}
+            {leaderboardData.length > 20 && (
+              <div className="flex justify-center mt-6">
+                <button 
+                  onClick={() => setShowAllLeaderboard(!showAllLeaderboard)}
+                  className={`text-sm flex items-center gap-1 px-4 py-2 rounded-md transition-all ${
+                    character === 'goku' ? 'bg-goku-primary/20 text-goku-primary hover:bg-goku-primary/30' :
+                    character === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary hover:bg-saitama-primary/30' :
+                    character === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary hover:bg-jin-woo-primary/30' :
+                    'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                  }`}
+                >
+                  {showAllLeaderboard ? (
+                    <>Show Less <ChevronUp size={14} /></>
+                  ) : (
+                    <>Show All <ChevronDown size={14} /></>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </AnimatedCard>
