@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from '@/components/ui/AnimatedCard';
@@ -37,6 +36,8 @@ interface Supporter {
 
 const ADMIN_EMAIL = "thegaurav.r@gmail.com";
 const ADMIN_PASSWORD = "solo123";
+const SUPABASE_URL = "https://xppaofqmxtaikkacvvzt.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwcGFvZnFteHRhaWtrYWN2dnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExNTM0OTUsImV4cCI6MjA1NjcyOTQ5NX0.lI372EUlv0gCI8536_AbSd_kvSrsurZP7xx2DbyW7Dc";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -49,12 +50,10 @@ const AdminPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
-  // Warning dialog state
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [warningMessage, setWarningMessage] = useState('');
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   
-  // Hall of Fame dialog state
   const [newSupporterName, setNewSupporterName] = useState('');
   const [newSupporterAmount, setNewSupporterAmount] = useState('');
   const [newSupporterUserId, setNewSupporterUserId] = useState('');
@@ -89,7 +88,6 @@ const AdminPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch users
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, warrior_name, email, character_type');
@@ -97,12 +95,11 @@ const AdminPage = () => {
       if (userError) throw userError;
       setUsers(userData || []);
       
-      // Fetch Hall of Fame entries using edge function
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/auth-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           action: 'get_hall_of_fame',
@@ -131,11 +128,11 @@ const AdminPage = () => {
     }
     
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/auth-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           action: 'delete_user',
@@ -166,11 +163,11 @@ const AdminPage = () => {
     if (!selectedUser || !warningMessage.trim()) return;
     
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/auth-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           action: 'send_warning',
@@ -216,11 +213,11 @@ const AdminPage = () => {
     }
     
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/auth-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
           action: 'add_hall_of_fame',
@@ -498,7 +495,6 @@ const AdminPage = () => {
         </Tabs>
       </div>
       
-      {/* Warning Dialog */}
       <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
         <DialogContent className="bg-black/90 border border-white/20">
           <DialogHeader>
@@ -540,7 +536,6 @@ const AdminPage = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Hall of Fame Dialog */}
       <Dialog open={showHallOfFameDialog} onOpenChange={setShowHallOfFameDialog}>
         <DialogContent className="bg-black/90 border border-white/20">
           <DialogHeader>
