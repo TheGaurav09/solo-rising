@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -171,7 +172,6 @@ const UsersList = () => {
                     to={`/profile/${user.id}`} 
                     className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80"
                     target="_blank"
-                    state={{ userId: user.id }}
                   >
                     <ExternalLink size={18} />
                   </Link>

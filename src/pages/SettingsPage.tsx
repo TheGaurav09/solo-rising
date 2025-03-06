@@ -1,24 +1,24 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnimatedCard from '@/components/ui/AnimatedCard';
+import AnimatedButton from '@/components/ui/AnimatedButton';
 import { useUser } from '@/context/UserContext';
 import { useAudio } from '@/context/AudioContext';
-import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Music, VolumeX, Volume1, Volume2, Moon, Sun, LogOut, Pause, Play } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Music, VolumeX, Volume1, Volume2, Play, Pause, LogOut } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import Footer from '@/components/ui/Footer';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const { userName, character, updateUserProfile } = useUser();
   const { isPlaying, volume, isLooping, togglePlay, setVolume, toggleLoop } = useAudio();
-  const { theme, toggleTheme } = useTheme();
   
   const [newName, setNewName] = useState(userName);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -91,14 +91,13 @@ const SettingsPage = () => {
               />
             </div>
             
-            <Button
+            <AnimatedButton
               onClick={handleUpdateName}
               disabled={isUpdating || !newName.trim() || newName === userName}
-              variant="outline"
-              className="w-full"
+              character={character || undefined}
             >
               {isUpdating ? 'Updating...' : 'Update Name'}
-            </Button>
+            </AnimatedButton>
           </div>
         </AnimatedCard>
         
@@ -111,9 +110,10 @@ const SettingsPage = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <Label>Background Music</Label>
-              <Button 
+              <AnimatedButton 
                 onClick={togglePlay} 
                 size="sm" 
+                character={character || undefined}
                 variant="outline"
                 className="w-24"
               >
@@ -128,7 +128,7 @@ const SettingsPage = () => {
                     <span>Play</span>
                   </div>
                 )}
-              </Button>
+              </AnimatedButton>
             </div>
             
             <div className="space-y-2">
@@ -158,23 +158,6 @@ const SettingsPage = () => {
           </div>
         </AnimatedCard>
         
-        <AnimatedCard className="p-6 h-auto">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-            Theme Settings
-          </h2>
-          
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Label>Dark Mode</Label>
-              <Switch 
-                checked={theme === 'dark'}
-                onCheckedChange={toggleTheme}
-              />
-            </div>
-          </div>
-        </AnimatedCard>
-        
         <AnimatedCard className="p-6 h-auto col-span-1 lg:col-span-2">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
             <LogOut size={20} />
@@ -186,15 +169,15 @@ const SettingsPage = () => {
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full"
+                <AnimatedButton
+                  variant="outline"
+                  className="bg-red-950/20 border-red-800/30 hover:bg-red-900/30 text-red-400"
                 >
                   <div className="flex items-center gap-2">
                     <LogOut size={16} />
                     Logout
                   </div>
-                </Button>
+                </AnimatedButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -214,6 +197,8 @@ const SettingsPage = () => {
           </div>
         </AnimatedCard>
       </div>
+      
+      <Footer />
     </div>
   );
 };

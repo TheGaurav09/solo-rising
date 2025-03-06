@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 
 interface AnimatedCardProps {
@@ -7,7 +7,7 @@ interface AnimatedCardProps {
   children: React.ReactNode;
   onClick?: () => void;
   active?: boolean;
-  hoverEffect?: 'glow' | 'border' | 'none';
+  hoverEffect?: 'glow' | 'scale' | 'border' | 'none';
 }
 
 const AnimatedCard = ({ 
@@ -15,19 +15,42 @@ const AnimatedCard = ({
   children, 
   onClick, 
   active = false,
-  hoverEffect = 'border'
+  hoverEffect = 'scale'
 }: AnimatedCardProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const getHoverClasses = () => {
+    switch (hoverEffect) {
+      case 'glow':
+        return 'hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-shadow duration-300';
+      case 'scale':
+        return 'hover:scale-[1.01] transition-transform duration-300';
+      case 'border':
+        return 'border border-white/10 hover:border-white/30 transition-colors duration-300';
+      case 'none':
+      default:
+        return '';
+    }
+  };
+
   return (
     <div
       className={cn(
-        'glass-card rounded-xl relative overflow-hidden',
-        hoverEffect === 'border' && 'before:content-[""] before:absolute before:w-[200%] before:h-[200%] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:-left-[100%] before:animate-border-slide',
-        hoverEffect === 'glow' && 'hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-shadow duration-300',
+        'glass-card rounded-xl transition-all duration-300 ease-out',
+        getHoverClasses(),
         active && 'ring-2 ring-white/30',
+        isHovered && 'transform-gpu',
         onClick && 'cursor-pointer',
         className
       )}
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        transform: isHovered 
+          ? 'perspective(1000px) rotateX(1deg) rotateY(0deg)' // Reduced rotation
+          : 'perspective(1000px) rotateX(0deg) rotateY(0deg)',
+      }}
     >
       {children}
     </div>
