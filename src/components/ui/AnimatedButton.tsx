@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { cn } from "@/lib/utils";
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 interface AnimatedButtonProps {
   children: React.ReactNode;
@@ -26,6 +27,8 @@ const AnimatedButton = ({
   style,
   ...props
 }: AnimatedButtonProps & React.ButtonHTMLAttributes<HTMLButtonElement>) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
   const getCharacterGradient = () => {
     switch (character) {
       case 'goku':
@@ -69,6 +72,9 @@ const AnimatedButton = ({
     }
   };
 
+  // Adjust scale for mobile to prevent overflow issues
+  const hoverScaleClass = isMobile ? 'hover:scale-[1.01]' : 'hover:scale-[1.02]';
+
   return (
     <button
       onClick={onClick}
@@ -81,7 +87,7 @@ const AnimatedButton = ({
         'hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/25',
         'active:scale-[0.98] hover:border hover:border-white/20',
         'max-w-full break-words whitespace-normal', // Fixes the text wrapping issue
-        'transform hover:scale-[1.02]', // Reduce the hover scale effect to prevent overflow
+        hoverScaleClass, // Dynamic scale based on device
         getVariantClasses(),
         getSizeClasses(),
         disabled && 'opacity-50 cursor-not-allowed',

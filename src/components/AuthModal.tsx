@@ -100,7 +100,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         if (profileError) throw profileError;
         
-        setUserData(warriorName, character, 0, 0, 100, country);
+        setUserData(warriorName, character, 0, 0, 100, country, 0, 1);
         
         toast({
           title: "Account created!",
@@ -150,9 +150,11 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
           userData.warrior_name,
           userData.character_type as CharacterType,
           userData.points,
-          userData.streak,
-          userData.coins,
-          userData.country
+          userData.streak || 0,
+          userData.coins || 0,
+          userData.country || 'Global',
+          userData.xp || 0,
+          userData.level || 1
         );
         
         toast({

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -10,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import Footer from './ui/Footer';
 import { useMediaQuery } from '@/hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
+import HowToUseCarousel from './ui/HowToUseCarousel';
+import FAQs from './FAQs';
 
 const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;
@@ -30,7 +31,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
   useEffect(() => {
     const fetchCharacterCounts = async () => {
       try {
-        // Count users by character type
         const { data: gokuCount, error: gokuError } = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
@@ -115,39 +115,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
     setShowUsersList(character);
   };
 
-  const howToUseSteps = [
-    {
-      title: "Create Your Account",
-      description: "Sign up with your email and password to start your fitness journey.",
-      icon: <User className="w-8 h-8 text-blue-400" />
-    },
-    {
-      title: "Choose Your Character",
-      description: "Select from Goku, Saitama, or Sung Jin-Woo to define your training style.",
-      icon: <Heart className="w-8 h-8 text-red-400" />
-    },
-    {
-      title: "Log Your Workouts",
-      description: "Record your exercises, reps, and duration to earn points and track progress.",
-      icon: <Dumbbell className="w-8 h-8 text-green-400" />
-    },
-    {
-      title: "Complete Challenges",
-      description: "Take on special challenges to earn extra points and unlock achievements.",
-      icon: <Trophy className="w-8 h-8 text-yellow-400" />
-    },
-    {
-      title: "Check the Leaderboard",
-      description: "See how you rank against other warriors globally or in your country.",
-      icon: <Users className="w-8 h-8 text-purple-400" />
-    },
-    {
-      title: "Visit the Store",
-      description: "Spend your earned coins on items to customize your experience.",
-      icon: <ShieldCheck className="w-8 h-8 text-orange-400" />
-    }
-  ];
-
   return (
     <div className="min-h-screen flex flex-col">
       <div className="container max-w-6xl mx-auto px-4 py-10 min-h-screen flex flex-col justify-center">
@@ -169,7 +136,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             animationDelay="0.2s"
             count={characterCounts.goku}
             onCountClick={() => handleWarriorCountClick('goku')}
-            imagePath="/goku.png"
+            imagePath="/goku.jpeg"
           />
           
           <CharacterCard
@@ -182,7 +149,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             animationDelay="0.3s"
             count={characterCounts.saitama}
             onCountClick={() => handleWarriorCountClick('saitama')}
-            imagePath="/saitama.png"
+            imagePath="/saitama.jpeg"
           />
           
           <CharacterCard
@@ -195,7 +162,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             animationDelay="0.4s"
             count={characterCounts['jin-woo']}
             onCountClick={() => handleWarriorCountClick('jin-woo')}
-            imagePath="/jin-woo.png"
+            imagePath="/jinwoo.jpeg"
           />
         </div>
 
@@ -227,20 +194,10 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {howToUseSteps.map((step, index) => (
-              <AnimatedCard key={index} className="p-6 border border-white/10 animated-border">
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-white/10">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
-                  <p className="text-white/70">{step.description}</p>
-                </div>
-              </AnimatedCard>
-            ))}
-          </div>
+          <HowToUseCarousel />
         </div>
+        
+        <FAQs />
       </div>
 
       <Footer />

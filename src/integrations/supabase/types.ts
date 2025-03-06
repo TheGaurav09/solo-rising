@@ -276,10 +276,12 @@ export type Database = {
           id: string
           last_workout_date: string | null
           last_workout_time: string | null
+          level: number | null
           password: string
           points: number
           streak: number | null
           warrior_name: string
+          xp: number | null
         }
         Insert: {
           character_type: string
@@ -290,10 +292,12 @@ export type Database = {
           id?: string
           last_workout_date?: string | null
           last_workout_time?: string | null
+          level?: number | null
           password: string
           points?: number
           streak?: number | null
           warrior_name: string
+          xp?: number | null
         }
         Update: {
           character_type?: string
@@ -304,10 +308,12 @@ export type Database = {
           id?: string
           last_workout_date?: string | null
           last_workout_time?: string | null
+          level?: number | null
           password?: string
           points?: number
           streak?: number | null
           warrior_name?: string
+          xp?: number | null
         }
         Relationships: []
       }

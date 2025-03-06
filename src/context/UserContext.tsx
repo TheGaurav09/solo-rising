@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -27,9 +26,11 @@ export type UserContextType = {
   useCoins: (coinsToUse: number) => void;
   addStreak: (newStreak: number) => void;
   resetStreak: () => void;
-  setUserData: (name: string, char: CharacterType, pts: number, strk: number, cns: number, cntry: string) => void;
+  setUserData: (name: string, char: CharacterType, pts: number, strk: number, cns: number, cntry: string, xpValue: number, lvl: number) => void;
   checkWorkoutCooldown: () => boolean;
   setLastWorkoutTime: (date: string) => Promise<boolean>;
+  addXp: (amount: number) => void;
+  levelUp: () => void;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -107,7 +108,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const setUserData = (name: string, char: CharacterType, pts: number, strk: number, cns: number, cntry: string) => {
+  const setUserData = (
+    name: string, 
+    char: CharacterType, 
+    pts: number, 
+    strk: number, 
+    cns: number, 
+    cntry: string,
+    xpValue: number = 0,
+    lvl: number = 1
+  ) => {
     setUserName(name);
     setCharacterType(char);
     setHasSelectedCharacter(true);
@@ -115,6 +125,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStreak(strk);
     setCoins(cns);
     setCountry(cntry);
+    setXp(xpValue);
+    setLevel(lvl);
   };
 
   const setCharacter = (character: CharacterType) => {
@@ -215,6 +227,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const addXp = (amount: number) => {
+    setXp(prevXp => {
+      const newXp = prevXp + amount;
+      // Check if user should level up (simple formula: 100 * current level)
+      if (newXp >= level * 100) {
+        levelUp();
+      }
+      return newXp;
+    });
+  };
+
+  const levelUp = () => {
+    setLevel(prevLevel => prevLevel + 1);
+    
+    // Notify user of level up
+    toast({
+      title: "Level Up!",
+      description: `You've reached level ${level + 1}!`,
+      variant: "default",
+    });
+  };
+
   const value: UserContextType = {
     userId,
     userName,
@@ -240,6 +274,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserData,
     checkWorkoutCooldown,
     setLastWorkoutTime,
+    addXp,
+    levelUp,
   };
 
   return (
