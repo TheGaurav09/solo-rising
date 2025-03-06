@@ -20,6 +20,7 @@ interface Achievement {
 
 interface AchievementDetailModalProps {
   achievement: Achievement;
+  unlocked: boolean; // Changed from isUnlocked to unlocked
   onClose: () => void;
   character?: CharacterType;
   currentPoints?: number;
@@ -38,15 +39,15 @@ const motivationalQuotes = [
   "Your body can stand almost anything. It's your mind that you have to convince."
 ];
 
-const AchievementDetailModal = ({ achievement, onClose, character, currentPoints = 0 }: AchievementDetailModalProps) => {
+const AchievementDetailModal = ({ achievement, unlocked, onClose, character, currentPoints = 0 }: AchievementDetailModalProps) => {
   const userContext = useUser();
   const characterToUse = character || userContext.character;
   
   // Get a random motivational quote
   const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
   
-  // Check if the achievement is unlocked
-  const isUnlocked = achievement.unlocked || (currentPoints >= achievement.points_required);
+  // Use the unlocked prop directly instead of calculating
+  const isUnlocked = unlocked || (currentPoints >= achievement.points_required);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">

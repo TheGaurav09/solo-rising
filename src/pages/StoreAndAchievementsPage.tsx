@@ -227,7 +227,8 @@ const StoreAndAchievementsPage = () => {
       <h1 className="text-2xl font-bold mb-6">Store & Achievements</h1>
       
       <div className="flex justify-end mb-4">
-        <CoinDisplay coins={coins} character={character} />
+        {/* Fixed: Removed coins prop since CoinDisplay gets it from UserContext */}
+        <CoinDisplay className="" />
       </div>
       
       <Tabs defaultValue="store">
@@ -278,7 +279,7 @@ const StoreAndAchievementsPage = () => {
                       key={item.id}
                       item={item}
                       onClick={() => handleItemClick(item)}
-                      isPurchased={isItemPurchased(item.id)}
+                      owned={isItemPurchased(item.id)} {/* Fixed: isPurchased → owned */}
                       character={character}
                     />
                   ))}
@@ -438,18 +439,17 @@ const StoreAndAchievementsPage = () => {
       {showItemModal && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
-          isOwned={isItemPurchased(selectedItem.id)}
+          owned={isItemPurchased(selectedItem.id)} {/* Fixed: isOwned → owned */}
           onClose={() => setShowItemModal(false)}
           onPurchase={() => purchaseItem(selectedItem)}
           character={character}
-          userCoins={coins}
         />
       )}
       
       {showAchievementModal && selectedAchievement && (
         <AchievementDetailModal
           achievement={selectedAchievement}
-          isUnlocked={isAchievementUnlocked(selectedAchievement.id)}
+          unlocked={isAchievementUnlocked(selectedAchievement.id)} {/* Fixed: isUnlocked → unlocked */}
           onClose={() => setShowAchievementModal(false)}
           character={character}
         />

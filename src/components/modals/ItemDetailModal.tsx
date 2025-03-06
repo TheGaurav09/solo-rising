@@ -15,12 +15,13 @@ interface StoreItem {
 
 interface ItemDetailModalProps {
   item: StoreItem;
+  owned: boolean; // Changed from isOwned to owned to match StoreItemCard
   onClose: () => void;
   onPurchase: () => void;
   character?: 'goku' | 'saitama' | 'jin-woo' | null;
 }
 
-const ItemDetailModal = ({ item, onClose, onPurchase, character }: ItemDetailModalProps) => {
+const ItemDetailModal = ({ item, owned, onClose, onPurchase, character }: ItemDetailModalProps) => {
   const { coins } = useUser();
   const canAfford = coins >= item.price;
 
@@ -62,7 +63,7 @@ const ItemDetailModal = ({ item, onClose, onPurchase, character }: ItemDetailMod
             </div>
           </div>
           
-          {!canAfford && (
+          {!canAfford && !owned && (
             <div className="text-red-400 text-sm mt-2 text-right">
               Not enough coins to purchase
             </div>
@@ -79,16 +80,18 @@ const ItemDetailModal = ({ item, onClose, onPurchase, character }: ItemDetailMod
           
           <button
             onClick={onPurchase}
-            disabled={!canAfford}
+            disabled={!canAfford || owned}
             className={`py-2 rounded-lg transition-colors ${
-              canAfford 
-                ? character
-                  ? `bg-${character}-primary/20 text-${character}-primary hover:bg-${character}-primary/30`
-                  : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                : 'bg-white/5 text-white/40 cursor-not-allowed'
+              owned 
+                ? 'bg-green-600 hover:bg-green-700'
+                : canAfford 
+                  ? character
+                    ? `bg-${character}-primary hover:bg-${character}-primary/80`
+                    : 'bg-primary hover:bg-primary/80'
+                  : 'bg-gray-600 cursor-not-allowed'
             }`}
           >
-            Purchase
+            {owned ? 'Owned' : canAfford ? 'Purchase' : 'Cannot Afford'}
           </button>
         </div>
       </div>
