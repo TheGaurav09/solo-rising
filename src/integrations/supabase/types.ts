@@ -87,6 +87,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hall_of_fame: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       scheduled_tasks: {
         Row: {
           completed: boolean
@@ -314,6 +338,33 @@ export type Database = {
           streak?: number | null
           warrior_name?: string
           xp?: number | null
+        }
+        Relationships: []
+      }
+      warnings: {
+        Row: {
+          admin_email: string
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          user_id: string
+        }
+        Insert: {
+          admin_email: string
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          user_id: string
+        }
+        Update: {
+          admin_email?: string
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          user_id?: string
         }
         Relationships: []
       }

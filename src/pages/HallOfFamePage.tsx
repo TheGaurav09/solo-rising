@@ -11,6 +11,7 @@ interface Supporter {
   name: string;
   amount: number;
   user_id: string | null;
+  created_at?: string;
 }
 
 const HallOfFamePage = () => {

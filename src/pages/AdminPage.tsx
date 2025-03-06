@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Search, Trash2, AlertTriangle, Send, Plus, ExternalLink } from 'lucide-react';
+import { Search, Trash2, AlertTriangle, Send, Plus, ExternalLink, Trophy } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ interface Supporter {
   name: string;
   amount: number;
   user_id: string | null;
+  created_at?: string;
 }
 
 const ADMIN_EMAIL = "thegaurav.r@gmail.com";
@@ -96,14 +97,21 @@ const AdminPage = () => {
       if (userError) throw userError;
       setUsers(userData || []);
       
-      // Fetch Hall of Fame entries
-      const { data: supporterData, error: supporterError } = await supabase
-        .from('hall_of_fame')
-        .select('*')
-        .order('amount', { ascending: false });
+      // Fetch Hall of Fame entries using edge function
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          action: 'get_hall_of_fame',
+        }),
+      });
       
-      if (supporterError) throw supporterError;
-      setSupporters(supporterData || []);
+      const hallOfFameData = await response.json();
+      if (hallOfFameData.error) throw new Error(hallOfFameData.error);
+      setSupporters(hallOfFameData || []);
       
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -123,12 +131,20 @@ const AdminPage = () => {
     }
     
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          action: 'delete_user',
+          data: { user_id: userId },
+        }),
+      });
       
-      if (error) throw error;
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
       
       setUsers(users.filter(user => user.id !== userId));
       
@@ -150,18 +166,24 @@ const AdminPage = () => {
     if (!selectedUser || !warningMessage.trim()) return;
     
     try {
-      const { error } = await supabase
-        .from('warnings')
-        .insert([
-          { 
-            user_id: selectedUser.id, 
-            message: warningMessage, 
-            read: false, 
-            admin_email: ADMIN_EMAIL 
-          }
-        ]);
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          action: 'send_warning',
+          data: {
+            user_id: selectedUser.id,
+            message: warningMessage,
+            admin_email: ADMIN_EMAIL,
+          },
+        }),
+      });
       
-      if (error) throw error;
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
       
       setWarningMessage('');
       setShowWarningDialog(false);
@@ -194,20 +216,26 @@ const AdminPage = () => {
     }
     
     try {
-      const { data, error } = await supabase
-        .from('hall_of_fame')
-        .insert([
-          { 
-            name: newSupporterName, 
-            amount: amount, 
-            user_id: newSupporterUserId || null 
-          }
-        ])
-        .select();
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/auth-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          action: 'add_hall_of_fame',
+          data: {
+            name: newSupporterName,
+            amount: amount,
+            user_id: newSupporterUserId || null,
+          },
+        }),
+      });
       
-      if (error) throw error;
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
       
-      setSupporters([...supporters, data[0]]);
+      setSupporters([...supporters, result[0]]);
       setNewSupporterName('');
       setNewSupporterAmount('');
       setNewSupporterUserId('');
