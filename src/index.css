@@ -81,10 +81,48 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(calc(-300px * 9)); /* Width of each card times number of cards */
+    transform: translateX(calc(-300px * 6)); /* Width of each card times number of cards */
   }
 }
 
 .animate-scroll {
   animation: scroll 40s linear infinite;
+}
+
+.animated-border {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.animated-border:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.text-gradient.goku-gradient {
+  background: linear-gradient(to right, #FF6B00, #FFA200);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient.saitama-gradient {
+  background: linear-gradient(to right, #F9C22E, #F3A712);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient.jin-woo-gradient {
+  background: linear-gradient(to right, #8B5CF6, #C4B5FD);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass-card {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }

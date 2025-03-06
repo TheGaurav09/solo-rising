@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Heart, Instagram, Twitter, MessageCircle, Github, Coffee } from 'lucide-react';
+import { Heart, Instagram, Twitter, MessageCircle, Discord, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-mobile';
 
@@ -24,10 +24,10 @@ const Footer = () => {
       hoverColor: "hover:text-[#1DA1F2]"
     },
     {
-      name: "Github",
-      url: "https://github.com/thegaurav.r",
-      icon: <Github size={isMobile ? 18 : 20} />,
-      hoverColor: "hover:text-white"
+      name: "Discord",
+      url: "https://discord.gg/solorising",
+      icon: <Discord size={isMobile ? 18 : 20} />,
+      hoverColor: "hover:text-[#5865F2]"
     },
     {
       name: "Telegram",

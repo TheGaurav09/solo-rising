@@ -11,6 +11,7 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import HowToUseCarousel from './ui/HowToUseCarousel';
 import FAQs from './FAQs';
+import FeaturesCarousel from './ui/FeaturesCarousel';
 
 const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;

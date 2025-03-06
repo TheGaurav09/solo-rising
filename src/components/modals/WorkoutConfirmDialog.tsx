@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useUser } from '@/context/UserContext';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 interface WorkoutConfirmDialogProps {
   isOpen: boolean;
@@ -30,23 +31,45 @@ const getMotivationalQuote = (character: string | null) => {
   return quotes[character as keyof typeof quotes] || quotes.default;
 };
 
+const getCharacterAccentColor = (character: string | null) => {
+  switch (character) {
+    case 'goku': return 'bg-goku-primary text-white border-goku-primary';
+    case 'saitama': return 'bg-saitama-primary text-black border-saitama-primary';
+    case 'jin-woo': return 'bg-jin-woo-primary text-white border-jin-woo-primary';
+    default: return 'bg-purple-600 text-white border-purple-600';
+  }
+};
+
 const WorkoutConfirmDialog = ({ isOpen, onClose, onConfirm, character }: WorkoutConfirmDialogProps) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="bg-gray-900 border border-white/10">
+      <AlertDialogContent className="bg-black/80 backdrop-blur-lg border border-white/10">
         <AlertDialogHeader>
-          <AlertDialogTitle>Workout Confirmation</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogTitle className="text-white text-xl">Workout Confirmation</AlertDialogTitle>
+          <AlertDialogDescription className="text-white/80">
             Did you really complete this workout? You won't gain anything by logging workouts you haven't done.
             <p className="mt-2 text-sm italic text-white/60">"{getMotivationalQuote(character)}"</p>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} className="bg-gray-800 text-white hover:bg-gray-700">No</AlertDialogCancel>
-          <AlertDialogAction onClick={() => {
-            onConfirm();
-            onClose();
-          }} className="bg-green-600 hover:bg-green-700">Yes, I completed it</AlertDialogAction>
+        <AlertDialogFooter className="flex gap-3">
+          <AlertDialogCancel 
+            onClick={onClose} 
+            className="bg-gray-800 text-white hover:bg-gray-700 border-none flex items-center"
+          >
+            <XCircle className="mr-2" size={16} />
+            No, I didn't
+          </AlertDialogCancel>
+          
+          <AlertDialogAction 
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }} 
+            className={`${getCharacterAccentColor(character)} hover:opacity-90 border-none flex items-center`}
+          >
+            <CheckCircle className="mr-2" size={16} />
+            Yes, I completed it
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

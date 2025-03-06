@@ -10,7 +10,7 @@ import Footer from '@/components/ui/Footer';
 import { useAudio } from '@/context/AudioContext';
 
 const DashboardPage = () => {
-  const { userId } = useUser();
+  const { userId, character } = useUser();
   const { isPlaying, togglePlay } = useAudio();
 
   const { data: workoutStats } = useQuery({
@@ -40,83 +40,102 @@ const DashboardPage = () => {
   })) || [];
 
   const COLORS = ['#FF8042', '#00C49F', '#FFBB28', '#0088FE'];
+  
+  // Get character-specific styles
+  const getCharacterAccentColor = () => {
+    switch (character) {
+      case 'goku': return 'bg-goku-primary text-white';
+      case 'saitama': return 'bg-saitama-primary text-black';
+      case 'jin-woo': return 'bg-jin-woo-primary text-white';
+      default: return 'bg-purple-500 text-white';
+    }
+  };
+  
+  const getCharacterSecondaryColor = () => {
+    switch (character) {
+      case 'goku': return 'bg-blue-500/20 text-blue-500';
+      case 'saitama': return 'bg-yellow-500/20 text-yellow-500';
+      case 'jin-woo': return 'bg-purple-500/20 text-purple-500';
+      default: return 'bg-purple-500/20 text-purple-500';
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         
         <button 
           onClick={togglePlay}
-          className="flex items-center gap-2 bg-black/30 hover:bg-black/50 px-3 py-2 rounded-lg transition-colors"
+          className={`flex items-center gap-2 ${getCharacterAccentColor()} hover:opacity-90 px-3 py-2 rounded-lg transition-colors`}
         >
           {isPlaying ? (
             <>
               <Pause size={16} />
-              <span className="text-sm">Pause Music</span>
+              <span className="text-sm font-medium">Pause Music</span>
             </>
           ) : (
             <>
               <Play size={16} />
-              <span className="text-sm">Play Music</span>
+              <span className="text-sm font-medium">Play Music</span>
             </>
           )}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500/20">
-              <Activity className="text-purple-500" />
+            <div className={`p-3 rounded-full ${getCharacterSecondaryColor()}`}>
+              <Activity />
             </div>
             <div>
               <p className="text-sm text-white/70">Total Activities</p>
-              <h3 className="text-2xl font-bold">{workoutStats?.reduce((acc, curr) => acc + Number(curr.count), 0) || 0}</h3>
+              <h3 className="text-2xl font-bold text-white">{workoutStats?.reduce((acc, curr) => acc + Number(curr.count), 0) || 0}</h3>
             </div>
           </div>
         </AnimatedCard>
 
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-blue-500/20">
               <Timer className="text-blue-500" />
             </div>
             <div>
               <p className="text-sm text-white/70">Total Time</p>
-              <h3 className="text-2xl font-bold">2h 30m</h3>
+              <h3 className="text-2xl font-bold text-white">2h 30m</h3>
             </div>
           </div>
         </AnimatedCard>
 
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-green-500/20">
               <TrendingUp className="text-green-500" />
             </div>
             <div>
               <p className="text-sm text-white/70">Progress</p>
-              <h3 className="text-2xl font-bold">+15%</h3>
+              <h3 className="text-2xl font-bold text-white">+15%</h3>
             </div>
           </div>
         </AnimatedCard>
 
-        <AnimatedCard className="p-6">
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-yellow-500/20">
               <Award className="text-yellow-500" />
             </div>
             <div>
               <p className="text-sm text-white/70">Achievements</p>
-              <h3 className="text-2xl font-bold">12</h3>
+              <h3 className="text-2xl font-bold text-white">12</h3>
             </div>
           </div>
         </AnimatedCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Workout Distribution</h2>
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
+          <h2 className="text-xl font-bold mb-4 text-white">Workout Distribution</h2>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -139,10 +158,29 @@ const DashboardPage = () => {
           </div>
         </AnimatedCard>
 
-        <AnimatedCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+        <AnimatedCard className="p-6 bg-black/40 backdrop-blur-md border border-white/10">
+          <h2 className="text-xl font-bold mb-4 text-white">Recent Activity</h2>
           <div className="space-y-4">
-            {/* Add recent activity items here */}
+            {/* Recent activity items go here */}
+            <div className="flex items-center p-3 border border-white/10 rounded-lg bg-black/20">
+              <div className={`p-2 rounded-full ${getCharacterAccentColor()} mr-3`}>
+                <Dumbbell size={16} />
+              </div>
+              <div>
+                <h4 className="text-white font-medium">Upper Body Workout</h4>
+                <p className="text-white/60 text-sm">Completed 2 hours ago</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center p-3 border border-white/10 rounded-lg bg-black/20">
+              <div className={`p-2 rounded-full ${getCharacterAccentColor()} mr-3`}>
+                <Dumbbell size={16} />
+              </div>
+              <div>
+                <h4 className="text-white font-medium">Cardio Session</h4>
+                <p className="text-white/60 text-sm">Completed yesterday</p>
+              </div>
+            </div>
           </div>
         </AnimatedCard>
       </div>

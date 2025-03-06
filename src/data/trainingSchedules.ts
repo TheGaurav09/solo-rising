@@ -1,4 +1,3 @@
-
 export interface TrainingDay {
   day: string;
   workout: string;
@@ -9,6 +8,13 @@ export interface TrainingDay {
 export type TrainingSchedule = TrainingDay[];
 
 export const getTrainingScheduleForCharacter = (character: string | null): TrainingSchedule => {
+  // First try to get saved schedule from localStorage
+  const savedSchedule = localStorage.getItem(`training-schedule-${character}`);
+  if (savedSchedule) {
+    return JSON.parse(savedSchedule);
+  }
+  
+  // Otherwise return default schedule
   switch (character) {
     case 'goku':
       return [
@@ -51,4 +57,21 @@ export const getTrainingScheduleForCharacter = (character: string | null): Train
         { id: 'default-sun', day: 'Sunday', workout: 'Rest Day', completed: true }
       ];
   }
+};
+
+export const saveTrainingSchedule = (character: string | null, schedule: TrainingSchedule): void => {
+  if (!character) return;
+  localStorage.setItem(`training-schedule-${character}`, JSON.stringify(schedule));
+};
+
+export const toggleTrainingDay = (character: string | null, dayId: string): TrainingSchedule => {
+  if (!character) return [];
+  
+  const schedule = getTrainingScheduleForCharacter(character);
+  const updatedSchedule = schedule.map(day => 
+    day.id === dayId ? { ...day, completed: !day.completed } : day
+  );
+  
+  saveTrainingSchedule(character, updatedSchedule);
+  return updatedSchedule;
 };
