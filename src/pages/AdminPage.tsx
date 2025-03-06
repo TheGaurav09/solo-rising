@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Share2, Plus, Search, Trash2, AlertTriangle, Send, ExternalLink, Trophy, Menu, X } from 'lucide-react';
 import AnimatedCard from '@/components/ui/AnimatedCard';

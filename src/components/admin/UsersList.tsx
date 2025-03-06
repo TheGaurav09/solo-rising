@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import {
+import { Loader2, Search, Trash2, AlertTriangle, Send, ArrowUpRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -13,373 +14,471 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Search, Trash2, AlertTriangle, Send, ExternalLink } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-
-interface User {
-  id: string;
-  email: string;
-  warrior_name: string;
-  character_type: string;
-  points: number;
-  streak: number;
-  coins: number;
-  xp: number;
-  level: number;
-  country: string;
-}
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 
 const UsersList = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>('');
-  const [deleteUserPassword, setDeleteUserPassword] = useState('');
-  const [deletePasswordError, setDeletePasswordError] = useState('');
   const [warningMessage, setWarningMessage] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [hallOfFameDialogOpen, setHallOfFameDialogOpen] = useState(false);
+  const [hallOfFameName, setHallOfFameName] = useState('');
+  const [hallOfFameAmount, setHallOfFameAmount] = useState('');
+  const [isAddingToHallOfFame, setIsAddingToHallOfFame] = useState(false);
+  
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchQuery]);
-
+  
   const fetchUsers = async () => {
+    setIsLoadingUsers(true);
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
-
+      
       if (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive",
-        });
-        return;
+        throw error;
       }
-
+      
       setUsers(data || []);
+      setFilteredUsers(data || []);
     } catch (error) {
-      console.error('Unexpected error fetching users:', error);
+      console.error('Error fetching users:', error);
       toast({
         title: "Error",
-        description: "Unexpected error fetching users",
+        description: "Failed to fetch users.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
-
-  const filterUsers = () => {
-    const lowerCaseQuery = searchQuery.toLowerCase();
-    const filtered = users.filter(user =>
-      user.warrior_name?.toLowerCase().includes(lowerCaseQuery) ||
-      user.email?.toLowerCase().includes(lowerCaseQuery)
-    );
-    setFilteredUsers(filtered);
+  
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = users.filter(user => 
+        user.warrior_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.country?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredUsers(filtered);
+    } else {
+      setFilteredUsers(users);
+    }
+  }, [searchTerm, users]);
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
-
-  const handleDeleteUser = async () => {
-    if (!selectedUserId) return;
+  
+  const handleDeleteUser = (user: any) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleWarningUser = (user: any) => {
+    setSelectedUser(user);
+    setWarningDialogOpen(true);
+  };
+  
+  const handleAddToHallOfFame = (user: any) => {
+    setSelectedUser(user);
+    setHallOfFameName(user.warrior_name || '');
+    setHallOfFameAmount('');
+    setHallOfFameDialogOpen(true);
+  };
+  
+  const confirmDeleteUser = async () => {
+    if (!deletePassword) {
+      toast({
+        title: "Error",
+        description: "Please enter the admin delete password",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setIsProcessing(true);
-    setDeletePasswordError('');
-
+    setIsDeleting(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke('auth-admin', {
         body: { 
-          action: 'delete_user',
-          userDeleteId: selectedUserId,
-          password: deleteUserPassword
+          action: 'delete_user', 
+          userId: selectedUser.id,
+          password: deletePassword
         }
       });
-
+      
       if (error) {
-        console.error('Error deleting user:', error);
-        setDeletePasswordError('Failed to delete user: ' + error.message);
-        return;
+        throw error;
       }
-
+      
       if (data.error) {
-        console.error('Error response:', data.error);
-        setDeletePasswordError(data.error);
-        return;
+        throw new Error(data.error);
       }
-
-      // Remove user from public.users table
-      const { error: publicUserError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', selectedUserId);
-
-      if (publicUserError) {
-        console.error('Error deleting user from public.users:', publicUserError);
-        toast({
-          title: "Partial Success",
-          description: "User auth deleted, but failed to delete user data",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      
       toast({
-        title: "User Deleted",
-        description: "User has been successfully deleted",
+        title: "Success",
+        description: `User ${selectedUser.warrior_name} has been deleted.`,
       });
-
-      setUsers(users.filter(user => user.id !== selectedUserId));
-    } catch (error) {
-      console.error('Unexpected error deleting user:', error);
-      setDeletePasswordError('Unexpected error deleting user');
-    } finally {
-      setIsProcessing(false);
+      
+      fetchUsers();
       setDeleteDialogOpen(false);
-      setSelectedUserId(null);
-      setDeleteUserPassword('');
-    }
-  };
-
-  const handleSendWarning = async () => {
-    if (!selectedUserId || !warningMessage.trim()) return;
-    
-    setIsProcessing(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('auth-admin', {
-        body: { 
-          action: 'send_warning',
-          userId: selectedUserId,
-          warningMessage: warningMessage.trim()
-        }
-      });
-
-      if (error || (data && data.error)) {
-        console.error('Error sending warning:', error || data.error);
-        toast({
-          title: "Error",
-          description: "Failed to send warning",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Warning Sent",
-        description: `Warning sent to ${selectedUserName}`,
-      });
-    } catch (error) {
-      console.error('Unexpected error sending warning:', error);
+      setDeletePassword('');
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
       toast({
         title: "Error",
-        description: "Unexpected error sending warning",
+        description: error.message || "Failed to delete user.",
         variant: "destructive",
       });
     } finally {
-      setIsProcessing(false);
-      setWarningDialogOpen(false);
-      setSelectedUserId(null);
-      setSelectedUserName('');
-      setWarningMessage('');
+      setIsDeleting(false);
     }
   };
-
-  const handleViewProfile = (userId: string) => {
-    window.open(`/profile/${userId}`, '_blank');
+  
+  const sendWarning = async () => {
+    if (!warningMessage) {
+      toast({
+        title: "Error",
+        description: "Please enter a warning message",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('auth-admin', {
+        body: { 
+          action: 'send_warning', 
+          userId: selectedUser.id,
+          message: warningMessage
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      toast({
+        title: "Success",
+        description: `Warning sent to ${selectedUser.warrior_name}.`,
+      });
+      
+      setWarningDialogOpen(false);
+      setWarningMessage('');
+    } catch (error: any) {
+      console.error('Error sending warning:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send warning.",
+        variant: "destructive",
+      });
+    }
   };
-
+  
+  const addToHallOfFame = async () => {
+    if (!hallOfFameName || !hallOfFameAmount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const amount = parseFloat(hallOfFameAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAddingToHallOfFame(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('auth-admin', {
+        body: { 
+          action: 'add_to_hall_of_fame', 
+          userId: selectedUser.id,
+          name: hallOfFameName,
+          amount: amount
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      toast({
+        title: "Success",
+        description: `${hallOfFameName} added to Hall of Fame.`,
+      });
+      
+      setHallOfFameDialogOpen(false);
+      setHallOfFameName('');
+      setHallOfFameAmount('');
+    } catch (error: any) {
+      console.error('Error adding to Hall of Fame:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add to Hall of Fame.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingToHallOfFame(false);
+    }
+  };
+  
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-2">
-        <Input
-          type="text"
-          placeholder="Search users..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-black/20 border-white/10 text-white placeholder:text-gray-400"
-        />
-        <Search className="text-gray-400" />
+    <div className="space-y-4 bg-black/20 p-4 rounded-lg border border-white/10">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xl font-bold">Users Management</h3>
+        <div className="relative w-64">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+          <Input
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="pl-8 bg-black/20 border-white/20 text-white"
+          />
+        </div>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredUsers.map((user) => (
-          <div
-            key={user.id}
-            className="bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-4 space-y-3"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-semibold text-white">{user.warrior_name}</h3>
-                <p className="text-sm text-gray-400">{user.email}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white/80 hover:text-white"
-                onClick={() => handleViewProfile(user.id)}
-              >
-                <ExternalLink size={16} className="mr-1" />
-                View
-              </Button>
-            </div>
-            
-            <div className="space-y-1">
-              <p className="text-sm text-gray-300">
-                Points: <span className="text-white">{user.points}</span>
-              </p>
-              <p className="text-sm text-gray-300">
-                Level: <span className="text-white">{user.level}</span>
-              </p>
-              <p className="text-sm text-gray-300">
-                Country: <span className="text-white">{user.country}</span>
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-amber-950/40 border-amber-700/30 hover:bg-amber-900/30 text-amber-400"
-                  onClick={() => {
-                    setSelectedUserId(user.id);
-                    setSelectedUserName(user.warrior_name);
-                    setWarningDialogOpen(true);
-                  }}
-                >
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Warning
-                </Button>
-              </AlertDialogTrigger>
-              
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedUserId(user.id);
-                    setSelectedUserName(user.warrior_name);
-                    setDeleteDialogOpen(true);
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Warning Dialog */}
-      <AlertDialog open={warningDialogOpen} onOpenChange={setWarningDialogOpen}>
-        <AlertDialogContent className="bg-black/90 border border-white/20 text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send Warning to {selectedUserName}</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              This warning will be displayed to the user when they log in.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-2 py-4">
-            <Textarea
-              placeholder="Enter warning message"
-              value={warningMessage}
-              onChange={(e) => setWarningMessage(e.target.value)}
-              className="min-h-[100px] bg-white/10 border-white/20 text-white placeholder:text-gray-500"
-            />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="bg-transparent border border-white/20 text-white hover:bg-white/10"
-              onClick={() => setWarningDialogOpen(false)}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <Button
-              className="bg-yellow-600 hover:bg-yellow-700 text-white"
-              onClick={handleSendWarning}
-              disabled={!warningMessage.trim() || isProcessing}
-            >
-              {isProcessing ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Warning
-                </>
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete User Dialog */}
+      {isLoadingUsers ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-white/70" />
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-12 text-white/60">
+          No users found
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs uppercase bg-black/30 text-white/70">
+              <tr>
+                <th className="px-4 py-3 rounded-tl-lg">Name</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Character</th>
+                <th className="px-4 py-3">Country</th>
+                <th className="px-4 py-3">Points</th>
+                <th className="px-4 py-3">Streak</th>
+                <th className="px-4 py-3">Joined</th>
+                <th className="px-4 py-3 rounded-tr-lg">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className="border-b border-white/10 bg-black/10 hover:bg-black/20">
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">{user.warrior_name}</td>
+                  <td className="px-4 py-3">{user.email}</td>
+                  <td className="px-4 py-3 capitalize">{user.character_type}</td>
+                  <td className="px-4 py-3">{user.country}</td>
+                  <td className="px-4 py-3">{user.points}</td>
+                  <td className="px-4 py-3">{user.streak}</td>
+                  <td className="px-4 py-3">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex space-x-2">
+                      <a
+                        href={`/profile/${user.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300"
+                      >
+                        <ArrowUpRight size={16} />
+                      </a>
+                      <button
+                        onClick={() => handleAddToHallOfFame(user)}
+                        className="text-green-400 hover:text-green-300"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8"></path><path d="M12 21v-8"></path><path d="M17 5H7v8h10V5z"></path><path d="M10 5V3h4v2"></path></svg>
+                      </button>
+                      <button
+                        onClick={() => handleWarningUser(user)}
+                        className="text-yellow-400 hover:text-yellow-300"
+                      >
+                        <AlertTriangle size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-black/90 border border-white/20 text-white">
+        <AlertDialogContent className="bg-gray-900 border border-red-900/50 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm User Deletion</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              To delete <span className="font-semibold text-white">{selectedUserName}</span>, please enter the admin delete password.
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              Are you sure you want to delete {selectedUser?.warrior_name}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="grid gap-2 py-4">
+          <div className="space-y-2 py-2">
+            <Label htmlFor="deletePassword" className="text-white">Admin Password</Label>
             <Input
+              id="deletePassword"
               type="password"
-              placeholder="Admin Delete Password"
-              value={deleteUserPassword}
-              onChange={(e) => setDeleteUserPassword(e.target.value)}
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder="Enter admin password"
+              className="bg-black/30 border-white/20 text-white"
             />
-            {deletePasswordError && (
-              <p className="text-red-500 text-sm flex items-center gap-1">
-                <AlertTriangle size={14} />
-                {deletePasswordError}
-              </p>
-            )}
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="bg-transparent border border-white/20 text-white hover:bg-white/10"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
+            <AlertDialogCancel className="bg-transparent border border-white/20 text-white hover:bg-white/10">
               Cancel
             </AlertDialogCancel>
             <Button
-              variant="destructive"
-              onClick={handleDeleteUser}
-              disabled={!deleteUserPassword || isProcessing}
+              onClick={confirmDeleteUser}
+              className="bg-red-900 hover:bg-red-800 text-white"
+              disabled={isDeleting}
             >
-              {isProcessing ? (
+              {isDeleting ? (
                 <>
-                  <span className="animate-spin mr-2">⏳</span>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...
                 </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete User
-                </>
-              )}
+              ) : 'Delete'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <Dialog open={warningDialogOpen} onOpenChange={setWarningDialogOpen}>
+        <DialogContent className="bg-gray-900 border border-yellow-900/50 text-white">
+          <DialogHeader>
+            <DialogTitle>Send Warning</DialogTitle>
+            <DialogDescription className="text-white/70">
+              Send a warning to {selectedUser?.warrior_name}. The warning will be displayed to the user.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="warningMessage" className="text-white">Warning Message</Label>
+              <Textarea
+                id="warningMessage"
+                value={warningMessage}
+                onChange={(e) => setWarningMessage(e.target.value)}
+                placeholder="Enter warning message"
+                className="min-h-[100px] bg-black/30 border-white/20 text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setWarningDialogOpen(false)}
+              variant="outline"
+              className="bg-transparent border border-white/20 text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={sendWarning}
+              className="bg-yellow-900 hover:bg-yellow-800 text-white"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Warning
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={hallOfFameDialogOpen} onOpenChange={setHallOfFameDialogOpen}>
+        <DialogContent className="bg-gray-900 border border-green-900/50 text-white">
+          <DialogHeader>
+            <DialogTitle>Add to Hall of Fame</DialogTitle>
+            <DialogDescription className="text-white/70">
+              Add {selectedUser?.warrior_name} to the Hall of Fame.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="hofName" className="text-white">Name</Label>
+              <Input
+                id="hofName"
+                value={hallOfFameName}
+                onChange={(e) => setHallOfFameName(e.target.value)}
+                placeholder="Enter name"
+                className="bg-black/30 border-white/20 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hofAmount" className="text-white">Amount</Label>
+              <Input
+                id="hofAmount"
+                value={hallOfFameAmount}
+                onChange={(e) => setHallOfFameAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="bg-black/30 border-white/20 text-white"
+                type="number"
+                step="0.01"
+                min="0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setHallOfFameDialogOpen(false)}
+              variant="outline"
+              className="bg-transparent border border-white/20 text-white hover:bg-white/10"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={addToHallOfFame}
+              className="bg-green-900 hover:bg-green-800 text-white"
+              disabled={isAddingToHallOfFame}
+            >
+              {isAddingToHallOfFame ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : 'Add to Hall of Fame'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

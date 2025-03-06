@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
 import { X, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 interface UsersListProps {
   character: 'goku' | 'saitama' | 'jin-woo';
@@ -69,16 +68,18 @@ const UsersList = ({ character, onClose, label }: UsersListProps) => {
                 <p className="text-center py-8 text-white/70">No {label.toLowerCase()} found</p>
               ) : (
                 users.map((user) => (
-                  <Link 
+                  <a
                     key={user.id} 
-                    to={`/profile/${user.id}`}
+                    href={`/profile/${user.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-3 py-3 px-2 hover:bg-white/5 rounded-lg transition-colors duration-300"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-${character}-primary/20`}>
                       <User size={16} className={`text-${character}-primary`} />
                     </div>
                     <span>{user.warrior_name}</span>
-                  </Link>
+                  </a>
                 ))
               )}
             </div>

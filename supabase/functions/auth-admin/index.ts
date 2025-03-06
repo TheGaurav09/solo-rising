@@ -1,324 +1,199 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "";
+const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD") || "";
+const ADMIN_NAME = Deno.env.get("ADMIN_NAME") || "";
+const DELETE_USER_PASSWORD = Deno.env.get("DELETE_USER_PASSWORD") || "";
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  // Handle CORS preflight requests
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const requestData = await req.json();
-    const { action } = requestData;
-    console.log(`Received action: ${action}`);
+    // Create a Supabase client with admin privileges
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
-    if (action === 'get_secrets') {
-      console.log('Fetching admin secrets...');
-      
-      const secrets = {
-        ADMIN_EMAIL: Deno.env.get('ADMIN_EMAIL'),
-        ADMIN_PASSWORD: Deno.env.get('ADMIN_PASSWORD'),
-        ADMIN_NAME: Deno.env.get('ADMIN_NAME'),
-        DELETE_USER_PASSWORD: Deno.env.get('DELETE_USER_PASSWORD'),
-      };
+    const { action, ...params } = await req.json();
 
-      // Log securely without exposing actual values
-      console.log(`ADMIN_EMAIL present: ${Boolean(secrets.ADMIN_EMAIL)}`);
-      console.log(`ADMIN_PASSWORD present: ${Boolean(secrets.ADMIN_PASSWORD)}`);
-      console.log(`ADMIN_NAME present: ${Boolean(secrets.ADMIN_NAME)}`);
-      console.log(`DELETE_USER_PASSWORD present: ${Boolean(secrets.DELETE_USER_PASSWORD)}`);
+    console.log(`Admin function called with action: ${action}`);
 
-      // Validate that all required secrets are present
-      if (!secrets.ADMIN_EMAIL || !secrets.ADMIN_PASSWORD || !secrets.ADMIN_NAME) {
-        console.error('Missing required admin secrets');
-        return new Response(
-          JSON.stringify({ 
-            error: 'Admin credentials not properly configured', 
-            details: 'Please configure ADMIN_EMAIL, ADMIN_PASSWORD, and ADMIN_NAME environment variables' 
-          }), 
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
+    // Get secrets for authentication or other admin tasks
+    if (action === "get_secrets") {
+      return new Response(
+        JSON.stringify({
+          ADMIN_EMAIL,
+          ADMIN_PASSWORD,
+          ADMIN_NAME,
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // Delete a user
+    else if (action === "delete_user") {
+      const { userId, password } = params;
+
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "User ID is required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
       }
 
-      return new Response(JSON.stringify(secrets), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      if (!password) {
+        return new Response(JSON.stringify({ error: "Password is required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      if (password !== DELETE_USER_PASSWORD) {
+        return new Response(JSON.stringify({ error: "Invalid password" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+
+      // Delete the user
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authDeleteError) {
+        console.error("Error deleting user from auth:", authDeleteError);
+        return new Response(JSON.stringify({ error: "Failed to delete user from auth: " + authDeleteError.message }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      // Additionally, delete from users table (should cascade with RLS)
+      const { error: dbDeleteError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (dbDeleteError) {
+        console.error("Error deleting user from database:", dbDeleteError);
+        return new Response(JSON.stringify({ error: "User deleted from auth but failed to delete from database: " + dbDeleteError.message }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "User deleted successfully" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
-    
-    else if (action === 'delete_user') {
-      const { userDeleteId, password } = requestData;
-      console.log(`Attempting to delete user: ${userDeleteId}`);
-      
-      // Verify password
-      const storedPassword = Deno.env.get('DELETE_USER_PASSWORD');
-      if (!storedPassword || password !== storedPassword) {
-        console.error('Invalid delete user password provided');
-        return new Response(
-          JSON.stringify({ error: 'Invalid password' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 401,
-          }
-        );
+
+    // Send a warning to a user
+    else if (action === "send_warning") {
+      const { userId, message } = params;
+
+      if (!userId || !message) {
+        return new Response(JSON.stringify({ error: "User ID and message are required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
       }
-      
-      // Create a Supabase client with the service role key
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Missing Supabase credentials');
-        return new Response(
-          JSON.stringify({ error: 'Server configuration error' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
+
+      // Check if the user exists
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("email")
+        .eq("id", userId)
+        .single();
+
+      if (userError) {
+        console.error("Error fetching user:", userError);
+        return new Response(JSON.stringify({ error: "User not found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
       }
-      
-      // Delete the user with the service role
-      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userDeleteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': supabaseServiceKey
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error deleting user:', errorData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to delete user', details: errorData }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: response.status,
-          }
-        );
-      }
-      
-      console.log('User deleted successfully');
-      return new Response(
-        JSON.stringify({ success: true, message: 'User deleted successfully' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-    
-    else if (action === 'send_warning') {
-      const { userId, warningMessage } = requestData;
-      console.log(`Sending warning to user: ${userId}`);
-      console.log(`Warning message: ${warningMessage}`);
-      
-      if (!userId || !warningMessage) {
-        return new Response(
-          JSON.stringify({ error: 'Missing required fields' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      
-      // Create a Supabase client with the service role key
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Missing Supabase credentials');
-        return new Response(
-          JSON.stringify({ error: 'Server configuration error' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-      
-      // Insert warning into database
-      const response = await fetch(`${supabaseUrl}/rest/v1/warnings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': supabaseServiceKey,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
+
+      // Create the warning
+      const { data: warningData, error: warningError } = await supabase
+        .from("warnings")
+        .insert({
           user_id: userId,
-          message: warningMessage,
-          admin_email: Deno.env.get('ADMIN_EMAIL') || 'admin',
-          read: false
+          message,
+          admin_email: ADMIN_EMAIL,
         })
+        .select();
+
+      if (warningError) {
+        console.error("Error creating warning:", warningError);
+        return new Response(JSON.stringify({ error: "Failed to create warning" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: warningData }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error sending warning:', errorData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to send warning', details: errorData }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: response.status,
-          }
-        );
-      }
-      
-      console.log('Warning sent successfully');
-      return new Response(
-        JSON.stringify({ success: true, message: 'Warning sent successfully' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-    
-    else if (action === 'add_to_hall_of_fame') {
-      const { name, amount, userId } = requestData;
-      console.log(`Adding to Hall of Fame: ${name}, Amount: ${amount}, UserId: ${userId || 'none'}`);
-      
-      if (!name || amount === undefined) {
-        return new Response(
-          JSON.stringify({ error: 'Missing required fields' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      
-      // Create a Supabase client with the service role key
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Missing Supabase credentials');
-        return new Response(
-          JSON.stringify({ error: 'Server configuration error' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-      
-      // Insert into hall_of_fame
-      const response = await fetch(`${supabaseUrl}/rest/v1/hall_of_fame`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': supabaseServiceKey,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          name: name,
-          amount: amount,
-          user_id: userId || null
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error adding to Hall of Fame:', errorData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to add to Hall of Fame', details: errorData }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: response.status,
-          }
-        );
-      }
-      
-      console.log('Added to Hall of Fame successfully');
-      return new Response(
-        JSON.stringify({ success: true, message: 'Added to Hall of Fame successfully' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    }
-    
-    else if (action === 'delete_from_hall_of_fame') {
-      const { supporterId } = requestData;
-      console.log(`Deleting from Hall of Fame: ${supporterId}`);
-      
-      if (!supporterId) {
-        return new Response(
-          JSON.stringify({ error: 'Missing supporter ID' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        );
-      }
-      
-      // Create a Supabase client with the service role key
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Missing Supabase credentials');
-        return new Response(
-          JSON.stringify({ error: 'Server configuration error' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          }
-        );
-      }
-      
-      // Delete from hall_of_fame
-      const response = await fetch(`${supabaseUrl}/rest/v1/hall_of_fame?id=eq.${supporterId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'apikey': supabaseServiceKey
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error deleting from Hall of Fame:', errorData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to delete from Hall of Fame', details: errorData }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: response.status,
-          }
-        );
-      }
-      
-      console.log('Deleted from Hall of Fame successfully');
-      return new Response(
-        JSON.stringify({ success: true, message: 'Deleted from Hall of Fame successfully' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    });
+    // Add user to Hall of Fame
+    else if (action === "add_to_hall_of_fame") {
+      const { userId, name, amount } = params;
+
+      if (!name || !amount) {
+        return new Response(JSON.stringify({ error: "Name and amount are required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      // Create the Hall of Fame entry
+      const { data: hofData, error: hofError } = await supabase
+        .from("hall_of_fame")
+        .insert({
+          user_id: userId || null,
+          name,
+          amount,
+        })
+        .select();
+
+      if (hofError) {
+        console.error("Error adding to Hall of Fame:", hofError);
+        return new Response(JSON.stringify({ error: "Failed to add to Hall of Fame" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, data: hofData }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    else {
+      return new Response(JSON.stringify({ error: "Invalid action" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
   } catch (error) {
-    console.error('Error in auth-admin function:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error("Error in auth-admin function:", error);
+    return new Response(JSON.stringify({ error: error.message || "An unexpected error occurred" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }

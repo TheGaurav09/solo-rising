@@ -15,7 +15,7 @@ const countries = [
 ];
 
 const LeaderboardPage = () => {
-  const { character, userName } = useUser();
+  const { character, userName, userId } = useUser();
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -220,7 +220,7 @@ const LeaderboardPage = () => {
                       }`}>
                         {entry.warrior_name}
                       </span>
-                      {entry.warrior_name === userName && (
+                      {entry.id === userId && (
                         <span className="px-2 py-0.5 text-xs bg-white/10 rounded-full">You</span>
                       )}
                     </div>
@@ -245,9 +245,15 @@ const LeaderboardPage = () => {
                     }`}>
                       <span>{entry.streak || 0}</span>
                     </div>
-                    <Link to={`/profile/${entry.id}`} className="text-white/60 hover:text-white">
+                    <a 
+                      href={`/profile/${entry.id}`}
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-white/60 hover:text-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <ExternalLink size={16} />
-                    </Link>
+                    </a>
                     {expandedUser === entry.id ? (
                       <ChevronUp size={16} className="text-white/60" />
                     ) : (
@@ -284,8 +290,10 @@ const LeaderboardPage = () => {
                       <span className="font-medium">{entry.streak || 0} days</span>
                     </div>
                     <div className="mt-2 pt-2 border-t border-white/10 flex justify-end">
-                      <Link 
-                        to={`/profile/${entry.id}`}
+                      <a 
+                        href={`/profile/${entry.id}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
                         className={`text-xs px-2 py-1 rounded ${
                           entry.character_type === 'goku' ? 'bg-goku-primary/20 text-goku-primary' :
                           entry.character_type === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary' :
@@ -294,7 +302,7 @@ const LeaderboardPage = () => {
                         }`}
                       >
                         View Profile
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 )}

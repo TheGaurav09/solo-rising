@@ -3,94 +3,136 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import AnimatedButton from '@/components/ui/AnimatedButton';
-import CoinDisplay from '@/components/ui/CoinDisplay';
-import StoreItemCard from '@/components/ui/StoreItemCard';
-import { ShoppingBag, Award, ChevronDown, ChevronUp, Gift, CheckCircle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ShoppingBag, Trophy, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
+import StoreItemCard from '@/components/ui/StoreItemCard';
+import CoinDisplay from '@/components/ui/CoinDisplay';
 import ItemDetailModal from '@/components/modals/ItemDetailModal';
 import AchievementDetailModal from '@/components/modals/AchievementDetailModal';
 import Footer from '@/components/ui/Footer';
 
 const StoreAndAchievementsPage = () => {
-  const { character, points, coins, addCoins, useCoins } = useUser();
+  const { character, coins, userId } = useUser();
   const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [userItems, setUserItems] = useState<string[]>([]);
   const [achievements, setAchievements] = useState<any[]>([]);
-  const [userAchievements, setUserAchievements] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userAchievements, setUserAchievements] = useState<any[]>([]);
+  const [userItems, setUserItems] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
   const [showItemModal, setShowItemModal] = useState(false);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [storeSearchTerm, setStoreSearchTerm] = useState('');
+  const [achievementsSearchTerm, setAchievementsSearchTerm] = useState('');
+  const [isLoadingStore, setIsLoadingStore] = useState(true);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(true);
+  const [filteredStoreItems, setFilteredStoreItems] = useState<any[]>([]);
+  const [filteredAchievements, setFilteredAchievements] = useState<any[]>([]);
+  const [showAllStore, setShowAllStore] = useState(false);
   const [showAllAchievements, setShowAllAchievements] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchStoreItems();
+    fetchAchievements();
+    fetchUserItems();
+    fetchUserAchievements();
+  }, [userId]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (storeSearchTerm.trim() === '') {
+      setFilteredStoreItems(storeItems);
+    } else {
+      const filtered = storeItems.filter(item => 
+        item.name.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(storeSearchTerm.toLowerCase()) ||
+        item.item_type.toLowerCase().includes(storeSearchTerm.toLowerCase())
+      );
+      setFilteredStoreItems(filtered);
+    }
+  }, [storeSearchTerm, storeItems]);
+
+  useEffect(() => {
+    if (achievementsSearchTerm.trim() === '') {
+      setFilteredAchievements(achievements);
+    } else {
+      const filtered = achievements.filter(achievement => 
+        achievement.name.toLowerCase().includes(achievementsSearchTerm.toLowerCase()) ||
+        achievement.description.toLowerCase().includes(achievementsSearchTerm.toLowerCase())
+      );
+      setFilteredAchievements(filtered);
+    }
+  }, [achievementsSearchTerm, achievements]);
+
+  const fetchStoreItems = async () => {
+    setIsLoadingStore(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: storeItems, error: storeError } = await supabase
+      const { data, error } = await supabase
         .from('store_items')
         .select('*')
         .order('price', { ascending: true });
+      
+      if (error) throw error;
+      
+      setStoreItems(data || []);
+      setFilteredStoreItems(data || []);
+    } catch (error) {
+      console.error('Error fetching store items:', error);
+    } finally {
+      setIsLoadingStore(false);
+    }
+  };
 
-      if (storeError) {
-        console.error("Store items fetch error:", storeError);
-      } else {
-        setStoreItems(storeItems || []);
-      }
-
-      const { data: userItemsData, error: userItemsError } = await supabase
-        .from('user_items')
-        .select('item_id')
-        .eq('user_id', userData.user.id);
-
-      if (userItemsError) {
-        console.error("User items fetch error:", userItemsError);
-      } else {
-        setUserItems(userItemsData?.map(item => item.item_id) || []);
-      }
-
-      const { data: achievementsData, error: achievementsError } = await supabase
+  const fetchAchievements = async () => {
+    setIsLoadingAchievements(true);
+    try {
+      const { data, error } = await supabase
         .from('achievements')
         .select('*')
         .order('points_required', { ascending: true });
-
-      if (achievementsError) {
-        console.error("Achievements fetch error:", achievementsError);
-      } else {
-        setAchievements(achievementsData || []);
-      }
-
-      const { data: userAchievementsData, error: userAchievementsError } = await supabase
-        .from('user_achievements')
-        .select('achievement_id')
-        .eq('user_id', userData.user.id);
-
-      if (userAchievementsError) {
-        console.error("User achievements fetch error:", userAchievementsError);
-      } else {
-        setUserAchievements(userAchievementsData?.map(item => item.achievement_id) || []);
-      }
+      
+      if (error) throw error;
+      
+      setAchievements(data || []);
+      setFilteredAchievements(data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load store and achievements data',
-        variant: 'destructive',
-      });
+      console.error('Error fetching achievements:', error);
     } finally {
-      setLoading(false);
+      setIsLoadingAchievements(false);
+    }
+  };
+
+  const fetchUserItems = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_items')
+        .select('*, item_id(*)')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      setUserItems(data || []);
+    } catch (error) {
+      console.error('Error fetching user items:', error);
+    }
+  };
+
+  const fetchUserAchievements = async () => {
+    if (!userId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_achievements')
+        .select('*, achievement_id(*)')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      
+      setUserAchievements(data || []);
+    } catch (error) {
+      console.error('Error fetching user achievements:', error);
     }
   };
 
@@ -104,238 +146,314 @@ const StoreAndAchievementsPage = () => {
     setShowAchievementModal(true);
   };
 
-  const handlePurchase = async (item: any) => {
+  const isItemPurchased = (itemId: string) => {
+    return userItems.some(userItem => userItem.item_id.id === itemId);
+  };
+
+  const isAchievementUnlocked = (achievementId: string) => {
+    return userAchievements.some(userAchievement => userAchievement.achievement_id.id === achievementId);
+  };
+
+  const purchaseItem = async (item: any) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to purchase items",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isItemPurchased(item.id)) {
+      toast({
+        title: "Already Owned",
+        description: "You already own this item",
+        variant: "default",
+      });
+      return;
+    }
+    
+    if (coins < item.price) {
+      toast({
+        title: "Insufficient Coins",
+        description: "You don't have enough coins to purchase this item",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
-      
-      if (userItems.includes(item.id)) {
-        toast({
-          title: 'Already Owned',
-          description: 'You already own this item',
-          duration: 3000,
-        });
-        return;
-      }
-      
-      const { data: userCoins, error: userCoinsError } = await supabase
-        .from('users')
-        .select('coins')
-        .eq('id', userData.user.id)
-        .single();
-      
-      if (userCoinsError) throw userCoinsError;
-      
-      if (!userCoins || userCoins.coins < item.price) {
-        toast({
-          title: 'Not Enough Coins',
-          description: `You need ${item.price - (userCoins?.coins || 0)} more coins to purchase this item`,
-          variant: 'destructive',
-          duration: 3000,
-        });
-        return;
-      }
-      
+      // First, add the item to user_items
       const { error: purchaseError } = await supabase
         .from('user_items')
         .insert([
-          { user_id: userData.user.id, item_id: item.id }
+          { user_id: userId, item_id: item.id }
         ]);
       
       if (purchaseError) throw purchaseError;
       
-      const newCoins = userCoins.coins - item.price;
-      const { error: updateError } = await supabase
+      // Then, update the user's coins
+      const { error: updateCoinsError } = await supabase
         .from('users')
-        .update({ coins: newCoins })
-        .eq('id', userData.user.id);
+        .update({ coins: coins - item.price })
+        .eq('id', userId);
       
-      if (updateError) throw updateError;
+      if (updateCoinsError) throw updateCoinsError;
       
-      setUserItems([...userItems, item.id]);
-      useCoins(item.price); // Fixed: Pass positive value since useCoins functions subtracts
+      // Update local state
+      setUserItems([...userItems, { item_id: item, user_id: userId, purchased_at: new Date().toISOString() }]);
       
       toast({
-        title: 'Purchase Successful',
+        title: "Purchase Successful",
         description: `You have purchased ${item.name}`,
-        duration: 3000,
+        variant: "default",
       });
       
-      setShowItemModal(false);
     } catch (error) {
-      console.error('Purchase error:', error);
+      console.error('Error purchasing item:', error);
       toast({
-        title: 'Purchase Failed',
-        description: 'There was an error completing your purchase',
-        variant: 'destructive',
+        title: "Purchase Failed",
+        description: "There was an error processing your purchase",
+        variant: "destructive",
       });
     }
   };
 
-  const visibleAchievements = showAllAchievements ? achievements : achievements.slice(0, 6);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+  const visibleStoreItems = showAllStore ? filteredStoreItems : filteredStoreItems.slice(0, 6);
+  const visibleAchievements = showAllAchievements ? filteredAchievements : filteredAchievements.slice(0, 6);
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Store & Achievements</h1>
-        <CoinDisplay />
+      <h1 className="text-2xl font-bold mb-6">Store & Achievements</h1>
+      
+      <div className="flex justify-end mb-4">
+        <CoinDisplay coins={coins} character={character} />
       </div>
       
-      <Tabs defaultValue="store" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="store" className="flex items-center gap-2">
-            <ShoppingBag size={16} />
-            <span>Store</span>
+      <Tabs defaultValue="store">
+        <TabsList className="w-full mb-4">
+          <TabsTrigger value="store" className="flex-1">
+            <div className="flex items-center gap-2">
+              <ShoppingBag size={16} />
+              <span>Store</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="achievements" className="flex items-center gap-2">
-            <Award size={16} />
-            <span>Achievements</span>
+          <TabsTrigger value="achievements" className="flex-1">
+            <div className="flex items-center gap-2">
+              <Trophy size={16} />
+              <span>Achievements</span>
+            </div>
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="store" className="space-y-4">
+        <TabsContent value="store" className="focus-visible:outline-none focus-visible:ring-0">
           <AnimatedCard className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <ShoppingBag size={20} />
-                <span>Item Shop</span>
-              </h2>
-              <CoinDisplay />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-xl font-bold">Available Items</h2>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                <Input
+                  placeholder="Search items..."
+                  value={storeSearchTerm}
+                  onChange={(e) => setStoreSearchTerm(e.target.value)}
+                  className="pl-8 bg-black/20 border-white/20 text-white"
+                />
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {storeItems.map((item) => (
-                <StoreItemCard
-                  key={item.id}
-                  item={item}
-                  owned={userItems.includes(item.id)}
-                  onClick={() => handleItemClick(item)}
-                  character={character}
-                />
-              ))}
-            </div>
+            {isLoadingStore ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : filteredStoreItems.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No items found</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+                  {visibleStoreItems.map((item) => (
+                    <StoreItemCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => handleItemClick(item)}
+                      isPurchased={isItemPurchased(item.id)}
+                      character={character}
+                    />
+                  ))}
+                </div>
+                
+                {filteredStoreItems.length > 6 && (
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={() => setShowAllStore(!showAllStore)}
+                      className={`text-sm flex items-center gap-1 px-4 py-2 rounded-md transition-all ${
+                        character === 'goku' ? 'bg-goku-primary/20 text-goku-primary hover:bg-goku-primary/30' :
+                        character === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary hover:bg-saitama-primary/30' :
+                        character === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary hover:bg-jin-woo-primary/30' :
+                        'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      {showAllStore ? (
+                        <>Show Less <ChevronUp size={14} /></>
+                      ) : (
+                        <>Show All <ChevronDown size={14} /></>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </AnimatedCard>
         </TabsContent>
         
-        <TabsContent value="achievements" className="space-y-4">
+        <TabsContent value="achievements" className="focus-visible:outline-none focus-visible:ring-0">
           <AnimatedCard className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Award size={20} />
-                <span>Achievements</span>
-              </h2>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-white/70">
-                  {userAchievements.length}/{achievements.length} unlocked
-                </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-xl font-bold">Achievements</h2>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                <Input
+                  placeholder="Search achievements..."
+                  value={achievementsSearchTerm}
+                  onChange={(e) => setAchievementsSearchTerm(e.target.value)}
+                  className="pl-8 bg-black/20 border-white/20 text-white"
+                />
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visibleAchievements.map((achievement) => {
-                const isUnlocked = userAchievements.includes(achievement.id);
-                const progress = Math.min(100, Math.floor((points / achievement.points_required) * 100));
-                
-                return (
-                  <div 
-                    key={achievement.id}
-                    onClick={() => handleAchievementClick(achievement)}
-                    className={`p-4 rounded-lg cursor-pointer transition-all border ${
-                      isUnlocked 
-                        ? character 
-                          ? `bg-${character}-primary/20 border-${character}-primary/40` 
-                          : 'bg-primary/20 border-primary/40'
-                        : 'bg-white/5 border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="bg-black/30 p-2 rounded-lg">
-                        <Award 
-                          size={24} 
-                          className={isUnlocked ? character 
-                            ? `text-${character}-primary` 
-                            : 'text-primary' : 'text-white/40'} 
-                        />
+            {isLoadingAchievements ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+              </div>
+            ) : filteredAchievements.length === 0 ? (
+              <div className="text-center py-12 text-white/50">
+                <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No achievements found</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+                  {visibleAchievements.map((achievement) => (
+                    <div
+                      key={achievement.id}
+                      className={`relative p-4 rounded-lg cursor-pointer transition-all ${
+                        isAchievementUnlocked(achievement.id)
+                          ? character === 'goku' 
+                              ? 'bg-goku-primary/20 border border-goku-primary/30' 
+                              : character === 'saitama'
+                                ? 'bg-saitama-primary/20 border border-saitama-primary/30'
+                                : character === 'jin-woo'
+                                  ? 'bg-jin-woo-primary/20 border border-jin-woo-primary/30'
+                                  : 'bg-green-900/20 border border-green-500/30'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                      }`}
+                      onClick={() => handleAchievementClick(achievement)}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isAchievementUnlocked(achievement.id)
+                            ? character === 'goku' 
+                                ? 'bg-goku-primary/30 text-goku-primary' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary/30 text-saitama-primary'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary/30 text-jin-woo-primary'
+                                    : 'bg-green-900/30 text-green-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}>
+                          <span className="text-lg">
+                            {achievement.icon && (
+                              <span dangerouslySetInnerHTML={{ __html: achievement.icon }} />
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold">{achievement.name}</h3>
+                          <p className="text-sm opacity-70 line-clamp-2">{achievement.description}</p>
+                        </div>
                       </div>
-                      {isUnlocked && (
-                        <CheckCircle 
-                          size={20} 
-                          className={character ? `text-${character}-primary` : 'text-primary'} 
-                        />
+                      <div className="mt-2 text-right text-sm">
+                        <span className={`px-2 py-0.5 rounded-full ${
+                          isAchievementUnlocked(achievement.id)
+                            ? character === 'goku' 
+                                ? 'bg-goku-primary/30 text-goku-primary' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary/30 text-saitama-primary'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary/30 text-jin-woo-primary'
+                                    : 'bg-green-900/30 text-green-400'
+                            : 'bg-white/10 text-white/60'
+                        }`}>
+                          {achievement.points_required} points
+                        </span>
+                      </div>
+                      {isAchievementUnlocked(achievement.id) && (
+                        <div className="absolute top-2 right-2">
+                          <span className={`p-1 rounded-full ${
+                            character === 'goku' 
+                                ? 'bg-goku-primary text-white' 
+                                : character === 'saitama'
+                                  ? 'bg-saitama-primary text-white'
+                                  : character === 'jin-woo'
+                                    ? 'bg-jin-woo-primary text-white'
+                                    : 'bg-green-600 text-white'
+                          }`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          </span>
+                        </div>
                       )}
                     </div>
-                    
-                    <h3 className="font-bold">{achievement.name}</h3>
-                    <p className="text-sm text-white/70 mb-2">{achievement.description}</p>
-                    
-                    <div className="flex justify-between text-xs text-white/60 mb-1">
-                      <span>Progress</span>
-                      <span>{points}/{achievement.points_required} points</span>
-                    </div>
-                    
-                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full ${
-                          isUnlocked 
-                            ? character 
-                              ? `bg-${character}-primary` 
-                              : 'bg-primary' 
-                            : 'bg-white/30'
-                        }`}
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
+                  ))}
+                </div>
+                
+                {filteredAchievements.length > 6 && (
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      onClick={() => setShowAllAchievements(!showAllAchievements)}
+                      className={`text-sm flex items-center gap-1 px-4 py-2 rounded-md transition-all ${
+                        character === 'goku' ? 'bg-goku-primary/20 text-goku-primary hover:bg-goku-primary/30' :
+                        character === 'saitama' ? 'bg-saitama-primary/20 text-saitama-primary hover:bg-saitama-primary/30' :
+                        character === 'jin-woo' ? 'bg-jin-woo-primary/20 text-jin-woo-primary hover:bg-jin-woo-primary/30' :
+                        'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      {showAllAchievements ? (
+                        <>Show Less <ChevronUp size={14} /></>
+                      ) : (
+                        <>Show All <ChevronDown size={14} /></>
+                      )}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Show All/Less button moved to after the cards */}
-            {achievements.length > 6 && (
-              <div className="flex justify-center mt-6">
-                <button 
-                  onClick={() => setShowAllAchievements(!showAllAchievements)}
-                  className="text-sm flex items-center gap-1 text-white/60 hover:text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md transition-all"
-                >
-                  {showAllAchievements ? (
-                    <>Show Less <ChevronUp size={14} /></>
-                  ) : (
-                    <>Show All <ChevronDown size={14} /></>
-                  )}
-                </button>
-              </div>
+                )}
+              </>
             )}
           </AnimatedCard>
         </TabsContent>
       </Tabs>
       
+      <Footer />
+      
       {showItemModal && selectedItem && (
         <ItemDetailModal
           item={selectedItem}
+          isOwned={isItemPurchased(selectedItem.id)}
           onClose={() => setShowItemModal(false)}
-          onPurchase={() => handlePurchase(selectedItem)}
+          onPurchase={() => purchaseItem(selectedItem)}
           character={character}
+          userCoins={coins}
         />
       )}
       
       {showAchievementModal && selectedAchievement && (
         <AchievementDetailModal
           achievement={selectedAchievement}
+          isUnlocked={isAchievementUnlocked(selectedAchievement.id)}
           onClose={() => setShowAchievementModal(false)}
           character={character}
-          currentPoints={points}
         />
       )}
-      
-      <Footer />
     </div>
   );
 };
