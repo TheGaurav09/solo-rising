@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Link as LinkIcon, Copy, Share2, Check, Twitter, Smartphone } from 'lucide-react';
@@ -23,7 +22,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
   };
   
   const getShareText = () => {
-    return encodeURIComponent("Check out SoloProve! I'm training like an anime character and tracking my progress. Join me!");
+    return encodeURIComponent("Check out SoloRising! I'm training like an anime character and tracking my progress. Join me!");
   };
   
   const url = encodeURIComponent(window.location.origin);
@@ -52,7 +51,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'SoloProve Workout App',
+          title: 'SoloRising Workout App',
           text: decodeURIComponent(shareText),
           url: window.location.origin,
         });
@@ -89,7 +88,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ onClose, character = 'goku' }) 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-xl font-bold">Share SoloProve</h2>
+          <h2 className="text-xl font-bold">Share SoloRising</h2>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-white/10"

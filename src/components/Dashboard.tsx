@@ -3,7 +3,7 @@ import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu, X, Share2 } from 'lucide-react';
 import { getIconComponent } from '@/lib/iconUtils';
 import { AnimatePresence, motion } from 'framer-motion';
 import ShareModal from './modals/ShareModal';
@@ -330,8 +330,8 @@ const Dashboard = () => {
                 onClick={handleShareClick}
                 className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
               >
-                <Menu size={20} />
-                <span className="ml-2">Share Profile</span>
+                <Share2 size={20} />
+                <span className="ml-2">Share SoloRising</span>
               </button>
               
               {primaryActions?.map((action, index) => (

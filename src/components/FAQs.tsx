@@ -42,20 +42,20 @@ const FAQs = () => {
   return (
     <div className="py-8 px-4 md:px-0">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-2">Frequently Asked Questions</h2>
-        <p className="text-white/70 max-w-xl mx-auto">
-          Everything you need to know about Solo Rising
+        <h2 className="text-3xl font-bold mb-2 text-white">Frequently Asked Questions</h2>
+        <p className="text-white/90 max-w-xl mx-auto">
+          Everything you need to know about SoloRising
         </p>
       </div>
       
       <div className="max-w-3xl mx-auto">
         <Accordion type="single" collapsible className="w-full">
           {faqItems.map((item, index) => (
-            <AccordionItem key={index} value={`item-${index}`} className="border-b border-white/10">
-              <AccordionTrigger className="text-left text-lg hover:text-white/90 py-4">
+            <AccordionItem key={index} value={`item-${index}`} className="border-b border-white/20">
+              <AccordionTrigger className="text-left text-lg text-white hover:text-white/90 py-4">
                 {item.question}
               </AccordionTrigger>
-              <AccordionContent className="text-white/70 pb-4">
+              <AccordionContent className="text-white/90 pb-4">
                 {item.answer}
               </AccordionContent>
             </AccordionItem>

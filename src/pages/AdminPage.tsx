@@ -34,10 +34,10 @@ interface Supporter {
   created_at?: string;
 }
 
-const ADMIN_EMAIL = "thegaurav.r@gmail.com";
-const ADMIN_PASSWORD = "solo123";
-const SUPABASE_URL = "https://xppaofqmxtaikkacvvzt.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwcGFvZnFteHRhaWtrYWN2dnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDExNTM0OTUsImV4cCI6MjA1NjcyOTQ5NX0.lI372EUlv0gCI8536_AbSd_kvSrsurZP7xx2DbyW7Dc";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.ADMIN_NAME;
+const DELETE_USER_PASSWORD = process.env.DELETE_USER_PASSWORD;
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ const AdminPage = () => {
   const [showHallOfFameDialog, setShowHallOfFameDialog] = useState(false);
 
   const authenticate = () => {
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD && name === "Gaurav") {
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD && name === ADMIN_NAME) {
       setAuthenticated(true);
       localStorage.setItem('admin_authenticated', 'true');
       toast({
@@ -123,6 +123,16 @@ const AdminPage = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    const password = prompt("Please enter the admin delete password to confirm:");
+    if (password !== DELETE_USER_PASSWORD) {
+      toast({
+        title: "Unauthorized",
+        description: "Incorrect delete password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       return;
     }
