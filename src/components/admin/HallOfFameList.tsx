@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, ExternalLink, Trash2, Trophy, Search } from 'lucide-react';
+import { Plus, ExternalLink, Trash2, Trophy, Search, Loader2 } from 'lucide-react';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
 
 interface Supporter {
   id: string;
@@ -36,6 +37,7 @@ const HallOfFameList = () => {
   const [showUserSearchDialog, setShowUserSearchDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSupporters();
@@ -150,16 +152,14 @@ const HallOfFameList = () => {
     setIsProcessing(true);
     
     try {
-      // Use the admin function to bypass RLS policies
-      const { data, error } = await supabase.functions.invoke('auth-admin', {
-        body: { 
-          action: 'delete_from_hall_of_fame',
-          supporterId: supporterId
-        }
-      });
+      // Direct delete from the database
+      const { error } = await supabase
+        .from('hall_of_fame')
+        .delete()
+        .eq('id', supporterId);
       
-      if (error || (data && data.error)) {
-        throw new Error(error?.message || data?.error || 'Failed to delete supporter');
+      if (error) {
+        throw new Error(error.message || 'Failed to delete supporter');
       }
       
       setSupporters(supporters.filter(supporter => supporter.id !== supporterId));
@@ -184,6 +184,12 @@ const HallOfFameList = () => {
     setNewSupporterUserId(user.id);
     setNewSupporterName(user.warrior_name);
     setShowUserSearchDialog(false);
+  };
+
+  const handleUserClick = (userId: string | null) => {
+    if (userId) {
+      navigate(`/profile/${userId}`);
+    }
   };
 
   return (
@@ -214,21 +220,19 @@ const HallOfFameList = () => {
                 </div>
                 <div className="flex gap-2">
                   {supporter.user_id && (
-                    <a 
-                      href={`/profile/${supporter.user_id}`}
+                    <button 
+                      onClick={() => handleUserClick(supporter.user_id)}
                       className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/80"
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
                       <ExternalLink size={18} />
-                    </a>
+                    </button>
                   )}
                   <button 
                     onClick={() => handleDeleteSupporter(supporter.id)}
                     className="p-2 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500"
                     disabled={isProcessing}
                   >
-                    <Trash2 size={18} />
+                    {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
                   </button>
                 </div>
               </div>
@@ -321,7 +325,7 @@ const HallOfFameList = () => {
             >
               {isProcessing ? (
                 <>
-                  <span className="animate-spin mr-2">⏳</span>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Adding...
                 </>
               ) : (

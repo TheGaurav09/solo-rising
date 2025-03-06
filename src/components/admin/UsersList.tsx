@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, Search, Trash2, AlertTriangle, Send, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,7 @@ const UsersList = () => {
   const [hallOfFameName, setHallOfFameName] = useState('');
   const [hallOfFameAmount, setHallOfFameAmount] = useState('');
   const [isAddingToHallOfFame, setIsAddingToHallOfFame] = useState(false);
+  const navigate = useNavigate();
   
   useEffect(() => {
     fetchUsers();
@@ -105,6 +107,10 @@ const UsersList = () => {
     setHallOfFameName(user.warrior_name || '');
     setHallOfFameAmount('');
     setHallOfFameDialogOpen(true);
+  };
+
+  const handleViewProfile = (userId: string) => {
+    navigate(`/profile/${userId}`);
   };
   
   const confirmDeleteUser = async () => {
@@ -263,7 +269,7 @@ const UsersList = () => {
   return (
     <div className="space-y-4 bg-black/20 p-4 rounded-lg border border-white/10">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold">Users Management</h3>
+        <h3 className="text-xl font-bold text-white">Users Management</h3>
         <div className="relative w-64">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
           <Input
@@ -301,23 +307,21 @@ const UsersList = () => {
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-white/10 bg-black/10 hover:bg-black/20">
-                  <td className="px-4 py-3 font-medium whitespace-nowrap">{user.warrior_name}</td>
-                  <td className="px-4 py-3">{user.email}</td>
-                  <td className="px-4 py-3 capitalize">{user.character_type}</td>
-                  <td className="px-4 py-3">{user.country}</td>
-                  <td className="px-4 py-3">{user.points}</td>
-                  <td className="px-4 py-3">{user.streak}</td>
-                  <td className="px-4 py-3">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap text-white">{user.warrior_name}</td>
+                  <td className="px-4 py-3 text-white/80">{user.email}</td>
+                  <td className="px-4 py-3 capitalize text-white/80">{user.character_type}</td>
+                  <td className="px-4 py-3 text-white/80">{user.country}</td>
+                  <td className="px-4 py-3 text-white/80">{user.points}</td>
+                  <td className="px-4 py-3 text-white/80">{user.streak}</td>
+                  <td className="px-4 py-3 text-white/80">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <div className="flex space-x-2">
-                      <a
-                        href={`/profile/${user.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewProfile(user.id)}
                         className="text-blue-400 hover:text-blue-300"
                       >
                         <ArrowUpRight size={16} />
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleAddToHallOfFame(user)}
                         className="text-green-400 hover:text-green-300"

@@ -184,6 +184,37 @@ serve(async (req) => {
       });
     }
 
+    // Delete warning
+    else if (action === "delete_warning") {
+      const { warningId } = params;
+
+      if (!warningId) {
+        return new Response(JSON.stringify({ error: "Warning ID is required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      // Delete the warning
+      const { error: deleteError } = await supabase
+        .from("warnings")
+        .delete()
+        .eq("id", warningId);
+
+      if (deleteError) {
+        console.error("Error deleting warning:", deleteError);
+        return new Response(JSON.stringify({ error: "Failed to delete warning" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "Warning deleted successfully" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

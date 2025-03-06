@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
-import { Share2, Plus, Search, Trash2, AlertTriangle, Send, ExternalLink, Trophy, Menu, X } from 'lucide-react';
+import { Share2, Plus, Search, Trash2, AlertTriangle, Send, ExternalLink, Trophy, Menu, X, MessageCircle } from 'lucide-react';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import UsersList from '@/components/admin/UsersList';
 import HallOfFameList from '@/components/admin/HallOfFameList';
+import MessagesList from '@/components/admin/MessagesList';
 import AuthForm from '@/components/admin/AuthForm';
 
 const AdminPage = () => {
@@ -56,9 +57,25 @@ const AdminPage = () => {
         </div>
         
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="users">Users Management</TabsTrigger>
-            <TabsTrigger value="hall-of-fame">Hall of Fame</TabsTrigger>
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="users" className="data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <div className="flex items-center gap-2">
+                <Menu size={16} />
+                <span>Users Management</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="hall-of-fame" className="data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <div className="flex items-center gap-2">
+                <Trophy size={16} />
+                <span>Hall of Fame</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="data-[state=active]:bg-white/10 data-[state=active]:text-white">
+              <div className="flex items-center gap-2">
+                <MessageCircle size={16} />
+                <span>Messages</span>
+              </div>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="users">
@@ -67,6 +84,10 @@ const AdminPage = () => {
           
           <TabsContent value="hall-of-fame">
             <HallOfFameList />
+          </TabsContent>
+          
+          <TabsContent value="messages">
+            <MessagesList />
           </TabsContent>
         </Tabs>
       </div>
