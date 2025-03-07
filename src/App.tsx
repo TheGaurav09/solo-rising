@@ -36,6 +36,13 @@ const App = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
+      // First, check local storage for faster initial check
+      const cachedAuth = localStorage.getItem('sb-auth-token');
+      const initialAuth = !!cachedAuth;
+      
+      setIsAuthenticated(initialAuth);
+      
+      // Then verify with Supabase (happens in parallel)
       const { data } = await supabase.auth.getUser();
       const isAuth = !!data.user;
       setIsAuthenticated(isAuth);
@@ -81,6 +88,8 @@ const App = () => {
     };
   }, []);
 
+  // Show a lightweight loading indicator instead of a blank screen
+  // This allows the app to at least render something quickly
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-black">
@@ -101,7 +110,7 @@ const App = () => {
                 {/* Redirect authenticated users with character directly to dashboard */}
                 <Route path="/" element={
                   isAuthenticated && hasCharacter ? 
-                    <Navigate to="/profile-workout" replace /> : 
+                    <Navigate to="/dashboard" replace /> : 
                     <Index />
                 } />
                 
@@ -118,7 +127,7 @@ const App = () => {
                   <Route path="hall-of-fame" element={<HallOfFamePage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   {/* Redirect missing paths to profile-workout */}
-                  <Route path="*" element={<Navigate to="/profile-workout" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Route>
                 
                 {/* Catch-all route */}

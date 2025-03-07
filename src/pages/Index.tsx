@@ -14,15 +14,28 @@ const Index = () => {
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialCheckComplete, setInitialCheckComplete] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // First, check local storage for a faster initial check
+        const cachedAuth = localStorage.getItem('sb-auth-token');
+        
+        if (cachedAuth) {
+          // If we have a cached token, immediately redirect to dashboard page
+          // We'll verify the token's validity in the background
+          setLoading(false);
+          navigate('/dashboard', { replace: true });
+        }
+        
+        // In parallel, do the proper auth check with Supabase
         const { data, error } = await supabase.auth.getUser();
         
         if (error) {
           console.error("Auth check error:", error);
           setLoading(false);
+          setInitialCheckComplete(true);
           return;
         }
         
@@ -39,20 +52,23 @@ const Index = () => {
           if (userError) {
             console.error("User data check error:", userError);
             setLoading(false);
+            setInitialCheckComplete(true);
             return;
           }
           
-          // If user exists in DB and has selected a character, redirect to workout page
+          // If user exists in DB and has selected a character, redirect to dashboard page
           if (userData && userData.character_type) {
-            navigate('/profile-workout', { replace: true });
+            navigate('/dashboard', { replace: true });
             return;
           }
         }
         
         setLoading(false);
+        setInitialCheckComplete(true);
       } catch (err) {
         console.error("Error checking authentication:", err);
         setLoading(false);
+        setInitialCheckComplete(true);
       }
     };
     
@@ -76,9 +92,9 @@ const Index = () => {
             return;
           }
           
-          // If user exists in DB and has selected a character, redirect to workout page
+          // If user exists in DB and has selected a character, redirect to dashboard page
           if (userData && userData.character_type) {
-            navigate('/profile-workout', { replace: true });
+            navigate('/dashboard', { replace: true });
           }
         };
         
@@ -109,6 +125,10 @@ const Index = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
       </div>
     );
+  }
+
+  if (!initialCheckComplete) {
+    return null; // Don't render anything while we check if redirect is needed
   }
 
   return (
