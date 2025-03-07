@@ -39,7 +39,7 @@ const App = () => {
       // Set a timeout to prevent infinite loading
       const timeout = setTimeout(() => {
         setIsInitialized(true);
-      }, a6000); // 6 seconds max loading time
+      }, 6000); // 6 seconds max loading time
       
       try {
         // First, check local storage for faster initial check
