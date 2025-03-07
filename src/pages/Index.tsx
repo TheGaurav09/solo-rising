@@ -24,9 +24,8 @@ const Index = () => {
         
         if (cachedAuth) {
           // If we have a cached token, immediately redirect to dashboard page
-          // We'll verify the token's validity in the background
-          setLoading(false);
           navigate('/dashboard', { replace: true });
+          return; // Early return to prevent further execution
         }
         
         // In parallel, do the proper auth check with Supabase
@@ -72,6 +71,15 @@ const Index = () => {
       }
     };
     
+    // Add a timeout to ensure we don't get stuck in loading state
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("Loading timeout triggered, resetting loading state");
+        setLoading(false);
+        setInitialCheckComplete(true);
+      }
+    }, 5000); // 5 second timeout
+    
     checkAuth();
 
     // Add listener for auth state changes
@@ -106,8 +114,9 @@ const Index = () => {
     
     return () => {
       authListener.subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
     };
-  }, [hasSelectedCharacter, navigate]);
+  }, [hasSelectedCharacter, navigate, loading]);
 
   const handleLoginClick = () => {
     setAuthView('login');

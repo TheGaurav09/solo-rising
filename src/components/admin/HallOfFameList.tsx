@@ -59,6 +59,7 @@ const HallOfFameList = () => {
 
   const fetchSupporters = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('hall_of_fame')
         .select('*')
@@ -168,8 +169,10 @@ const HallOfFameList = () => {
         throw new Error(error.message || 'Failed to delete supporter');
       }
       
-      // Update local state to reflect the deletion
-      setSupporters(supporters.filter(supporter => supporter.id !== supporterToDelete.id));
+      // Immediately update local state to reflect the deletion
+      setSupporters(prevSupporters => 
+        prevSupporters.filter(supporter => supporter.id !== supporterToDelete.id)
+      );
       
       toast({
         title: "Success",
@@ -198,7 +201,8 @@ const HallOfFameList = () => {
 
   const handleUserClick = (userId: string | null) => {
     if (userId) {
-      navigate(`/profile/${userId}`, { replace: true });
+      // Navigate within the app instead of opening a new tab
+      navigate(`/profile/${userId}`);
     }
   };
 
@@ -270,23 +274,21 @@ const HallOfFameList = () => {
           
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="supporter-name" className="text-white">Supporter Name</Label>
               <Input 
                 id="supporter-name"
                 value={newSupporterName}
                 onChange={(e) => setNewSupporterName(e.target.value)}
-                placeholder="Enter supporter name"
+                placeholder="Supporter Name"
                 className="bg-white/5 border-white/20 text-white placeholder:text-gray-500"
               />
             </div>
             
             <div>
-              <Label htmlFor="supporter-amount" className="text-white">Amount ($)</Label>
               <Input 
                 id="supporter-amount"
                 value={newSupporterAmount}
                 onChange={(e) => setNewSupporterAmount(e.target.value)}
-                placeholder="Enter amount"
+                placeholder="Amount ($)"
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -295,7 +297,6 @@ const HallOfFameList = () => {
             </div>
             
             <div>
-              <Label htmlFor="supporter-user-id" className="text-white">Select User (Optional)</Label>
               <div className="flex gap-2">
                 <Input 
                   id="supporter-user-id"

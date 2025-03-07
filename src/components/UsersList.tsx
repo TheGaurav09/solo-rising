@@ -46,7 +46,7 @@ const UsersList = ({ character, onClose, label }: UsersListProps) => {
   };
 
   const handleUserClick = (userId: string) => {
-    // Navigate to user profile within the app without a page reload
+    // Navigate to user profile within the app
     navigate(`/profile/${userId}`);
     onClose();
   };

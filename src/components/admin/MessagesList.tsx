@@ -16,6 +16,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+interface UserInfo {
+  warrior_name: string;
+  email: string;
+}
+
 interface Warning {
   id: string;
   user_id: string;
@@ -23,10 +28,7 @@ interface Warning {
   admin_email: string;
   read: boolean;
   created_at: string;
-  user?: {
-    warrior_name: string;
-    email: string;
-  } | null;
+  user?: UserInfo | null;
 }
 
 const MessagesList = () => {
@@ -68,30 +70,53 @@ const MessagesList = () => {
         throw warningsError;
       }
       
-      // If we have warnings, fetch the user details separately
-      const enhancedWarnings: Warning[] = await Promise.all((warningsData || []).map(async (warning) => {
-        // For each warning, fetch the corresponding user information
-        if (warning.user_id) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('warrior_name, email')
-            .eq('id', warning.user_id)
-            .single();
-            
-          if (!userError && userData) {
-            return {
+      if (!warningsData || warningsData.length === 0) {
+        setWarnings([]);
+        setFilteredWarnings([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If we have warnings, fetch the user details separately for each warning
+      const enhancedWarnings: Warning[] = [];
+      
+      for (const warning of warningsData) {
+        try {
+          if (warning.user_id) {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('warrior_name, email')
+              .eq('id', warning.user_id)
+              .maybeSingle();
+              
+            if (!userError && userData) {
+              enhancedWarnings.push({
+                ...warning,
+                user: userData
+              });
+            } else {
+              // If user not found, still include the warning with user as null
+              enhancedWarnings.push({
+                ...warning,
+                user: null
+              });
+            }
+          } else {
+            // If no user_id, still include the warning with user as null
+            enhancedWarnings.push({
               ...warning,
-              user: userData
-            };
+              user: null
+            });
           }
+        } catch (error) {
+          console.error('Error fetching user for warning:', error);
+          // Still include the warning even if there was an error fetching user
+          enhancedWarnings.push({
+            ...warning,
+            user: null
+          });
         }
-        
-        // If no user was found or there was an error, return the warning without user info
-        return {
-          ...warning,
-          user: null
-        };
-      }));
+      }
       
       setWarnings(enhancedWarnings);
       setFilteredWarnings(enhancedWarnings);
@@ -127,8 +152,9 @@ const MessagesList = () => {
         throw error;
       }
       
-      setWarnings(warnings.filter(w => w.id !== selectedWarning.id));
-      setFilteredWarnings(filteredWarnings.filter(w => w.id !== selectedWarning.id));
+      // Immediately update UI
+      setWarnings(prev => prev.filter(w => w.id !== selectedWarning.id));
+      setFilteredWarnings(prev => prev.filter(w => w.id !== selectedWarning.id));
       
       toast({
         title: "Success",

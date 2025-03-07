@@ -36,30 +36,42 @@ const App = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      // First, check local storage for faster initial check
-      const cachedAuth = localStorage.getItem('sb-auth-token');
-      const initialAuth = !!cachedAuth;
+      // Set a timeout to prevent infinite loading
+      const timeout = setTimeout(() => {
+        setIsInitialized(true);
+      }, a6000); // 6 seconds max loading time
       
-      setIsAuthenticated(initialAuth);
-      
-      // Then verify with Supabase (happens in parallel)
-      const { data } = await supabase.auth.getUser();
-      const isAuth = !!data.user;
-      setIsAuthenticated(isAuth);
+      try {
+        // First, check local storage for faster initial check
+        const cachedAuth = localStorage.getItem('sb-auth-token');
+        const initialAuth = !!cachedAuth;
+        
+        setIsAuthenticated(initialAuth);
+        
+        // Then verify with Supabase (happens in parallel)
+        const { data } = await supabase.auth.getUser();
+        const isAuth = !!data.user;
+        setIsAuthenticated(isAuth);
 
-      // If user is authenticated, check if they have selected a character
-      if (isAuth) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('character_type')
-          .eq('id', data.user.id)
-          .single();
-          
-        setHasCharacter(!!userData?.character_type);
+        // If user is authenticated, check if they have selected a character
+        if (isAuth && data.user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('character_type')
+            .eq('id', data.user.id)
+            .maybeSingle();
+            
+          setHasCharacter(!!userData?.character_type);
+        }
+        
+        // Set initialized after checking auth status
+        clearTimeout(timeout);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        clearTimeout(timeout);
+        setIsInitialized(true);
       }
-      
-      // Set initialized after checking auth status
-      setIsInitialized(true);
     };
 
     checkAuth();
@@ -70,12 +82,12 @@ const App = () => {
       setIsAuthenticated(isAuth);
       
       // If user is authenticated, check if they have selected a character
-      if (isAuth) {
+      if (isAuth && session?.user) {
         const { data: userData } = await supabase
           .from('users')
           .select('character_type')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
           
         setHasCharacter(!!userData?.character_type);
       } else {
@@ -89,7 +101,6 @@ const App = () => {
   }, []);
 
   // Show a lightweight loading indicator instead of a blank screen
-  // This allows the app to at least render something quickly
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-black">

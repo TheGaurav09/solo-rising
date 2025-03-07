@@ -47,14 +47,14 @@ const AdminPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 py-8 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gradient goku-gradient">Admin Panel</h1>
+          <h1 className="text-2xl font-bold text-gradient goku-gradient">Control Panel</h1>
           <Button 
             onClick={handleLogout}
             variant="outline" 
             className="bg-red-950/20 border-red-800/30 hover:bg-red-900/30 text-red-400"
           >
             <LogOut size={16} className="mr-2" />
-            Logout
+            Exit
           </Button>
         </div>
         
@@ -66,8 +66,7 @@ const AdminPage = () => {
             >
               <div className="flex items-center gap-2">
                 <Menu size={18} />
-                <span className="hidden sm:inline">Users</span>
-                <span className="sm:hidden">Users</span>
+                <span>Users</span>
               </div>
             </TabsTrigger>
             <TabsTrigger 
@@ -76,8 +75,8 @@ const AdminPage = () => {
             >
               <div className="flex items-center gap-2">
                 <Trophy size={18} />
-                <span className="hidden sm:inline">Hall of Fame</span>
-                <span className="sm:hidden">HoF</span>
+                <span className="hidden sm:inline">Donations</span>
+                <span className="sm:hidden">$$</span>
               </div>
             </TabsTrigger>
             <TabsTrigger 
@@ -86,8 +85,7 @@ const AdminPage = () => {
             >
               <div className="flex items-center gap-2">
                 <MessageCircle size={18} />
-                <span className="hidden sm:inline">Messages</span>
-                <span className="sm:hidden">Msgs</span>
+                <span>Notices</span>
               </div>
             </TabsTrigger>
           </TabsList>
