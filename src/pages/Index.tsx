@@ -19,10 +19,13 @@ const Index = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Index: Starting auth check");
+        
         // First, check local storage for a faster initial check
         const cachedAuth = localStorage.getItem('sb-auth-token');
         
         if (cachedAuth) {
+          console.log("Index: Found cached auth token");
           // If we have a cached token, immediately redirect to dashboard page
           navigate('/dashboard', { replace: true });
           return; // Early return to prevent further execution
@@ -32,13 +35,14 @@ const Index = () => {
         const { data, error } = await supabase.auth.getUser();
         
         if (error) {
-          console.error("Auth check error:", error);
+          console.error("Index: Auth check error:", error);
           setLoading(false);
           setInitialCheckComplete(true);
           return;
         }
         
         if (data.user) {
+          console.log("Index: User is authenticated:", data.user.id);
           setCurrentUserId(data.user.id);
           
           // Check if this user has a record in the users table
@@ -49,7 +53,7 @@ const Index = () => {
             .maybeSingle();
           
           if (userError) {
-            console.error("User data check error:", userError);
+            console.error("Index: User data check error:", userError);
             setLoading(false);
             setInitialCheckComplete(true);
             return;
@@ -57,15 +61,20 @@ const Index = () => {
           
           // If user exists in DB and has selected a character, redirect to dashboard page
           if (userData && userData.character_type) {
+            console.log("Index: User has character, redirecting to dashboard");
             navigate('/dashboard', { replace: true });
             return;
+          } else {
+            console.log("Index: User has no character yet");
           }
+        } else {
+          console.log("Index: No authenticated user found");
         }
         
         setLoading(false);
         setInitialCheckComplete(true);
       } catch (err) {
-        console.error("Error checking authentication:", err);
+        console.error("Index: Error checking authentication:", err);
         setLoading(false);
         setInitialCheckComplete(true);
       }
@@ -74,7 +83,7 @@ const Index = () => {
     // Add a timeout to ensure we don't get stuck in loading state
     const loadingTimeout = setTimeout(() => {
       if (loading) {
-        console.log("Loading timeout triggered, resetting loading state");
+        console.log("Index: Loading timeout triggered, resetting loading state");
         setLoading(false);
         setInitialCheckComplete(true);
       }
@@ -84,30 +93,38 @@ const Index = () => {
 
     // Add listener for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Index: Auth state changed:", event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session) {
         setCurrentUserId(session.user.id);
         
         // Check if the user has a character selected
         const checkUserCharacter = async () => {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('character_type')
-            .eq('id', session.user.id)
-            .maybeSingle();
-          
-          if (userError) {
-            console.error("User data check error:", userError);
-            return;
-          }
-          
-          // If user exists in DB and has selected a character, redirect to dashboard page
-          if (userData && userData.character_type) {
-            navigate('/dashboard', { replace: true });
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('character_type')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            
+            if (userError) {
+              console.error("Index: User data check error:", userError);
+              return;
+            }
+            
+            // If user exists in DB and has selected a character, redirect to dashboard page
+            if (userData && userData.character_type) {
+              console.log("Index: User has character after sign in, redirecting");
+              navigate('/dashboard', { replace: true });
+            }
+          } catch (error) {
+            console.error("Index: Error checking user character:", error);
           }
         };
         
         checkUserCharacter();
       } else if (event === 'SIGNED_OUT') {
+        console.log("Index: User signed out");
         setCurrentUserId(null);
       }
     });
@@ -131,7 +148,10 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+          <p className="text-white/70 text-sm">Loading...</p>
+        </div>
       </div>
     );
   }

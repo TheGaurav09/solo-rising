@@ -5,7 +5,6 @@ import { toast } from '@/components/ui/use-toast';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface AuthFormProps {
@@ -29,6 +28,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
     setError('');
     
     try {
+      console.log("Attempting admin authentication");
       const { data: secrets, error } = await supabase.functions.invoke('auth-admin', {
         body: { action: 'get_secrets' }
       });
@@ -45,10 +45,10 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
         onAuthenticated();
         toast({
           title: "Authenticated",
-          description: "Welcome to the admin panel",
+          description: "Access granted",
         });
       } else {
-        setError('Invalid credentials. Please check your email, password, and name.');
+        setError('Invalid credentials');
         toast({
           title: "Authentication Failed",
           description: "Invalid credentials",
@@ -57,10 +57,10 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      setError('Failed to authenticate. Please try again later.');
+      setError('Failed to authenticate');
       toast({
         title: "Error",
-        description: "Failed to authenticate. Please check your credentials.",
+        description: "Failed to authenticate",
         variant: "destructive",
       });
     } finally {
@@ -76,7 +76,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-gray-900 p-4">
       <AnimatedCard className="w-full max-w-md p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center text-white">Admin Authentication</h1>
+        {/* Removed the Admin Authentication title for security */}
         
         {error && (
           <div className="mb-4 p-3 bg-red-950/40 border border-red-800/50 rounded-md text-red-400 text-sm flex items-center gap-2">
@@ -87,35 +87,35 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-white block mb-1">Name</Label>
+            {/* Removed label for security */}
             <Input 
               id="name" 
               type="text" 
               value={name} 
               onChange={(e) => setName(e.target.value)} 
-              placeholder="Enter your name"
+              placeholder="Field 1"
               className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
             />
           </div>
           <div>
-            <Label htmlFor="email" className="text-white block mb-1">Email</Label>
+            {/* Removed label for security */}
             <Input 
               id="email" 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              placeholder="Enter your email"
+              placeholder="Field 2"
               className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
             />
           </div>
           <div>
-            <Label htmlFor="password" className="text-white block mb-1">Password</Label>
+            {/* Removed label for security */}
             <Input 
               id="password" 
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              placeholder="Enter your password"
+              placeholder="Field 3"
               className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
             />
           </div>
@@ -127,9 +127,9 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Authenticating...
+                Processing...
               </>
-            ) : 'Login'}
+            ) : 'Continue'}
           </Button>
         </form>
       </AnimatedCard>

@@ -19,18 +19,25 @@ const UsersList = ({ character, onClose, label }: UsersListProps) => {
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, warrior_name')
-        .eq('character_type', character);
-      
-      if (data && !error) {
-        setUsers(data);
-      } else {
+      try {
+        console.log("Fetching users for character:", character);
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, warrior_name')
+          .eq('character_type', character);
+        
+        if (error) {
+          console.error('Error fetching users:', error);
+          return;
+        }
+        
+        console.log(`Found ${data?.length || 0} users for character ${character}`);
+        setUsers(data || []);
+      } catch (error) {
         console.error('Error fetching users:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     fetchUsers();
@@ -46,9 +53,10 @@ const UsersList = ({ character, onClose, label }: UsersListProps) => {
   };
 
   const handleUserClick = (userId: string) => {
-    // Navigate to user profile within the app
-    navigate(`/profile/${userId}`);
+    // Navigate to user profile within the app without reloading the page
+    console.log("Navigating to profile:", userId);
     onClose();
+    navigate(`/profile/${userId}`);
   };
 
   return (

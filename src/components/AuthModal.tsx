@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { useUser, CharacterType } from '@/context/UserContext';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,7 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
     setLoginError('');
     
     try {
+      console.log("Attempting to sign up with email:", email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -79,9 +80,13 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign up error", error);
+        throw error;
+      }
       
       if (data.user) {
+        console.log("User created, creating profile:", data.user.id);
         const { error: profileError } = await supabase
           .from('users')
           .insert({
@@ -98,7 +103,10 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
             password: '******'
           });
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          throw profileError;
+        }
         
         setUserData(warriorName, character, 0, 0, 100, country, 0, 1);
         
@@ -130,40 +138,54 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
     setLoginError('');
     
     try {
+      console.log("Attempting to login with email:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
       
       if (data.user) {
+        console.log("User logged in, fetching profile:", data.user.id);
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('*')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
         
-        if (userError) throw userError;
+        if (userError) {
+          console.error("User data fetch error:", userError);
+          throw userError;
+        }
         
-        setUserData(
-          userData.warrior_name,
-          userData.character_type as CharacterType,
-          userData.points,
-          userData.streak || 0,
-          userData.coins || 0,
-          userData.country || 'Global',
-          userData.xp || 0,
-          userData.level || 1
-        );
-        
-        toast({
-          title: "Welcome back!",
-          description: `Logged in as ${userData.warrior_name}`,
-        });
-        
-        onClose();
-        navigate('/profile-workout');
+        if (userData) {
+          console.log("User profile found:", userData);
+          setUserData(
+            userData.warrior_name,
+            userData.character_type as CharacterType,
+            userData.points,
+            userData.streak || 0,
+            userData.coins || 0,
+            userData.country || 'Global',
+            userData.xp || 0,
+            userData.level || 1
+          );
+          
+          toast({
+            title: "Welcome back!",
+            description: `Logged in as ${userData.warrior_name}`,
+          });
+          
+          onClose();
+          navigate('/profile-workout');
+        } else {
+          console.error("No user profile found despite successful login");
+          setLoginError("User profile not found. Please contact support.");
+        }
       }
     } catch (error: any) {
       console.error('Login error', error);
@@ -192,9 +214,9 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md p-6 bg-black border border-white/10 text-white rounded-lg">
-        <h2 className="text-xl font-bold mb-4">
+        <DialogTitle className="text-xl font-bold mb-4">
           {view === 'login' ? 'Login to Solo Rising' : 'Create your Account'}
-        </h2>
+        </DialogTitle>
         
         {loginError && (
           <div className="bg-red-900/30 border border-red-500/50 text-red-200 p-3 rounded-md mb-4 text-sm">

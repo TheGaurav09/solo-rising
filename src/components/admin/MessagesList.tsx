@@ -60,6 +60,7 @@ const MessagesList = () => {
   const fetchWarnings = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching warnings");
       // First fetch all warnings
       const { data: warningsData, error: warningsError } = await supabase
         .from('warnings')
@@ -67,8 +68,11 @@ const MessagesList = () => {
         .order('created_at', { ascending: false });
       
       if (warningsError) {
+        console.error("Error fetching warnings:", warningsError);
         throw warningsError;
       }
+      
+      console.log("Warnings data received:", warningsData?.length || 0, "entries");
       
       if (!warningsData || warningsData.length === 0) {
         setWarnings([]);
@@ -96,6 +100,7 @@ const MessagesList = () => {
               });
             } else {
               // If user not found, still include the warning with user as null
+              console.log("User data not found for warning:", warning.id);
               enhancedWarnings.push({
                 ...warning,
                 user: null
@@ -143,12 +148,14 @@ const MessagesList = () => {
     setIsDeleting(true);
     
     try {
+      console.log("Deleting warning:", selectedWarning.id);
       const { error } = await supabase
         .from('warnings')
         .delete()
         .eq('id', selectedWarning.id);
       
       if (error) {
+        console.error("Error deleting warning:", error);
         throw error;
       }
       
@@ -193,6 +200,15 @@ const MessagesList = () => {
           />
         </div>
       </div>
+      
+      <Button
+        onClick={fetchWarnings}
+        className="bg-blue-700 hover:bg-blue-600 text-white"
+        size="sm"
+      >
+        <Loader2 className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : 'hidden'}`} />
+        Refresh Warnings
+      </Button>
       
       {isLoading ? (
         <div className="flex justify-center py-12">

@@ -38,6 +38,7 @@ const App = () => {
     const checkAuth = async () => {
       // Set a timeout to prevent infinite loading
       const timeout = setTimeout(() => {
+        console.log("Timeout triggered - forcing initialization");
         setIsInitialized(true);
       }, 6000); // 6 seconds max loading time
       
@@ -49,19 +50,35 @@ const App = () => {
         setIsAuthenticated(initialAuth);
         
         // Then verify with Supabase (happens in parallel)
-        const { data } = await supabase.auth.getUser();
+        const { data, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Auth check error:", error);
+          setIsInitialized(true);
+          clearTimeout(timeout);
+          return;
+        }
+        
         const isAuth = !!data.user;
         setIsAuthenticated(isAuth);
 
         // If user is authenticated, check if they have selected a character
         if (isAuth && data.user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('character_type')
-            .eq('id', data.user.id)
-            .maybeSingle();
-            
-          setHasCharacter(!!userData?.character_type);
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('character_type')
+              .eq('id', data.user.id)
+              .maybeSingle();
+              
+            if (userError) {
+              console.error("User data fetch error:", userError);
+            } else {
+              setHasCharacter(!!userData?.character_type);
+            }
+          } catch (fetchError) {
+            console.error("Error fetching user character data:", fetchError);
+          }
         }
         
         // Set initialized after checking auth status
@@ -78,18 +95,27 @@ const App = () => {
     
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event);
       const isAuth = !!session?.user;
       setIsAuthenticated(isAuth);
       
       // If user is authenticated, check if they have selected a character
       if (isAuth && session?.user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('character_type')
-          .eq('id', session.user.id)
-          .maybeSingle();
-          
-        setHasCharacter(!!userData?.character_type);
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('character_type')
+            .eq('id', session.user.id)
+            .maybeSingle();
+            
+          if (userError) {
+            console.error("User data fetch error on auth change:", userError);
+          } else {
+            setHasCharacter(!!userData?.character_type);
+          }
+        } catch (fetchError) {
+          console.error("Error fetching user character data on auth change:", fetchError);
+        }
       } else {
         setHasCharacter(false);
       }
@@ -104,7 +130,10 @@ const App = () => {
   if (!isInitialized) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+          <p className="text-white/70 text-sm">Loading application...</p>
+        </div>
       </div>
     );
   }
