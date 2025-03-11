@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { useUser } from '@/context/UserContext';
-import { Coins, ShoppingCart, Search, Tag, Filter } from 'lucide-react';
+import { Coins, Search, Tag, Filter } from 'lucide-react';
 import ItemDetailModal from './modals/ItemDetailModal';
 import AnimatedCard from './ui/AnimatedCard';
 import { getIconComponent } from '@/lib/iconUtils';
@@ -31,7 +31,7 @@ const StorePage = () => {
   const [userItems, setUserItems] = useState<any[]>([]);
 
   useEffect(() => {
-    const mockItems: StoreItem[] = [
+    const storeItems: StoreItem[] = [
       {
         id: '1',
         name: 'Double Points Boost',
@@ -177,8 +177,8 @@ const StorePage = () => {
         image_path: '/images/store/friend-boost.png'
       },
     ];
-    setItems(mockItems);
-    setFilteredItems(mockItems);
+    setItems(storeItems);
+    setFilteredItems(storeItems);
     
     // Fetch user's purchased items
     fetchUserItems();
@@ -324,8 +324,16 @@ interface StoreItemsListProps {
 }
 
 const StoreItemsList = ({ items, onSelect, character, isItemPurchased }: StoreItemsListProps) => {
+  const hasImage = (imagePath: string | undefined): boolean => {
+    if (!imagePath) return false;
+    
+    // For testing purposes, we'll assume the image exists
+    // In a real app, you'd check if the file exists before rendering
+    return true;
+  };
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       {items.length === 0 ? (
         <div className="col-span-full text-center py-6 text-white/50">
           <p>No items found</p>
@@ -338,9 +346,18 @@ const StoreItemsList = ({ items, onSelect, character, isItemPurchased }: StoreIt
             onClick={() => onSelect(item)}
           >
             <div className="flex-1 flex items-center justify-center py-2">
-              <div className={`w-10 h-10 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
-                {getIconComponent(item.icon, 20)}
-              </div>
+              {hasImage(item.image_path) ? (
+                <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-white/10">
+                  {/* Image fallback logic */}
+                  <div className={`w-10 h-10 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
+                    {getIconComponent(item.icon, 20)}
+                  </div>
+                </div>
+              ) : (
+                <div className={`w-10 h-10 rounded-full ${character ? `bg-${character}-primary/20` : 'bg-white/10'} flex items-center justify-center`}>
+                  {getIconComponent(item.icon, 20)}
+                </div>
+              )}
             </div>
             
             <div className="mt-1 text-center">

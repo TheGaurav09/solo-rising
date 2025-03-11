@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Heart, Instagram, Twitter, MessageCircle, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -107,8 +108,8 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-2 text-sm md:text-base">Legal</h4>
             <ul className="space-y-1 md:space-y-2 text-xs md:text-sm text-white/60">
-              <li><button className="hover:text-white transition-colors">Terms of Service</button></li>
-              <li><button className="hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Terms of Service</button></li>
+              <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
               <li><button className="hover:text-white transition-colors">Cookies</button></li>
             </ul>
           </div>

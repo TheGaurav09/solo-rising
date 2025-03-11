@@ -64,11 +64,11 @@ serve(async (req) => {
     // Format messages for Gemini
     const formattedMessages = [
       {
-        role: "system",
+        role: "model",
         parts: [{ text: systemPrompt }]
       },
       ...messages.map((msg: any) => ({
-        role: msg.role,
+        role: msg.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: msg.content }]
       }))
     ];
@@ -133,7 +133,7 @@ serve(async (req) => {
 
     // Return the response
     return new Response(JSON.stringify({ 
-      response: responseText,
+      message: responseText,
       raw: result 
     }), {
       status: 200,

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { Trophy, Trash2, Search, Loader2, AlertTriangle } from 'lucide-react';
+import { Trophy, Trash2, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { 
@@ -61,10 +61,7 @@ const HallOfFameList = () => {
         .from('hall_of_fame')
         .select(`
           *,
-          user:user_id (
-            warrior_name,
-            email
-          )
+          user:users(warrior_name, email)
         `)
         .order('amount', { ascending: false });
 
@@ -74,8 +71,19 @@ const HallOfFameList = () => {
       }
 
       console.log("Hall of fame data received:", data?.length || 0, "entries");
-      setDonors(data || []);
-      setFilteredDonors(data || []);
+      
+      // Transform data to match DonorEntry type
+      const formattedData: DonorEntry[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        amount: item.amount,
+        created_at: item.created_at,
+        user_id: item.user_id,
+        user: item.user || null
+      }));
+      
+      setDonors(formattedData);
+      setFilteredDonors(formattedData);
     } catch (error) {
       console.error('Error fetching donors:', error);
       toast({

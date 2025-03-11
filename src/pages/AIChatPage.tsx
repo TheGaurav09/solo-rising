@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
@@ -76,12 +77,11 @@ const AIChatPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: input,
-          character: character,
-          previousMessages: messages.map(msg => ({
+          messages: messages.concat(userMessage).map(msg => ({
             role: msg.role,
             content: msg.content
-          }))
+          })),
+          character: character
         })
       });
       
@@ -114,7 +114,7 @@ const AIChatPage: React.FC = () => {
       const fallbackMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Please check your connection and try again.",
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
         timestamp: new Date()
       };
       
@@ -170,9 +170,9 @@ const AIChatPage: React.FC = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-8 w-full">
-      <div className="max-w-5xl mx-auto w-full">
-        <AnimatedCard className="relative min-h-[80vh] p-0 overflow-hidden w-full">
+    <div className="container mx-auto px-4 py-0 w-full h-full">
+      <div className="max-w-5xl mx-auto w-full h-[calc(100vh-120px)]">
+        <AnimatedCard className="relative h-full p-0 overflow-hidden w-full">
           <div className={`p-4 border-b border-white/10 ${character === 'goku' ? 'bg-goku-primary/10' : character === 'saitama' ? 'bg-saitama-primary/10' : character === 'jin-woo' ? 'bg-jin-woo-primary/10' : 'bg-primary/10'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ const AIChatPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4 overflow-y-auto max-h-[calc(80vh-140px)]" style={{ scrollBehavior: 'smooth' }}>
+          <div className="p-4 overflow-y-auto h-[calc(100%-160px)]" style={{ scrollBehavior: 'smooth' }}>
             {messages.map((message) => (
               <div 
                 key={message.id} 
@@ -273,7 +273,7 @@ const AIChatPage: React.FC = () => {
             </div>
           )}
           
-          <div className="border-t border-white/10 p-4 bg-black/20">
+          <div className="border-t border-white/10 p-4 bg-black/20 absolute bottom-0 w-full">
             <div className="flex items-center gap-2">
               <textarea
                 id="chat-input"

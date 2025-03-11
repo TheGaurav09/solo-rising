@@ -87,7 +87,7 @@ const UsersList = ({ character, onClose, label }: UsersListProps) => {
                   <button
                     key={user.id} 
                     onClick={() => handleUserClick(user.id)}
-                    className="flex w-full text-left items-center gap-3 py-3 px-2 hover:bg-white/5 rounded-lg transition-colors duration-300"
+                    className="flex w-full text-left items-center gap-3 py-3 px-2 hover:bg-white/10 rounded-lg transition-colors duration-300 text-white"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-${character}-primary/20`}>
                       <User size={16} className={`text-${character}-primary`} />

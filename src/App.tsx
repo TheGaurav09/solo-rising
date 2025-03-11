@@ -18,6 +18,8 @@ import HallOfFamePage from "./pages/HallOfFamePage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminPage from "./pages/AdminPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient({
@@ -126,6 +128,45 @@ const App = () => {
     };
   }, []);
 
+  // Function to assign default 10 coins to new users
+  useEffect(() => {
+    const setupNewUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Check if the user already has a coins record
+        const { data: userData, error: fetchError } = await supabase
+          .from('users')
+          .select('coins')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (fetchError) {
+          console.error("Error fetching user coins data:", fetchError);
+          return;
+        }
+        
+        // If no coins value or coins are 0, update to give 10 coins
+        if (!userData || userData.coins === 0 || userData.coins === null) {
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({ coins: 10 })
+            .eq('id', user.id);
+            
+          if (updateError) {
+            console.error("Error updating user coins:", updateError);
+          } else {
+            console.log("Assigned 10 default coins to user");
+          }
+        }
+      }
+    };
+    
+    if (isAuthenticated) {
+      setupNewUser();
+    }
+  }, [isAuthenticated]);
+
   // Show a lightweight loading indicator instead of a blank screen
   if (!isInitialized) {
     return (
@@ -153,6 +194,10 @@ const App = () => {
                     <Navigate to="/dashboard" replace /> : 
                     <Index />
                 } />
+                
+                {/* Legal pages */}
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
                 
                 <Route path="/admin" element={<AdminPage />} />
                 
