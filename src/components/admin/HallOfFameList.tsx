@@ -57,33 +57,47 @@ const HallOfFameList = () => {
     setLoading(true);
     try {
       console.log("Fetching hall of fame data");
-      const { data, error } = await supabase
+      
+      // First, fetch basic hall of fame data
+      const { data: hofData, error: hofError } = await supabase
         .from('hall_of_fame')
-        .select(`
-          *,
-          user:users(warrior_name, email)
-        `)
+        .select('*')
         .order('amount', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching hall of fame data:", error);
-        throw error;
+      if (hofError) {
+        console.error("Error fetching hall of fame data:", hofError);
+        throw hofError;
       }
 
-      console.log("Hall of fame data received:", data?.length || 0, "entries");
+      console.log("Hall of fame data received:", hofData?.length || 0, "entries");
       
-      // Transform data to match DonorEntry type
-      const formattedData: DonorEntry[] = (data || []).map(item => ({
-        id: item.id,
-        name: item.name,
-        amount: item.amount,
-        created_at: item.created_at,
-        user_id: item.user_id,
-        user: item.user || null
-      }));
+      // Create the base donor entries from the hall of fame data
+      const donorEntries: DonorEntry[] = hofData || [];
       
-      setDonors(formattedData);
-      setFilteredDonors(formattedData);
+      // For each entry with a user_id, fetch the user data separately
+      const enhancedDonors = await Promise.all(
+        donorEntries.map(async (donor) => {
+          if (donor.user_id) {
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('warrior_name, email')
+                .eq('id', donor.user_id)
+                .single();
+                
+              if (!userError && userData) {
+                return { ...donor, user: userData };
+              }
+            } catch (error) {
+              console.error(`Error fetching user data for user_id ${donor.user_id}:`, error);
+            }
+          }
+          return { ...donor, user: null };
+        })
+      );
+      
+      setDonors(enhancedDonors);
+      setFilteredDonors(enhancedDonors);
     } catch (error) {
       console.error('Error fetching donors:', error);
       toast({
