@@ -7,7 +7,7 @@ import { useUser, CharacterType } from '@/context/UserContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { EyeIcon, EyeOffIcon, Info } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, Info, Loader2 } from 'lucide-react';
 import { countries, Country } from './Countries';
 
 interface AuthModalProps {
@@ -164,6 +164,8 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
         
         if (userData) {
           console.log("User profile found:", userData);
+          localStorage.setItem('sb-auth-token', 'true'); // Set token in localStorage for faster auth checks
+          
           setUserData(
             userData.warrior_name,
             userData.character_type as CharacterType,
@@ -324,7 +326,12 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
                 'bg-white/10 hover:bg-white/20'
               }`}
             >
-              {loading ? 'Processing...' : view === 'login' ? 'Login' : 'Sign Up'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : view === 'login' ? 'Login' : 'Sign Up'}
             </Button>
           </div>
         </form>

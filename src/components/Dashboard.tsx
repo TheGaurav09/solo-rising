@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
@@ -23,6 +23,7 @@ const Dashboard = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const { togglePlay, isPlaying, setVolume } = useAudio();
+  const contentRef = useRef<HTMLDivElement>(null);
   
   const isAIChat = location.pathname.includes('/ai-chat');
 
@@ -36,6 +37,13 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
   }, [sidebarHidden]);
+
+  // Scroll to top when route changes
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const audio = document.querySelector('audio');
@@ -361,7 +369,10 @@ const Dashboard = () => {
           </motion.button>
         )}
         
-        <main className="flex-1 overflow-y-auto pb-0 relative w-full transition-all">
+        <main 
+          ref={contentRef} 
+          className="flex-1 overflow-y-auto pb-0 relative w-full transition-all"
+        >
           <div className="min-h-screen pt-4 px-4">
             <Outlet />
           </div>

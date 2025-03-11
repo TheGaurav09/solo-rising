@@ -1,123 +1,114 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import AnimatedCard from '@/components/ui/AnimatedCard';
+import { Link } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
 const PrivacyPage = () => {
-  const navigate = useNavigate();
-  
   return (
-    <div className="min-h-screen bg-black p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <Button 
-          variant="ghost" 
-          className="mb-6" 
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white py-8 px-4">
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-10">
+          <Link to="/" className="text-white hover:text-white/80 flex items-center gap-2 transition-colors">
+            <ChevronLeft size={20} />
+            <span>Back to Home</span>
+          </Link>
+        </div>
         
-        <AnimatedCard>
-          <div className="p-6 md:p-8">
-            <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
+        <div className="space-y-8">
+          <h1 className="text-4xl font-bold">Privacy Policy</h1>
+          
+          <p className="text-white/90">Last Updated: June 1, 2023</p>
+          
+          <div className="space-y-6">
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Introduction</h2>
+              <p className="text-white/90">
+                Solo Rising ("we", "our", "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information about you when you use our mobile application, website, and services (collectively, the "Services").
+              </p>
+              <p className="text-white/90 mt-2">
+                By using our Services, you agree to the collection and use of information in accordance with this Privacy Policy. If you do not agree with our policies and practices, do not use our Services.
+              </p>
+            </section>
             
-            <div className="space-y-6">
-              <section>
-                <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
-                <p className="text-white/80">
-                  Welcome to Solo Rising ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application and services.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">2. Information We Collect</h2>
-                <p className="text-white/80 mb-3">
-                  We collect information that you provide directly to us when you:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-white/80">
-                  <li>Create an account or profile</li>
-                  <li>Set fitness goals and track workouts</li>
-                  <li>Make purchases or donations</li>
-                  <li>Communicate with us</li>
-                  <li>Participate in our forums or social features</li>
-                </ul>
-                <p className="text-white/80 mt-3">
-                  We may also automatically collect certain information about your device, including IP address, device type, operating system, browser type, app usage data, and fitness activity data.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">3. How We Use Your Information</h2>
-                <p className="text-white/80 mb-3">
-                  We use the information we collect to:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-white/80">
-                  <li>Provide, maintain, and improve our services</li>
-                  <li>Track your fitness progress and provide personalized content</li>
-                  <li>Process transactions and manage your account</li>
-                  <li>Respond to your comments, questions, and requests</li>
-                  <li>Send you technical notices, updates, and promotional messages</li>
-                  <li>Monitor and analyze usage patterns</li>
-                  <li>Detect, prevent, and address fraud or other illegal activities</li>
-                </ul>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">4. Sharing of Information</h2>
-                <p className="text-white/80 mb-3">
-                  We may share your information with:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-white/80">
-                  <li>Service providers who perform services on our behalf</li>
-                  <li>Other users (limited to information you choose to make public)</li>
-                  <li>Third-party services that you connect to your account</li>
-                  <li>Legal authorities when required by law or to protect our rights</li>
-                </ul>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">5. Your Choices</h2>
-                <p className="text-white/80 mb-3">
-                  You can:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-white/80">
-                  <li>Update or correct your account information</li>
-                  <li>Opt out of marketing communications</li>
-                  <li>Control visibility of your profile and activities</li>
-                  <li>Request deletion of your account</li>
-                </ul>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">6. Data Security</h2>
-                <p className="text-white/80">
-                  We implement reasonable security measures to protect your information from unauthorized access, alteration, disclosure, or destruction. However, no internet or electronic storage system is 100% secure, and we cannot guarantee absolute security.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">7. Changes to This Privacy Policy</h2>
-                <p className="text-white/80">
-                  We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">8. Contact Us</h2>
-                <p className="text-white/80">
-                  If you have any questions about this Privacy Policy, please contact us at privacy@solorising.com.
-                </p>
-              </section>
-              
-              <div className="text-sm text-white/60 pt-6 border-t border-white/10">
-                Last Updated: June 15, 2023
-              </div>
-            </div>
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Information We Collect</h2>
+              <p className="text-white/90">We collect several types of information from and about users of our Services, including:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-2 text-white/90">
+                <li>
+                  <strong>Personal Information:</strong> This includes your name, email address, and any other information you provide when you register for an account, such as your chosen warrior name and country.
+                </li>
+                <li>
+                  <strong>Usage Data:</strong> Information about how you interact with our Services, including your workout history, achievements, points, and in-app activities.
+                </li>
+                <li>
+                  <strong>Device Information:</strong> Information about the device you use to access our Services, including hardware model, operating system, unique device identifiers, and mobile network information.
+                </li>
+                <li>
+                  <strong>Location Information:</strong> With your consent, we may collect and process information about your actual location.
+                </li>
+              </ul>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">How We Use Your Information</h2>
+              <p className="text-white/90">We use the information we collect to:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-2 text-white/90">
+                <li>Provide, maintain, and improve our Services;</li>
+                <li>Process and complete transactions, and send related information including confirmations;</li>
+                <li>Create and maintain your account;</li>
+                <li>Send technical notices, updates, security alerts, and support and administrative messages;</li>
+                <li>Respond to your comments, questions, and requests;</li>
+                <li>Track and analyze trends, usage, and activities in connection with our Services;</li>
+                <li>Personalize and improve the Services and provide content or features that match user profiles or interests;</li>
+                <li>Facilitate contests, sweepstakes, and promotions and process and deliver entries and rewards.</li>
+              </ul>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Sharing Your Information</h2>
+              <p className="text-white/90">We may share information about you as follows:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-2 text-white/90">
+                <li>With service providers who perform services on our behalf;</li>
+                <li>With other users in shared features like leaderboards and user profiles;</li>
+                <li>To comply with applicable laws, regulations, or legal process;</li>
+                <li>To protect the rights, property, or safety of Solo Rising, our users, or others;</li>
+                <li>In connection with a sale, merger, or change of control.</li>
+              </ul>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Your Choices</h2>
+              <p className="text-white/90">
+                You can access and update certain information about you from within the Services. You can also request deletion of your account by contacting us.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Security</h2>
+              <p className="text-white/90">
+                We take reasonable measures to help protect information about you from loss, theft, misuse, unauthorized access, disclosure, alteration, and destruction.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Changes to this Privacy Policy</h2>
+              <p className="text-white/90">
+                We may change this Privacy Policy from time to time. If we make changes, we will notify you by revising the date at the top of the policy and, in some cases, we may provide you with additional notice.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+              <p className="text-white/90">
+                If you have any questions about this Privacy Policy, please contact us at:
+              </p>
+              <p className="text-white/90 mt-2">
+                Solo Rising Support<br />
+                Email: support@solorising.app
+              </p>
+            </section>
           </div>
-        </AnimatedCard>
+        </div>
       </div>
     </div>
   );

@@ -45,6 +45,9 @@ const Index = () => {
           console.log("Index: User is authenticated:", data.user.id);
           setCurrentUserId(data.user.id);
           
+          // Store auth token in localStorage for faster checks next time
+          localStorage.setItem('sb-auth-token', 'true');
+          
           // Check if this user has a record in the users table
           const { data: userData, error: userError } = await supabase
             .from('users')
@@ -87,7 +90,7 @@ const Index = () => {
         setLoading(false);
         setInitialCheckComplete(true);
       }
-    }, 5000); // 5 second timeout
+    }, 3000); // Reduced from 5 seconds to 3 seconds
     
     checkAuth();
 
@@ -96,6 +99,9 @@ const Index = () => {
       console.log("Index: Auth state changed:", event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session) {
+        // Store auth token in localStorage
+        localStorage.setItem('sb-auth-token', 'true');
+        
         setCurrentUserId(session.user.id);
         
         // Check if the user has a character selected
@@ -125,6 +131,7 @@ const Index = () => {
         checkUserCharacter();
       } else if (event === 'SIGNED_OUT') {
         console.log("Index: User signed out");
+        localStorage.removeItem('sb-auth-token'); // Remove auth token from localStorage
         setCurrentUserId(null);
       }
     });

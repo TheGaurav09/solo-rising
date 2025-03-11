@@ -29,18 +29,29 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
     
     try {
       console.log("Attempting admin authentication");
-      const { data: secrets, error } = await supabase.functions.invoke('auth-admin', {
+      const { data: secrets, error: secretsError } = await supabase.functions.invoke('auth-admin', {
         body: { action: 'get_secrets' }
       });
 
-      if (error) {
-        console.error('Error fetching admin secrets:', error);
+      if (secretsError) {
+        console.error('Error fetching admin secrets:', secretsError);
         throw new Error('Failed to retrieve admin credentials');
       }
 
-      if (email === secrets.ADMIN_EMAIL && 
-          password === secrets.ADMIN_PASSWORD && 
-          name === secrets.ADMIN_NAME) {
+      console.log("Comparing credentials");
+      // Make sure to compare correctly without any extra spaces or case sensitivity issues
+      const adminEmail = secrets.ADMIN_EMAIL.trim();
+      const adminPassword = secrets.ADMIN_PASSWORD.trim();
+      const adminName = secrets.ADMIN_NAME.trim();
+      
+      const inputEmail = email.trim();
+      const inputPassword = password.trim();
+      const inputName = name.trim();
+
+      if (inputEmail === adminEmail && 
+          inputPassword === adminPassword && 
+          inputName === adminName) {
+        console.log("Admin authentication successful");
         localStorage.setItem('admin_authenticated', 'true');
         onAuthenticated();
         toast({
@@ -48,6 +59,7 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
           description: "Access granted",
         });
       } else {
+        console.log("Admin authentication failed - invalid credentials");
         setError('Invalid credentials');
         toast({
           title: "Authentication Failed",

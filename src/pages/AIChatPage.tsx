@@ -24,8 +24,10 @@ const AIChatPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
+    // Initialize with welcome message
     const welcomeMessage = {
       id: 'welcome',
       role: 'assistant' as const,
@@ -33,9 +35,15 @@ const AIChatPage: React.FC = () => {
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
+    
+    // Scroll to top when component mounts
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
   }, [character, userName]);
   
   useEffect(() => {
+    // Scroll to newest message when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
@@ -190,7 +198,11 @@ const AIChatPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4 overflow-y-auto h-[calc(100%-160px)]" style={{ scrollBehavior: 'smooth' }}>
+          <div 
+            ref={messagesContainerRef}
+            className="p-4 overflow-y-auto h-[calc(100%-160px)]" 
+            style={{ scrollBehavior: 'smooth' }}
+          >
             {messages.map((message) => (
               <div 
                 key={message.id} 

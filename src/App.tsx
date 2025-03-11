@@ -42,7 +42,7 @@ const App = () => {
       const timeout = setTimeout(() => {
         console.log("Timeout triggered - forcing initialization");
         setIsInitialized(true);
-      }, 6000); // 6 seconds max loading time
+      }, 3000); // Reduced from 6 seconds to 3 seconds
       
       try {
         // First, check local storage for faster initial check
@@ -205,13 +205,14 @@ const App = () => {
                 <Route path="/" element={<Dashboard />}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
+                  {/* Fixed profile view route to properly pass userId parameter */}
                   <Route path="profile/:userId" element={<ProfileAndWorkoutPage />} />
                   <Route path="leaderboard" element={<LeaderboardPage />} />
                   <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
                   <Route path="ai-chat" element={<AIChatPage />} />
                   <Route path="hall-of-fame" element={<HallOfFamePage />} />
                   <Route path="settings" element={<SettingsPage />} />
-                  {/* Redirect missing paths to profile-workout */}
+                  {/* Redirect missing paths to dashboard */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Route>
                 

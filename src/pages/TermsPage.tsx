@@ -1,136 +1,129 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import AnimatedCard from '@/components/ui/AnimatedCard';
+import { Link } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 
 const TermsPage = () => {
-  const navigate = useNavigate();
-  
   return (
-    <div className="min-h-screen bg-black p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <Button 
-          variant="ghost" 
-          className="mb-6" 
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white py-8 px-4">
+      <div className="container mx-auto max-w-4xl">
+        <div className="mb-10">
+          <Link to="/" className="text-white hover:text-white/80 flex items-center gap-2 transition-colors">
+            <ChevronLeft size={20} />
+            <span>Back to Home</span>
+          </Link>
+        </div>
         
-        <AnimatedCard>
-          <div className="p-6 md:p-8">
-            <h1 className="text-3xl font-bold mb-8">Terms of Service</h1>
+        <div className="space-y-8">
+          <h1 className="text-4xl font-bold">Terms of Service</h1>
+          
+          <p className="text-white/90">Last Updated: June 1, 2023</p>
+          
+          <div className="space-y-6">
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>
+              <p className="text-white/90">
+                By accessing or using Solo Rising's application, website, or services (collectively, the "Services"), you agree to be bound by these Terms of Service. If you do not agree to these Terms, do not use our Services.
+              </p>
+            </section>
             
-            <div className="space-y-6">
-              <section>
-                <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
-                <p className="text-white/80">
-                  By accessing or using Solo Rising, you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not access or use our services.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">2. Account Registration</h2>
-                <p className="text-white/80">
-                  To use certain features of Solo Rising, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">3. User Conduct</h2>
-                <p className="text-white/80 mb-3">
-                  You agree not to:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-white/80">
-                  <li>Use our services for any illegal purpose</li>
-                  <li>Violate any laws in your jurisdiction</li>
-                  <li>Post or transmit any content that is unlawful, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, or otherwise objectionable</li>
-                  <li>Impersonate any person or entity</li>
-                  <li>Interfere with or disrupt our services or servers</li>
-                  <li>Attempt to gain unauthorized access to any part of our services</li>
-                  <li>Use our services to collect or harvest personal information about others</li>
-                </ul>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">4. Intellectual Property</h2>
-                <p className="text-white/80">
-                  Solo Rising and its original content, features, and functionality are owned by us and are protected by international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws. You may not modify, reproduce, distribute, create derivative works or adaptations of, publicly display or in any way exploit any of our content in whole or in part except as expressly authorized by us.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">5. Purchases and Subscriptions</h2>
-                <p className="text-white/80">
-                  We offer various virtual items, premium features, and subscription services for purchase. All purchases are final and non-refundable except as required by law. Prices and availability of services are subject to change without notice.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">6. User Content</h2>
-                <p className="text-white/80">
-                  By submitting content to Solo Rising, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, modify, adapt, publish, translate, distribute, and display such content in connection with providing our services. You represent and warrant that you own or have the necessary rights to the content you submit.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">7. Disclaimer of Warranties</h2>
-                <p className="text-white/80">
-                  Solo Rising is provided "as is" and "as available" without any warranties of any kind, either express or implied. We do not warrant that our services will be uninterrupted, secure, or error-free, or that defects will be corrected.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">8. Limitation of Liability</h2>
-                <p className="text-white/80">
-                  In no event shall Solo Rising, its directors, employees, partners, agents, suppliers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to, loss of profits, data, use, goodwill, or other intangible losses.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">9. Health and Fitness Disclaimer</h2>
-                <p className="text-white/80">
-                  Solo Rising provides fitness information and suggestions. This information is not medical advice and should not be treated as such. Before starting any exercise program, consult with a healthcare professional. We are not responsible for any injuries or health problems that may result from training programs, exercises, or information accessed through our services.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">10. Termination</h2>
-                <p className="text-white/80">
-                  We may terminate or suspend your account and access to our services immediately, without prior notice or liability, for any reason, including breach of these Terms of Service.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">11. Governing Law</h2>
-                <p className="text-white/80">
-                  These Terms shall be governed by and construed in accordance with the laws of the United States, without regard to its conflict of law provisions.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">12. Changes to Terms</h2>
-                <p className="text-white/80">
-                  We reserve the right to modify or replace these Terms at any time. Your continued use of our services after any such changes constitutes your acceptance of the new Terms.
-                </p>
-              </section>
-              
-              <section>
-                <h2 className="text-xl font-semibold mb-3">13. Contact Us</h2>
-                <p className="text-white/80">
-                  If you have any questions about these Terms, please contact us at terms@solorising.com.
-                </p>
-              </section>
-              
-              <div className="text-sm text-white/60 pt-6 border-t border-white/10">
-                Last Updated: June 15, 2023
-              </div>
-            </div>
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Changes to Terms</h2>
+              <p className="text-white/90">
+                We may revise these Terms from time to time. If we do, we will update the "Last Updated" date above. By continuing to use the Services after those changes become effective, you agree to be bound by the revised Terms.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Privacy Policy</h2>
+              <p className="text-white/90">
+                Please refer to our <Link to="/privacy" className="text-blue-400 hover:text-blue-300">Privacy Policy</Link> for information about how we collect, use, and disclose information about you.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Account Registration</h2>
+              <p className="text-white/90">
+                To use certain features of the Services, you may need to register for an account. You agree to provide accurate, current, and complete information and to update your information as necessary. You are responsible for all activities that occur under your account.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">User Content</h2>
+              <p className="text-white/90">
+                Our Services may allow you to create, post, or share content. You are solely responsible for your User Content and the consequences of posting it. By posting User Content, you grant us a non-exclusive, transferable, sub-licensable, royalty-free, worldwide license to use, copy, modify, create derivative works based on, distribute, publicly display, and publicly perform your User Content.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Prohibited Activities</h2>
+              <p className="text-white/90">You agree not to:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-2 text-white/90">
+                <li>Violate any applicable law or regulation;</li>
+                <li>Use the Services in any manner that could disable, overburden, or impair the Services;</li>
+                <li>Use any robot, spider, or other automated device to access the Services;</li>
+                <li>Introduce any viruses, trojan horses, worms, or other harmful materials;</li>
+                <li>Attempt to gain unauthorized access to, interfere with, or disrupt any part of the Services;</li>
+                <li>Impersonate or attempt to impersonate Solo Rising, a Solo Rising employee, another user, or any other person;</li>
+                <li>Engage in any harassing, intimidating, predatory, or stalking conduct;</li>
+                <li>Use the Services to advertise or offer to sell goods and services.</li>
+              </ul>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">In-App Purchases and Virtual Items</h2>
+              <p className="text-white/90">
+                Our Services may include virtual items or currency that can be purchased with real money or earned through gameplay. Virtual items and currency are not redeemable for real money and have no monetary value. We reserve the right to manage, regulate, control, modify, or eliminate virtual items or currency at any time.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Intellectual Property Rights</h2>
+              <p className="text-white/90">
+                The Services and their content, features, and functionality are owned by Solo Rising and are protected by copyright, trademark, and other intellectual property laws. You may not use our trademarks or other intellectual property without our prior written consent.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Termination</h2>
+              <p className="text-white/90">
+                We may terminate or suspend your account and access to the Services at any time, without prior notice or liability, for any reason.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Disclaimer of Warranties</h2>
+              <p className="text-white/90">
+                THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND. TO THE FULLEST EXTENT PERMITTED BY LAW, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Limitation of Liability</h2>
+              <p className="text-white/90">
+                TO THE FULLEST EXTENT PERMITTED BY LAW, IN NO EVENT WILL SOLO RISING BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO YOUR USE OF THE SERVICES.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Governing Law</h2>
+              <p className="text-white/90">
+                These Terms and your use of the Services shall be governed by and construed in accordance with the laws of the jurisdiction in which Solo Rising operates, without regard to its conflict of laws principles.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+              <p className="text-white/90">
+                If you have any questions about these Terms, please contact us at:
+              </p>
+              <p className="text-white/90 mt-2">
+                Solo Rising Support<br />
+                Email: support@solorising.app
+              </p>
+            </section>
           </div>
-        </AnimatedCard>
+        </div>
       </div>
     </div>
   );
