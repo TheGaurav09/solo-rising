@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useUser } from '@/context/UserContext';
+import { useUser, CharacterType } from '@/context/UserContext';
 import CharacterSelection from '@/components/CharacterSelection';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,20 +35,24 @@ const Index = () => {
               
               // If we have character info too, set user data
               if (userData.warrior_name && userData.character_type) {
-                setUserData(
-                  userData.warrior_name,
-                  userData.character_type,
-                  userData.points || 0,
-                  userData.streak || 0,
-                  userData.coins || 0,
-                  userData.country || 'Global',
-                  userData.xp || 0,
-                  userData.level || 1
-                );
-                
-                // Immediately redirect to dashboard page using cached data
-                navigate('/dashboard', { replace: true });
-                return; // Early return to prevent further execution
+                // Ensure character_type is a valid CharacterType
+                const characterType = userData.character_type as CharacterType;
+                if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                  setUserData(
+                    userData.warrior_name,
+                    characterType,
+                    userData.points || 0,
+                    userData.streak || 0,
+                    userData.coins || 0,
+                    userData.country || 'Global',
+                    userData.xp || 0,
+                    userData.level || 1
+                  );
+                  
+                  // Immediately redirect to dashboard page using cached data
+                  navigate('/dashboard', { replace: true });
+                  return; // Early return to prevent further execution
+                }
               }
             }
           } catch (err) {
@@ -97,20 +101,24 @@ const Index = () => {
                 
                 // Set user data in context
                 if (userData.warrior_name && userData.character_type) {
-                  setUserData(
-                    userData.warrior_name,
-                    userData.character_type,
-                    userData.points || 0,
-                    userData.streak || 0,
-                    userData.coins || 0,
-                    userData.country || 'Global',
-                    userData.xp || 0,
-                    userData.level || 1
-                  );
+                  // Ensure character_type is a valid CharacterType
+                  const characterType = userData.character_type as CharacterType;
+                  if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                    setUserData(
+                      userData.warrior_name,
+                      characterType,
+                      userData.points || 0,
+                      userData.streak || 0,
+                      userData.coins || 0,
+                      userData.country || 'Global',
+                      userData.xp || 0,
+                      userData.level || 1
+                    );
+                  }
+                  
+                  navigate('/dashboard', { replace: true });
+                  return;
                 }
-                
-                navigate('/dashboard', { replace: true });
-                return;
               } else {
                 console.log("Index: User has no character yet");
               }
@@ -177,19 +185,23 @@ const Index = () => {
               
               // Set user data in context
               if (userData.warrior_name && userData.character_type) {
-                setUserData(
-                  userData.warrior_name,
-                  userData.character_type,
-                  userData.points || 0,
-                  userData.streak || 0,
-                  userData.coins || 0,
-                  userData.country || 'Global',
-                  userData.xp || 0,
-                  userData.level || 1
-                );
+                // Ensure character_type is a valid CharacterType
+                const characterType = userData.character_type as CharacterType;
+                if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                  setUserData(
+                    userData.warrior_name,
+                    characterType,
+                    userData.points || 0,
+                    userData.streak || 0,
+                    userData.coins || 0,
+                    userData.country || 'Global',
+                    userData.xp || 0,
+                    userData.level || 1
+                  );
+                }
+                
+                navigate('/dashboard', { replace: true });
               }
-              
-              navigate('/dashboard', { replace: true });
             }
           } catch (error) {
             console.error("Index: Error checking user character:", error);
