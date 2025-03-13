@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -38,6 +37,28 @@ const HallOfFameList = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    const deleteSonGoku = async () => {
+      try {
+        const { data } = await supabase
+          .from('hall_of_fame')
+          .select('*')
+          .eq('name', 'Son Goku');
+
+        if (data && data.length > 0) {
+          console.log("Found Son Goku entry, deleting...");
+          await supabase
+            .from('hall_of_fame')
+            .delete()
+            .eq('name', 'Son Goku');
+          
+          console.log("Son Goku entry deleted");
+        }
+      } catch (error) {
+        console.error("Error deleting Son Goku:", error);
+      }
+    };
+
+    deleteSonGoku();
     fetchDonors();
   }, []);
 

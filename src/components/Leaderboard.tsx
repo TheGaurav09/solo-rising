@@ -1,11 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Trophy, Medal, User, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Trophy, Medal, User, ArrowUp, ArrowDown, Minus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import CollapsibleSection from '@/components/ui/CollapsibleSection';
 import { countries } from './Countries';
+import { 
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose
+} from '@/components/ui/sheet';
 
 interface LeaderboardUser {
   id: string;
@@ -13,6 +21,7 @@ interface LeaderboardUser {
   character_type: string;
   points: number;
   country: string;
+  streak?: number;
   rank?: number;
   rankChange?: number;
 }
@@ -24,17 +33,24 @@ const Leaderboard = () => {
   const [regionFilter, setRegionFilter] = useState(country || 'Global');
   const [timeFilter, setTimeFilter] = useState('all-time');
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<LeaderboardUser | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     fetchLeaderboardData();
   }, [regionFilter, timeFilter]);
+
+  useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+  }, []);
 
   const fetchLeaderboardData = async () => {
     setLoading(true);
     try {
       let query = supabase
         .from('users')
-        .select('id, warrior_name, character_type, points, country')
+        .select('id, warrior_name, character_type, points, country, streak')
         .order('points', { ascending: false });
       
       if (regionFilter !== 'Global') {
@@ -78,6 +94,11 @@ const Leaderboard = () => {
     setTimeFilter(time);
   };
 
+  const openUserProfile = (user: LeaderboardUser) => {
+    setSelectedUser(user);
+    setIsProfileOpen(true);
+  };
+
   const getRankChangeIcon = (change: number) => {
     if (change > 0) return <ArrowUp size={16} className="text-green-500" />;
     if (change < 0) return <ArrowDown size={16} className="text-red-500" />;
@@ -100,6 +121,94 @@ const Leaderboard = () => {
       case 3: return 'text-amber-600';
       default: return 'text-white/40';
     }
+  };
+
+  const getCharacterTitle = (characterType: string) => {
+    switch(characterType) {
+      case 'goku': return 'Saiyan Warrior';
+      case 'saitama': return 'Caped Baldy';
+      case 'jin-woo': return 'Shadow Monarch';
+      default: return 'Warrior';
+    }
+  };
+
+  const renderUserProfile = () => {
+    if (!selectedUser) return null;
+    
+    return (
+      <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+        <SheetContent className="bg-gray-900 border-l border-white/10 text-white overflow-y-auto p-0">
+          <SheetHeader className="p-6 border-b border-white/10">
+            <div className="flex justify-between items-center">
+              <SheetTitle className="text-xl text-white">Warrior Profile</SheetTitle>
+              <SheetClose className="rounded-full p-1 hover:bg-white/10">
+                <X className="h-5 w-5" />
+              </SheetClose>
+            </div>
+          </SheetHeader>
+          
+          <div className="p-6 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${getCharacterClass(selectedUser.character_type)}`}>
+                <User size={28} />
+              </div>
+              
+              <div className="flex-1">
+                <h2 className={`text-xl font-bold ${selectedUser.character_type ? `text-${selectedUser.character_type}-primary` : 'text-white'}`}>
+                  {selectedUser.warrior_name}
+                </h2>
+                <p className="text-white/70">{getCharacterTitle(selectedUser.character_type)}</p>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-lg font-bold">{selectedUser.points}</div>
+                <div className="text-sm text-white/70">total points</div>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <div className="flex justify-between text-sm mb-2">
+                <span>Level {Math.floor((selectedUser.points || 0) / 100) + 1}</span>
+                <span>{selectedUser.points} points</span>
+              </div>
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full ${selectedUser.character_type ? `bg-${selectedUser.character_type}-primary` : 'bg-primary'}`}
+                  style={{ width: `${((selectedUser.points % 100) / 100) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="space-y-4 mt-6">
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-white/60">Rank</span>
+                <span className="font-medium">{selectedUser.rank}</span>
+              </div>
+              
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-white/60">Character</span>
+                <span className="font-medium">{getCharacterTitle(selectedUser.character_type)}</span>
+              </div>
+              
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-white/60">Level</span>
+                <span className="font-medium">{Math.floor((selectedUser.points || 0) / 100) + 1}</span>
+              </div>
+              
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-white/60">Country</span>
+                <span className="font-medium">{selectedUser.country || 'Global'}</span>
+              </div>
+              
+              <div className="flex justify-between border-b border-white/10 pb-2">
+                <span className="text-white/60">Streak</span>
+                <span className="font-medium">{selectedUser.streak || 0} days</span>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
   };
 
   return (
@@ -180,7 +289,8 @@ const Leaderboard = () => {
             {users.map((user) => (
               <div 
                 key={user.id} 
-                className={`grid grid-cols-12 gap-2 p-4 ${user.warrior_name === userName ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                className={`grid grid-cols-12 gap-2 p-4 ${user.warrior_name === userName ? 'bg-white/10' : 'hover:bg-white/5'} cursor-pointer`}
+                onClick={() => openUserProfile(user)}
               >
                 <div className="col-span-1 flex items-center justify-center">
                   {user.rank <= 3 ? (
@@ -213,6 +323,8 @@ const Leaderboard = () => {
           </div>
         )}
       </div>
+      
+      {renderUserProfile()}
     </AnimatedCard>
   );
 };

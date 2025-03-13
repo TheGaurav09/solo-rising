@@ -8,7 +8,7 @@ import AuthModal from '@/components/AuthModal';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
-  const { hasSelectedCharacter } = useUser();
+  const { hasSelectedCharacter, setUserData } = useUser();
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
@@ -22,13 +22,39 @@ const Index = () => {
         console.log("Index: Starting auth check");
         
         // First, check local storage for a faster initial check
-        const cachedAuth = localStorage.getItem('sb-auth-token');
+        const cachedAuth = localStorage.getItem('sb-auth-data');
         
         if (cachedAuth) {
-          console.log("Index: Found cached auth token");
-          // If we have a cached token, immediately redirect to dashboard page
-          navigate('/dashboard', { replace: true });
-          return; // Early return to prevent further execution
+          console.log("Index: Found cached auth data");
+          try {
+            // Parse the cached user data
+            const userData = JSON.parse(cachedAuth);
+            if (userData && userData.id) {
+              console.log("Index: Using cached auth data");
+              setCurrentUserId(userData.id);
+              
+              // If we have character info too, set user data
+              if (userData.warrior_name && userData.character_type) {
+                setUserData(
+                  userData.warrior_name,
+                  userData.character_type,
+                  userData.points || 0,
+                  userData.streak || 0,
+                  userData.coins || 0,
+                  userData.country || 'Global',
+                  userData.xp || 0,
+                  userData.level || 1
+                );
+                
+                // Immediately redirect to dashboard page using cached data
+                navigate('/dashboard', { replace: true });
+                return; // Early return to prevent further execution
+              }
+            }
+          } catch (err) {
+            console.error("Error parsing cached auth data:", err);
+            localStorage.removeItem('sb-auth-data');
+          }
         }
         
         // In parallel, do the proper auth check with Supabase
@@ -46,14 +72,11 @@ const Index = () => {
             console.log("Index: User is authenticated:", data.user.id);
             setCurrentUserId(data.user.id);
             
-            // Store auth token in localStorage for faster checks next time
-            localStorage.setItem('sb-auth-token', 'true');
-            
             // Check if this user has a record in the users table
             try {
               const { data: userData, error: userError } = await supabase
                 .from('users')
-                .select('character_type')
+                .select('*')
                 .eq('id', data.user.id)
                 .maybeSingle();
               
@@ -67,6 +90,25 @@ const Index = () => {
               // If user exists in DB and has selected a character, redirect to dashboard page
               if (userData && userData.character_type) {
                 console.log("Index: User has character, redirecting to dashboard");
+                
+                // Store user data in localStorage for faster loading on refresh
+                localStorage.setItem('sb-auth-data', JSON.stringify(userData));
+                localStorage.setItem('sb-auth-token', 'true');
+                
+                // Set user data in context
+                if (userData.warrior_name && userData.character_type) {
+                  setUserData(
+                    userData.warrior_name,
+                    userData.character_type,
+                    userData.points || 0,
+                    userData.streak || 0,
+                    userData.coins || 0,
+                    userData.country || 'Global',
+                    userData.xp || 0,
+                    userData.level || 1
+                  );
+                }
+                
                 navigate('/dashboard', { replace: true });
                 return;
               } else {
@@ -103,7 +145,7 @@ const Index = () => {
     checkAuth();
 
     // Add listener for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Index: Auth state changed:", event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session) {
@@ -117,7 +159,7 @@ const Index = () => {
           try {
             const { data: userData, error: userError } = await supabase
               .from('users')
-              .select('character_type')
+              .select('*')
               .eq('id', session.user.id)
               .maybeSingle();
             
@@ -129,6 +171,24 @@ const Index = () => {
             // If user exists in DB and has selected a character, redirect to dashboard page
             if (userData && userData.character_type) {
               console.log("Index: User has character after sign in, redirecting");
+              
+              // Store user data in localStorage for faster loading on refresh
+              localStorage.setItem('sb-auth-data', JSON.stringify(userData));
+              
+              // Set user data in context
+              if (userData.warrior_name && userData.character_type) {
+                setUserData(
+                  userData.warrior_name,
+                  userData.character_type,
+                  userData.points || 0,
+                  userData.streak || 0,
+                  userData.coins || 0,
+                  userData.country || 'Global',
+                  userData.xp || 0,
+                  userData.level || 1
+                );
+              }
+              
               navigate('/dashboard', { replace: true });
             }
           } catch (error) {
@@ -140,6 +200,7 @@ const Index = () => {
       } else if (event === 'SIGNED_OUT') {
         console.log("Index: User signed out");
         localStorage.removeItem('sb-auth-token'); // Remove auth token from localStorage
+        localStorage.removeItem('sb-auth-data'); // Remove user data from localStorage
         setCurrentUserId(null);
       }
     });
@@ -148,7 +209,7 @@ const Index = () => {
       authListener.subscription.unsubscribe();
       clearTimeout(loadingTimeout);
     };
-  }, [hasSelectedCharacter, navigate, loading]);
+  }, [hasSelectedCharacter, navigate, loading, setUserData]);
 
   const handleLoginClick = () => {
     setAuthView('login');
