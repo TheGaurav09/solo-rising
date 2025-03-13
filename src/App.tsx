@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,7 +41,7 @@ const App = () => {
       const timeout = setTimeout(() => {
         console.log("Timeout triggered - forcing initialization");
         setIsInitialized(true);
-      }, 3000); // Reduced from 6 seconds to 3 seconds
+      }, 2000); // Reduced from 3 seconds to 2 seconds
       
       try {
         // First, check local storage for faster initial check
@@ -80,12 +79,16 @@ const App = () => {
             }
           } catch (fetchError) {
             console.error("Error fetching user character data:", fetchError);
+          } finally {
+            // Always set initialized to true even if there's an error fetching user data
+            setIsInitialized(true);
+            clearTimeout(timeout);
           }
+        } else {
+          // If user is not authenticated, we're still ready to show the login screen
+          setIsInitialized(true);
+          clearTimeout(timeout);
         }
-        
-        // Set initialized after checking auth status
-        clearTimeout(timeout);
-        setIsInitialized(true);
       } catch (error) {
         console.error("Auth check error:", error);
         clearTimeout(timeout);
@@ -128,7 +131,7 @@ const App = () => {
     };
   }, []);
 
-  // Function to assign default 10 coins to new users
+  // Function to assign default coins to new users
   useEffect(() => {
     const setupNewUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();

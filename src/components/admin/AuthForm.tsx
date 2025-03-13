@@ -40,13 +40,13 @@ const AuthForm = ({ onAuthenticated }: AuthFormProps) => {
 
       console.log("Comparing credentials");
       // Make sure to compare correctly without any extra spaces or case sensitivity issues
-      const adminEmail = secrets.ADMIN_EMAIL.trim();
+      const adminEmail = secrets.ADMIN_EMAIL.trim().toLowerCase();
       const adminPassword = secrets.ADMIN_PASSWORD.trim();
-      const adminName = secrets.ADMIN_NAME.trim();
+      const adminName = secrets.ADMIN_NAME.trim().toLowerCase();
       
-      const inputEmail = email.trim();
+      const inputEmail = email.trim().toLowerCase();
       const inputPassword = password.trim();
-      const inputName = name.trim();
+      const inputName = name.trim().toLowerCase();
 
       if (inputEmail === adminEmail && 
           inputPassword === adminPassword && 

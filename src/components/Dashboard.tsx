@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +40,11 @@ const Dashboard = () => {
   // Scroll to top when route changes
   useEffect(() => {
     if (contentRef.current) {
-      contentRef.current.scrollTo(0, 0);
+      console.log("Scrolling to top on route change");
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: 'auto'
+      });
     }
   }, [location.pathname]);
 
@@ -372,6 +375,10 @@ const Dashboard = () => {
         <main 
           ref={contentRef} 
           className="flex-1 overflow-y-auto pb-0 relative w-full transition-all"
+          style={{
+            scrollBehavior: 'smooth',
+            WebkitOverflowScrolling: 'touch'
+          }}
         >
           <div className="min-h-screen pt-4 px-4">
             <Outlet />

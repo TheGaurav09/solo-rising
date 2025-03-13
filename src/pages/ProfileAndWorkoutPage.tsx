@@ -36,7 +36,8 @@ const ProfileAndWorkoutPage = () => {
   };
 
   const getCharacterColor = () => {
-    switch (character) {
+    const char = profileData?.character_type || character;
+    switch (char) {
       case 'goku': return 'bg-goku-primary/20 text-goku-primary';
       case 'saitama': return 'bg-saitama-primary/20 text-saitama-primary';
       case 'jin-woo': return 'bg-jin-woo-primary/20 text-jin-woo-primary';
@@ -45,16 +46,24 @@ const ProfileAndWorkoutPage = () => {
   };
 
   const calculateLevelProgress = () => {
-    const xpForCurrentLevel = level * 100;
-    const xpForNextLevel = (level + 1) * 100;
-    const xpInCurrentLevel = xp - xpForCurrentLevel;
+    const currentLevel = profileData ? profileData.level : level;
+    const currentXp = profileData ? profileData.xp : xp;
+    
+    const xpForCurrentLevel = currentLevel * 100;
+    const xpForNextLevel = (currentLevel + 1) * 100;
+    const xpInCurrentLevel = currentXp - xpForCurrentLevel;
     const xpRequiredForNextLevel = xpForNextLevel - xpForCurrentLevel;
     const progress = (xpInCurrentLevel / xpRequiredForNextLevel) * 100;
-    return progress;
+    return Math.max(0, Math.min(100, progress));
   };
 
   useEffect(() => {
-    setIsOwnProfile(!id || id === userId);
+    const checkIsOwnProfile = () => {
+      const profileId = id || userId;
+      setIsOwnProfile(profileId === userId);
+    };
+    
+    checkIsOwnProfile();
   }, [id, userId]);
 
   useEffect(() => {
@@ -66,15 +75,18 @@ const ProfileAndWorkoutPage = () => {
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!id) return;
+      const profileId = id || userId;
+      
+      if (!profileId) return;
       
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', id)
+        .eq('id', profileId)
         .single();
 
       if (error) {
+        console.error("Error fetching profile data:", error);
         toast({
           title: "Error",
           description: "Could not fetch profile data",
@@ -84,28 +96,14 @@ const ProfileAndWorkoutPage = () => {
       }
 
       setProfileData(data);
-      setIsOwnProfile(data.id === userId);
-    };
-
-    fetchProfileData();
-  }, [id, userId]);
-
-  useEffect(() => {
-    const fetchRank = async () => {
-      const targetId = id || userId;
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, points')
-        .order('points', { ascending: false });
-
-      if (users) {
-        const rank = users.findIndex(user => user.id === targetId) + 1;
-        setProfileRank(rank);
+      
+      if (data.character_type && !isOwnProfile) {
+        setWeeklySchedule(getTrainingScheduleForCharacter(data.character_type));
       }
     };
 
-    fetchRank();
-  }, [id, userId]);
+    fetchProfileData();
+  }, [id, userId, isOwnProfile]);
 
   const getDayNumber = (dayName: string) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

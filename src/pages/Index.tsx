@@ -32,46 +32,54 @@ const Index = () => {
         }
         
         // In parallel, do the proper auth check with Supabase
-        const { data, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          console.error("Index: Auth check error:", error);
-          setLoading(false);
-          setInitialCheckComplete(true);
-          return;
-        }
-        
-        if (data.user) {
-          console.log("Index: User is authenticated:", data.user.id);
-          setCurrentUserId(data.user.id);
+        try {
+          const { data, error } = await supabase.auth.getUser();
           
-          // Store auth token in localStorage for faster checks next time
-          localStorage.setItem('sb-auth-token', 'true');
-          
-          // Check if this user has a record in the users table
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('character_type')
-            .eq('id', data.user.id)
-            .maybeSingle();
-          
-          if (userError) {
-            console.error("Index: User data check error:", userError);
+          if (error) {
+            console.error("Index: Auth check error:", error);
             setLoading(false);
             setInitialCheckComplete(true);
             return;
           }
           
-          // If user exists in DB and has selected a character, redirect to dashboard page
-          if (userData && userData.character_type) {
-            console.log("Index: User has character, redirecting to dashboard");
-            navigate('/dashboard', { replace: true });
-            return;
+          if (data.user) {
+            console.log("Index: User is authenticated:", data.user.id);
+            setCurrentUserId(data.user.id);
+            
+            // Store auth token in localStorage for faster checks next time
+            localStorage.setItem('sb-auth-token', 'true');
+            
+            // Check if this user has a record in the users table
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('character_type')
+                .eq('id', data.user.id)
+                .maybeSingle();
+              
+              if (userError) {
+                console.error("Index: User data check error:", userError);
+                setLoading(false);
+                setInitialCheckComplete(true);
+                return;
+              }
+              
+              // If user exists in DB and has selected a character, redirect to dashboard page
+              if (userData && userData.character_type) {
+                console.log("Index: User has character, redirecting to dashboard");
+                navigate('/dashboard', { replace: true });
+                return;
+              } else {
+                console.log("Index: User has no character yet");
+              }
+            } catch (err) {
+              console.error("Index: Error checking user data:", err);
+            }
           } else {
-            console.log("Index: User has no character yet");
+            console.log("Index: No authenticated user found");
           }
-        } else {
-          console.log("Index: No authenticated user found");
+        } catch (err) {
+          console.error("Index: Error during auth check:", err);
         }
         
         setLoading(false);
@@ -90,7 +98,7 @@ const Index = () => {
         setLoading(false);
         setInitialCheckComplete(true);
       }
-    }, 3000); // Reduced from 5 seconds to 3 seconds
+    }, 3000); // 3 seconds timeout
     
     checkAuth();
 
