@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,62 +38,74 @@ const App = () => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      // Set a timeout to prevent infinite loading
-      const timeout = setTimeout(() => {
-        console.log("Timeout triggered - forcing initialization");
+      console.log("App: Starting auth check");
+      
+      // Set a shorter timeout to avoid infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log("App: Force-breaking initialization due to timeout");
         setIsInitialized(true);
-      }, 2000); // Reduced from 3 seconds to 2 seconds
+      }, 2000);
       
       try {
-        // First, check local storage for faster initial check
+        // First check local storage for auth token to speed up the process
         const cachedAuth = localStorage.getItem('sb-auth-token');
-        const initialAuth = !!cachedAuth;
         
-        setIsAuthenticated(initialAuth);
+        if (cachedAuth) {
+          console.log("App: Found cached auth token, attempting quick auth");
+          setIsAuthenticated(true);
+        }
         
-        // Then verify with Supabase (happens in parallel)
-        const { data, error } = await supabase.auth.getUser();
+        // Do the proper auth check with Supabase
+        const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Auth check error:", error);
+          console.error("App: Auth check error:", error);
+          localStorage.removeItem('sb-auth-token');
+          localStorage.removeItem('sb-auth-data');
+          setIsAuthenticated(false);
+          clearTimeout(timeoutId);
           setIsInitialized(true);
-          clearTimeout(timeout);
           return;
         }
         
-        const isAuth = !!data.user;
+        const isAuth = !!data.session;
+        console.log("App: User authenticated:", isAuth);
         setIsAuthenticated(isAuth);
+        
+        if (!isAuth) {
+          console.log("App: No auth session found, clearing local storage");
+          localStorage.removeItem('sb-auth-token');
+          localStorage.removeItem('sb-auth-data');
+        }
 
         // If user is authenticated, check if they have selected a character
-        if (isAuth && data.user) {
+        if (isAuth && data.session?.user) {
           try {
             const { data: userData, error: userError } = await supabase
               .from('users')
               .select('character_type')
-              .eq('id', data.user.id)
+              .eq('id', data.session.user.id)
               .maybeSingle();
               
             if (userError) {
-              console.error("User data fetch error:", userError);
+              console.error("App: User data fetch error:", userError);
             } else {
-              setHasCharacter(!!userData?.character_type);
+              const hasChar = !!userData?.character_type;
+              console.log("App: User has character:", hasChar);
+              setHasCharacter(hasChar);
             }
           } catch (fetchError) {
-            console.error("Error fetching user character data:", fetchError);
-          } finally {
-            // Always set initialized to true even if there's an error fetching user data
-            setIsInitialized(true);
-            clearTimeout(timeout);
+            console.error("App: Error fetching user character data:", fetchError);
           }
-        } else {
-          // If user is not authenticated, we're still ready to show the login screen
-          setIsInitialized(true);
-          clearTimeout(timeout);
         }
       } catch (error) {
-        console.error("Auth check error:", error);
-        clearTimeout(timeout);
+        console.error("App: Auth check error:", error);
+        localStorage.removeItem('sb-auth-token');
+        localStorage.removeItem('sb-auth-data');
+      } finally {
+        clearTimeout(timeoutId);
         setIsInitialized(true);
+        console.log("App: Auth check completed, setting initialized to true");
       }
     };
 
@@ -100,9 +113,17 @@ const App = () => {
     
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("App: Auth state changed:", event);
       const isAuth = !!session?.user;
       setIsAuthenticated(isAuth);
+      
+      if (isAuth) {
+        localStorage.setItem('sb-auth-token', 'true');
+      } else {
+        localStorage.removeItem('sb-auth-token');
+        localStorage.removeItem('sb-auth-data');
+        setHasCharacter(false);
+      }
       
       // If user is authenticated, check if they have selected a character
       if (isAuth && session?.user) {
@@ -114,15 +135,13 @@ const App = () => {
             .maybeSingle();
             
           if (userError) {
-            console.error("User data fetch error on auth change:", userError);
+            console.error("App: User data fetch error on auth change:", userError);
           } else {
             setHasCharacter(!!userData?.character_type);
           }
         } catch (fetchError) {
-          console.error("Error fetching user character data on auth change:", fetchError);
+          console.error("App: Error fetching user character data on auth change:", fetchError);
         }
-      } else {
-        setHasCharacter(false);
       }
     });
     
@@ -134,18 +153,18 @@ const App = () => {
   // Function to assign default coins to new users
   useEffect(() => {
     const setupNewUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (user) {
+      if (session?.user) {
         // Check if the user already has a coins record
         const { data: userData, error: fetchError } = await supabase
           .from('users')
           .select('coins')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .maybeSingle();
           
         if (fetchError) {
-          console.error("Error fetching user coins data:", fetchError);
+          console.error("App: Error fetching user coins data:", fetchError);
           return;
         }
         
@@ -154,12 +173,12 @@ const App = () => {
           const { error: updateError } = await supabase
             .from('users')
             .update({ coins: 10 })
-            .eq('id', user.id);
+            .eq('id', session.user.id);
             
           if (updateError) {
-            console.error("Error updating user coins:", updateError);
+            console.error("App: Error updating user coins:", updateError);
           } else {
-            console.log("Assigned 10 default coins to user");
+            console.log("App: Assigned 10 default coins to user");
           }
         }
       }

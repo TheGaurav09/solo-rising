@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser, CharacterType } from '@/context/UserContext';
@@ -33,7 +32,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
     'jin-woo': 0
   });
 
-  // Fetch character counts from the database
   useEffect(() => {
     const fetchCharacterCounts = async () => {
       try {
@@ -69,8 +67,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
   const handleCharacterSelect = (character: CharacterType) => {
     setSelectedCharacter(character);
     
-    // Play character-specific sound
-    const audio = new Audio(`/${character}.mp3`);
+    const audio = new Audio(`/${character}.mp3');
     audio.volume = 0.3;
     audio.play().catch(error => console.error('Error playing audio:', error));
     
@@ -79,20 +76,18 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
 
   const incrementCharacterCount = async (character: CharacterType) => {
     try {
-      // First check if the character exists in the counts table
       const { data, error } = await supabase
         .from('character_counts')
         .select('count')
         .eq('character_type', character)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "row not found"
+      if (error && error.code !== 'PGRST116') {
         console.error('Error checking character count:', error);
         return;
       }
       
       if (data) {
-        // Update existing count
         const { error: updateError } = await supabase
           .from('character_counts')
           .update({ count: data.count + 1, updated_at: new Date().toISOString() })
@@ -102,7 +97,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
           console.error('Error updating character count:', updateError);
         }
       } else {
-        // Insert new count
         const { error: insertError } = await supabase
           .from('character_counts')
           .insert({ character_type: character, count: 1 });
@@ -131,7 +125,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
     
     try {
       if (userId) {
-        // Authenticated user, update the database
         const { error } = await supabase
           .from('users')
           .update({
@@ -143,7 +136,6 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
           
         if (error) throw error;
         
-        // Store user data in localStorage for faster loading on refresh
         const userData = {
           id: userId,
           warrior_name: name,
@@ -154,14 +146,11 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
         };
         localStorage.setItem('sb-auth-data', JSON.stringify(userData));
         
-        // Increment the character count
         await incrementCharacterCount(selectedCharacter);
         
-        // Set character in context and navigate to dashboard
         setCharacter(selectedCharacter);
         navigate('/dashboard', { replace: true });
       } else {
-        // Unauthenticated user, prompt for sign up
         toast({
           description: "Please sign up or log in to continue.",
           variant: "default",
@@ -179,7 +168,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
       <div className="flex justify-between items-center mb-16">
@@ -297,6 +286,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
               description="Goku's training philosophy focuses on constantly surpassing your current level"
               imageSrc="/goku.jpeg"
               color="text-white"
+              children={[]}
             />
           </div>
           
@@ -306,6 +296,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
               description="Saitama's approach proves that simple, consistent training yields extraordinary results"
               imageSrc="/saitama.jpeg"
               color="text-white"
+              children={[]}
             />
           </div>
           
@@ -315,6 +306,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSe
               description="Jin-Woo's methodical approach to becoming stronger through daily challenges"
               imageSrc="/jinwoo.jpeg"
               color="text-white"
+              children={[]}
             />
           </div>
           

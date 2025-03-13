@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-mobile';
 
 interface SectionCarouselProps {
-  children: ReactNode[];
+  children?: ReactNode[];
   title?: string;
   description?: string;
   imageSrc?: string;
@@ -14,7 +14,7 @@ interface SectionCarouselProps {
 }
 
 const SectionCarousel: React.FC<SectionCarouselProps> = ({ 
-  children, 
+  children = [], 
   title,
   description,
   imageSrc,
@@ -31,7 +31,7 @@ const SectionCarousel: React.FC<SectionCarouselProps> = ({
   // Adjust cards per view based on screen size
   const getItemsPerView = () => {
     if (isMobile) return 1;
-    if (itemsPerView > children.length) return children.length;
+    if (children.length > 0 && itemsPerView > children.length) return children.length;
     return itemsPerView;
   };
   
@@ -82,7 +82,9 @@ const SectionCarousel: React.FC<SectionCarouselProps> = ({
   };
   
   // Calculate child width based on items per view and gap
-  const childWidth = `calc((100% - ${(getItemsPerView() - 1) * gap}px) / ${getItemsPerView()})`;
+  const childWidth = children.length > 0 
+    ? `calc((100% - ${(getItemsPerView() - 1) * gap}px) / ${getItemsPerView()})`
+    : '100%';
   
   return (
     <div className="w-full">
@@ -102,46 +104,52 @@ const SectionCarousel: React.FC<SectionCarouselProps> = ({
         </div>
       )}
       
-      <div className="relative group">
-        <div 
-          ref={scrollRef}
-          className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory" 
-          style={{ scrollSnapType: 'x mandatory', gap: `${gap}px` }}
-        >
-          {React.Children.map(children, (child, index) => (
-            <div 
-              className="flex-shrink-0 snap-start" 
-              style={{ width: childWidth }}
-              key={index}
-            >
-              {child}
-            </div>
-          ))}
+      {children.length > 0 ? (
+        <div className="relative group">
+          <div 
+            ref={scrollRef}
+            className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory" 
+            style={{ scrollSnapType: 'x mandatory', gap: `${gap}px` }}
+          >
+            {React.Children.map(children, (child, index) => (
+              <div 
+                className="flex-shrink-0 snap-start" 
+                style={{ width: childWidth }}
+                key={index}
+              >
+                {child}
+              </div>
+            ))}
+          </div>
+          
+          {/* Navigation controls - only on non-mobile */}
+          {showControls && !isMobile && (
+            <>
+              <button
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/60 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                onClick={() => scrollTo('left')}
+                disabled={scrollPosition <= 0}
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              
+              <button
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/60 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                onClick={() => scrollTo('right')}
+                disabled={scrollPosition >= maxScroll}
+                aria-label="Next"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
-        
-        {/* Navigation controls - only on non-mobile */}
-        {showControls && !isMobile && (
-          <>
-            <button
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/60 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
-              onClick={() => scrollTo('left')}
-              disabled={scrollPosition <= 0}
-              aria-label="Previous"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <button
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/60 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
-              onClick={() => scrollTo('right')}
-              disabled={scrollPosition >= maxScroll}
-              aria-label="Next"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </>
-        )}
-      </div>
+      ) : (
+        <div className="py-4 flex justify-center items-center">
+          <p className={`${color} text-sm opacity-70`}>No items to display</p>
+        </div>
+      )}
       
       {/* Dots indicator - for mobile */}
       {isMobile && children.length > 1 && (
