@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { LayoutDashboard, Dumbbell, Trophy, ShoppingBag, MessageCircle, Activity } from 'lucide-react';
-import { motion } from 'framer-motion';
 import AnimatedCard from './AnimatedCard';
 
 const FeaturesCarousel = () => {
@@ -40,13 +39,11 @@ const FeaturesCarousel = () => {
 
   return (
     <div className="w-full overflow-hidden py-4">
-      <div className="animate-scroll flex space-x-6 whitespace-nowrap">
-        {features.concat(features).map((feature, index) => (
-          <motion.div 
+      <div className="flex space-x-6 overflow-x-auto pb-4 hide-scrollbar">
+        {features.map((feature, index) => (
+          <div 
             key={index} 
-            className="inline-block w-[300px]"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
+            className="inline-block w-[300px] min-w-[300px]"
           >
             <AnimatedCard className="h-full p-6 bg-black/40 backdrop-blur-md border border-white/10">
               <div className="flex flex-col items-center text-center">
@@ -57,9 +54,19 @@ const FeaturesCarousel = () => {
                 <p className="text-sm text-white/70">{feature.description}</p>
               </div>
             </AnimatedCard>
-          </motion.div>
+          </div>
         ))}
       </div>
+      
+      <style jsx>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };

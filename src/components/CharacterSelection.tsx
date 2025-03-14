@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -11,7 +12,6 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import HowToUseCarousel from './ui/HowToUseCarousel';
 import FAQs from './FAQs';
-import FeaturesCarousel from './ui/FeaturesCarousel';
 
 const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;
@@ -117,62 +117,53 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="container max-w-6xl mx-auto px-4 py-10 min-h-screen flex flex-col justify-center">
-        <div className="text-center mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <h1 className="text-4xl font-bold mb-3 text-gradient goku-gradient">SOLO RISING</h1>
-          <p className="text-white/70 max-w-xl mx-auto">
+    <div className="min-h-screen flex flex-col bg-black">
+      <div className="container mx-auto px-4 py-6 flex-1 flex flex-col">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-[#FF6B00]">SOLO RISING</h1>
+          <p className="text-white/70 mt-2">
             Choose your character to begin your journey to the top of the global leaderboard
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="space-y-4 mb-6">
           <CharacterCard
             name="Goku"
-            label="Saiyans"
             description="Train like a Saiyan with incredible strength and endurance. Perfect for high-intensity workouts."
             character="goku"
             selected={selectedCharacter === 'goku'}
             onClick={() => handleCharacterClick('goku')}
-            animationDelay="0.2s"
             count={characterCounts.goku}
             onCountClick={() => handleWarriorCountClick('goku')}
-            imagePath="/goku.jpeg"
           />
           
           <CharacterCard
             name="Saitama"
-            label="Heroes"
             description="Follow the One Punch Man routine to achieve overwhelming power through consistent training."
             character="saitama"
             selected={selectedCharacter === 'saitama'}
             onClick={() => handleCharacterClick('saitama')}
-            animationDelay="0.3s"
             count={characterCounts.saitama}
             onCountClick={() => handleWarriorCountClick('saitama')}
-            imagePath="/saitama.jpeg"
           />
           
           <CharacterCard
             name="Sung Jin-Woo"
-            label="Hunters"
             description="Level up methodically like the Shadow Monarch, constantly pushing your limits to evolve."
             character="jin-woo"
             selected={selectedCharacter === 'jin-woo'}
             onClick={() => handleCharacterClick('jin-woo')}
-            animationDelay="0.4s"
             count={characterCounts['jin-woo']}
             onCountClick={() => handleWarriorCountClick('jin-woo')}
-            imagePath="/jinwoo.jpeg"
           />
         </div>
 
-        <div className="max-w-md mx-auto w-full animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+        <div className="mt-4 mb-6">
           <AnimatedButton
             onClick={handleBeginJourney}
             disabled={!selectedCharacter}
             character={selectedCharacter}
-            className="w-full py-3 hover:scale-105 transition-transform duration-300"
+            className="w-full py-3 bg-[#F97316] text-white"
           >
             Begin Your Journey
           </AnimatedButton>
@@ -180,25 +171,44 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           <div className="mt-4 text-center">
             <button 
               onClick={onLoginClick} 
-              className="text-white/70 hover:text-white transition-colors border-b-2 border-white/20 hover:border-white/70"
+              className="text-white/70 hover:text-white transition-colors"
             >
               Already have an account? Login
             </button>
           </div>
         </div>
 
-        <div className="py-8 mt-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-2">How to Use Solo Rising</h2>
-            <p className="text-white/70 max-w-xl mx-auto">
-              Follow these simple steps to get started on your anime-inspired fitness journey
-            </p>
+        <div className="mt-6 text-center">
+          <p className="text-white/70 mb-4">
+            Follow these simple steps to get started on your anime-inspired fitness journey
+          </p>
+          
+          <div className="flex justify-center mb-6">
+            <div className="bg-black/30 p-4 rounded-full">
+              <User size={24} className="text-blue-400" />
+            </div>
           </div>
           
-          <HowToUseCarousel />
+          <p className="text-white/80 text-sm max-w-xs mx-auto">
+            Sign up with your email and password to start your fitness journey.
+          </p>
+          
+          <div className="flex justify-center mt-4">
+            <div className="flex space-x-1">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         
-        <FAQs />
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+          <FAQs />
+        </div>
       </div>
 
       <Footer />
@@ -216,91 +226,84 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
 
 interface CharacterCardProps {
   name: string;
-  label: string;
   description: string;
   character: 'goku' | 'saitama' | 'jin-woo';
   selected: boolean;
   onClick: () => void;
-  animationDelay: string;
   count: number;
   onCountClick: () => void;
-  imagePath: string;
 }
 
 const CharacterCard = ({
   name,
-  label,
   description,
   character,
   selected,
   onClick,
-  animationDelay,
   count,
-  onCountClick,
-  imagePath
+  onCountClick
 }: CharacterCardProps) => {
-  const gradientClass = `${character}-gradient`;
+  const getCharacterGradient = () => {
+    switch (character) {
+      case 'goku':
+        return 'from-orange-500 to-blue-600';
+      case 'saitama':
+        return 'from-yellow-500 to-red-600';
+      case 'jin-woo':
+        return 'from-purple-500 to-indigo-800';
+      default:
+        return 'from-gray-500 to-gray-800';
+    }
+  };
+
+  const getCharacterLabel = () => {
+    switch (character) {
+      case 'goku': return 'Saiyans';
+      case 'saitama': return 'Heroes';
+      case 'jin-woo': return 'Hunters';
+      default: return '';
+    }
+  };
+
+  const getCharacterLetter = () => {
+    if (character === 'jin-woo') return 'S';
+    return name.charAt(0);
+  };
 
   return (
-    <div className="animate-fade-in-up" style={{ animationDelay }}>
-      <AnimatedCard
-        active={selected}
-        onClick={onClick}
-        hoverEffect="glow"
-        className={`h-full transition-all duration-300 hover:border hover:border-white/30 animated-border ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
-      >
-        <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
-          <img 
-            src={imagePath} 
-            alt={name} 
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-          />
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <div className={`text-6xl font-bold text-gradient ${gradientClass}`}>
-              {name.charAt(0)}
-            </div>
-          </div>
+    <div 
+      className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300`}
+      onClick={onClick}
+    >
+      <div className="flex">
+        <div className={`w-20 h-20 flex items-center justify-center bg-gradient-to-br ${getCharacterGradient()}`}>
+          <span className="text-4xl font-bold text-white">{getCharacterLetter()}</span>
         </div>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className={`text-xl font-bold text-gradient ${gradientClass}`}>{name}</h3>
+        <div className="p-3 flex-1">
+          <div className="flex justify-between">
+            <h3 className="font-bold text-white">{name}</h3>
             <div 
-              className="flex items-center text-sm cursor-pointer hover:text-white transition-colors duration-300"
+              className="text-xs text-white/60 flex items-center cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 onCountClick();
               }}
             >
-              <Users size={16} className="mr-1 text-white/60" />
-              <span>{count} {label}</span>
+              <Users size={12} className="mr-1" />
+              <span>{count}</span>
             </div>
           </div>
-          <p className="text-white/70 text-sm">{description}</p>
-          
-          <div className="mt-4 flex gap-2 flex-wrap">
-            {character === 'goku' && (
-              <>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary transition-colors duration-300 hover:bg-goku-primary/30 hover:scale-105">Strength</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary transition-colors duration-300 hover:bg-goku-secondary/30 hover:scale-105">Endurance</span>
-              </>
-            )}
-            
-            {character === 'saitama' && (
-              <>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary transition-colors duration-300 hover:bg-saitama-primary/30 hover:scale-105">Consistency</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary transition-colors duration-300 hover:bg-saitama-secondary/30 hover:scale-105">Power</span>
-              </>
-            )}
-            
-            {character === 'jin-woo' && (
-              <>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary transition-colors duration-300 hover:bg-jin-woo-primary/30 hover:scale-105">Leveling</span>
-                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent transition-colors duration-300 hover:bg-jin-woo-secondary/30 hover:scale-105">Progression</span>
-              </>
-            )}
+          <p className="text-xs text-white/70 mt-1">{description}</p>
+          <div className="flex space-x-2 mt-2">
+            <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-orange-500/20 text-orange-400' : character === 'saitama' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'}`}>
+              {character === 'goku' ? 'Strength' : character === 'saitama' ? 'Consistency' : 'Progression'}
+            </button>
+            <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-blue-500/20 text-blue-400' : character === 'saitama' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+              {character === 'goku' ? 'Power' : character === 'saitama' ? 'Power' : 'Leveling'}
+            </button>
           </div>
         </div>
-      </AnimatedCard>
+      </div>
     </div>
   );
 };

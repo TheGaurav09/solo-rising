@@ -1,150 +1,73 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, User, Heart, Dumbbell, Trophy, Users, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, User, Dumbbell, Crown, BadgeCheck, LucideIcon } from 'lucide-react';
 import AnimatedCard from './AnimatedCard';
-import { useMediaQuery } from '@/hooks/use-mobile';
 
-const howToUseSteps = [
-  {
-    title: "Create Your Account",
-    description: "Sign up with your email and password to start your fitness journey.",
-    icon: <User className="w-8 h-8 text-blue-400" />
-  },
-  {
-    title: "Choose Your Character",
-    description: "Select from Goku, Saitama, or Sung Jin-Woo to define your training style.",
-    icon: <Heart className="w-8 h-8 text-red-400" />
-  },
-  {
-    title: "Log Your Workouts",
-    description: "Record your exercises, reps, and duration to earn points and track progress.",
-    icon: <Dumbbell className="w-8 h-8 text-green-400" />
-  },
-  {
-    title: "Complete Challenges",
-    description: "Take on special challenges to earn extra points and unlock achievements.",
-    icon: <Trophy className="w-8 h-8 text-yellow-400" />
-  },
-  {
-    title: "Check the Leaderboard",
-    description: "See how you rank against other warriors globally or in your country.",
-    icon: <Users className="w-8 h-8 text-purple-400" />
-  },
-  {
-    title: "Visit the Store",
-    description: "Spend your earned coins on items to customize your experience.",
-    icon: <ShieldCheck className="w-8 h-8 text-orange-400" />
-  }
-];
+interface Step {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
 
 const HowToUseCarousel = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const isTablet = useMediaQuery("(max-width: 1024px) and (min-width: 769px)");
-
-  // Always show just one card per slide
-  const visibleCards = 1;
-  const maxIndex = howToUseSteps.length - 1;
-
-  const handleNext = () => {
-    setCurrentIndex(prevIndex => Math.min(prevIndex + 1, maxIndex));
-  };
-
-  const handlePrev = () => {
-    setCurrentIndex(prevIndex => Math.max(prevIndex - 1, 0));
-  };
-
-  // For touch swipe functionality
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
   
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-  
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-  
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    
-    if (isLeftSwipe && currentIndex < maxIndex) {
-      handleNext();
-    } else if (isRightSwipe && currentIndex > 0) {
-      handlePrev();
+  const steps: Step[] = [
+    {
+      icon: <User className="text-blue-400" />,
+      title: "Sign up with your email",
+      description: "Create your account and personalize your fitness journey"
+    },
+    {
+      icon: <Dumbbell className="text-green-400" />,
+      title: "Complete daily workouts",
+      description: "Follow guided workouts based on your chosen character"
+    },
+    {
+      icon: <Crown className="text-yellow-400" />,
+      title: "Earn points and rewards",
+      description: "Track your progress and climb the leaderboard rankings"
+    },
+    {
+      icon: <BadgeCheck className="text-purple-400" />,
+      title: "Unlock achievements",
+      description: "Discover new challenges and collect special rewards"
     }
-    
-    // Reset values
-    setTouchStart(null);
-    setTouchEnd(null);
+  ];
+  
+  const handleNext = () => {
+    setCurrentStep((prev) => (prev === steps.length - 1 ? 0 : prev + 1));
+  };
+  
+  const handlePrev = () => {
+    setCurrentStep((prev) => (prev === 0 ? steps.length - 1 : prev - 1));
   };
 
   return (
-    <div className="relative w-full py-4 overflow-hidden">
-      <div 
-        ref={carouselRef}
-        className="relative"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <motion.div
-          className="flex"
-          animate={{ x: `calc(-${currentIndex * 100}%)` }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {howToUseSteps.map((step, index) => (
-            <div key={index} className="min-w-full px-4">
-              <AnimatedCard className="p-6 border border-white/10 animated-border h-full">
-                <div className="flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 rounded-full bg-white/10">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Step {index + 1}: {step.title}</h3>
-                  <p className="text-white/70">{step.description}</p>
-                </div>
-              </AnimatedCard>
-            </div>
-          ))}
-        </motion.div>
-      </div>
-
-      <div className="flex justify-center mt-6 gap-2">
-        <button
-          onClick={handlePrev}
-          disabled={currentIndex === 0}
-          className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex gap-1 items-center">
-          {Array.from({ length: howToUseSteps.length }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                currentIndex === index ? 'bg-white' : 'bg-white/30'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+    <div className="flex justify-center">
+      <div className="relative max-w-md w-full">
+        <div className="flex items-center justify-center p-6">
+          <div className="bg-black/30 p-4 rounded-full">
+            {steps[currentStep].icon}
+          </div>
         </div>
-        <button
-          onClick={handleNext}
-          disabled={currentIndex >= maxIndex}
-          className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+        
+        <div className="text-center px-4">
+          <h3 className="text-lg font-bold text-white">{steps[currentStep].title}</h3>
+          <p className="text-white/70 text-sm mt-2">{steps[currentStep].description}</p>
+        </div>
+        
+        <div className="flex justify-center mt-4">
+          <div className="flex space-x-1">
+            {steps.map((_, index) => (
+              <button 
+                key={index} 
+                onClick={() => setCurrentStep(index)}
+                className={`h-1.5 w-1.5 rounded-full transition-all ${index === currentStep ? 'bg-white w-3' : 'bg-white/30'}`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

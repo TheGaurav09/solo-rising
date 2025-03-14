@@ -1,66 +1,85 @@
-import React from 'react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import AnimatedCard from './ui/AnimatedCard';
 
 const FAQs = () => {
-  const faqItems = [
+  const [openItem, setOpenItem] = useState<string | null>(null);
+  
+  const faqs = [
     {
-      question: "What is Solo Rising?",
-      answer: "Solo Rising is an anime-inspired fitness app that helps you track your workouts, earn points, and compete on global leaderboards. You can choose a character from popular anime to represent your training style."
+      id: 'what-is-solorising',
+      question: 'What is Solo Rising?',
+      answer: 'Solo Rising is an anime-inspired fitness tracking app that helps you stay motivated through character roleplay, daily challenges, leaderboards, and a unique progression system.'
     },
     {
-      question: "How do I earn points?",
-      answer: "Points are earned by logging workouts, maintaining streaks, completing challenges, and achieving specific milestones. The more consistently you work out, the more points you'll accumulate."
+      id: 'how-earn-points',
+      question: 'How do I earn points?',
+      answer: 'You earn points by completing workouts and daily challenges. More difficult workouts and longer streaks earn more points, boosting your position on the global leaderboard.'
     },
     {
-      question: "Can I change my character after selecting one?",
-      answer: "No, once you've selected a character, it becomes a permanent part of your profile. This choice represents your fitness journey and training style."
+      id: 'change-character',
+      question: 'Can I change my character after selection?',
+      answer: 'Currently, character selection is permanent. We recommend choosing a character that aligns with your fitness goals and personality.'
     },
     {
-      question: "What do coins do?",
-      answer: "Coins can be spent in the in-app store to purchase special items, unlock cosmetic features, and customize your experience within Solo Rising."
+      id: 'coins-use',
+      question: 'What do coins do?',
+      answer: 'Coins are earned through workouts and can be spent in the Store to unlock special items, custom themes, and bonus training features.'
     },
     {
-      question: "How does the streak system work?",
-      answer: "You earn streak points by logging workouts on consecutive days. The longer your streak, the more bonus points you'll receive. Missing a day will reset your streak."
+      id: 'streak-system',
+      question: 'How does the streak system work?',
+      answer: 'Complete at least one workout every day to maintain your streak. Missing a day resets your streak to zero and deducts 50 points from your total score.'
     },
     {
-      question: "Is there a limit to how many workouts I can log per day?",
-      answer: "You can log multiple workouts per day, but there's a cooldown period of 3 hours between workouts to ensure balanced training and prevent misuse."
+      id: 'workouts-limit',
+      question: 'Is there a limit to how many workouts I can log per day?',
+      answer: 'You can log up to 3 workouts per day that count toward your points total. This encourages consistency rather than overtraining.'
     },
     {
-      question: "How do I compete with others?",
-      answer: "Your points automatically place you on the global and country leaderboards. Check the Leaderboard page to see your rank compared to other users worldwide or in your country."
+      id: 'compete',
+      question: 'How do I compete with others?',
+      answer: 'Your completed workouts automatically add points to your total score, which determines your position on the global and character-specific leaderboards.'
     }
   ];
+  
+  const toggleItem = (id: string) => {
+    if (openItem === id) {
+      setOpenItem(null);
+    } else {
+      setOpenItem(id);
+    }
+  };
 
   return (
-    <div className="py-8 px-4 md:px-0">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold mb-2 text-white">Frequently Asked Questions</h2>
-        <p className="text-white/90 max-w-xl mx-auto">
-          Everything you need to know about SoloRising
-        </p>
-      </div>
+    <div className="space-y-3">
+      <h2 className="text-xl font-bold text-white mb-4">Frequently Asked Questions</h2>
       
-      <div className="max-w-3xl mx-auto">
-        <Accordion type="single" collapsible className="w-full">
-          {faqItems.map((item, index) => (
-            <AccordionItem key={index} value={`item-${index}`} className="border-b border-white/20">
-              <AccordionTrigger className="text-left text-lg text-white hover:text-white/90 py-4">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-white/80 pb-4">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
+      {faqs.map((faq) => (
+        <div 
+          key={faq.id}
+          className={`border border-white/10 rounded-lg overflow-hidden transition-all duration-300 ${openItem === faq.id ? 'bg-black/30' : 'bg-black/20 hover:bg-black/25'}`}
+        >
+          <button
+            className="w-full px-4 py-3 text-left flex justify-between items-center"
+            onClick={() => toggleItem(faq.id)}
+          >
+            <span className="font-medium text-white">{faq.question}</span>
+            {openItem === faq.id ? (
+              <ChevronUp size={18} className="text-white/60" />
+            ) : (
+              <ChevronDown size={18} className="text-white/60" />
+            )}
+          </button>
+          
+          {openItem === faq.id && (
+            <div className="px-4 pb-3 pt-0 text-white/70 text-sm">
+              {faq.answer}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };

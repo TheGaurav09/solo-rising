@@ -1,365 +1,142 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 240 4.9% 83.9%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
- 
     --radius: 0.5rem;
   }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-300px * 6)); /* Width of each card times number of cards */
-  }
+/* Character-specific styling */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
-@keyframes border-glow {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
-  }
-  100% {
-    box-shadow: 0 0 10px 0 rgba(255, 255, 255, 0.1);
-  }
+.goku-gradient {
+  background-image: linear-gradient(to right, #FF6B00, #2563EB);
 }
 
-.animate-scroll {
-  animation: scroll 40s linear infinite;
+.saitama-gradient {
+  background-image: linear-gradient(to right, #F9C22E, #E53935);
 }
 
+.jin-woo-gradient {
+  background-image: linear-gradient(to right, #8B5CF6, #C4B5FD);
+}
+
+/* Animate glowing border */
 .animated-border {
-  position: relative;
-  overflow: hidden;
+  animation: border-pulse 3s infinite;
 }
 
-.animated-border::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  animation: border-shine 2s linear infinite;
+/* Animate grid for background */
+.animated-grid {
+  background-size: 100px 100px;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
 }
 
-@keyframes border-shine {
-  0% {
-    transform: translateX(-100%);
+/* Hide scrollbar but allow scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Add smooth animations for elements */
+.animated-element {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Add some custom animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
   }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.border-animation {
-  position: relative;
-  overflow: hidden;
-}
-
-.border-animation::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: border-slide 2s linear infinite;
-}
-
-.border-animation::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: border-slide 2s linear infinite;
-  animation-delay: 1s;
-}
-
-@keyframes border-slide {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
+  50% {
+    transform: translateY(-10px);
   }
 }
 
-.animated-border:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+.float-animation {
+  animation: float 4s ease-in-out infinite;
 }
 
-.character-card-border {
-  position: relative;
-  overflow: hidden;
+/* Add a more distinct active state for buttons */
+button:active {
+  transform: scale(0.97);
 }
 
-.character-card-border::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: border-glow 2s ease-in-out infinite alternate;
-}
-
-.text-gradient.goku-gradient {
-  background: linear-gradient(to right, #FF6B00, #FFA200);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient.saitama-gradient {
-  background: linear-gradient(to right, #F9C22E, #F3A712);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient.jin-woo-gradient {
-  background: linear-gradient(to right, #8B5CF6, #C4B5FD);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.glass-card {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Character backgrounds */
-.bg-goku {
-  background: linear-gradient(to bottom, #0A1424, #1A2C56);
-  color: white;
-}
-
-.bg-saitama {
-  background: linear-gradient(to bottom, #1A0F0E, #402218);
-  color: white;
-}
-
-.bg-jin-woo {
-  background: linear-gradient(to bottom, #0F172A, #1E293B);
-  color: white;
-}
-
-/* Character-specific colors */
-.text-goku-primary {
-  color: #FF6B00;
-}
-
-.bg-goku-primary {
-  background-color: #FF6B00;
-}
-
-.bg-goku-primary\/10 {
-  background-color: rgba(255, 107, 0, 0.1);
-}
-
-.bg-goku-primary\/20 {
-  background-color: rgba(255, 107, 0, 0.2);
-}
-
-.hover\:bg-goku-primary\/80:hover {
-  background-color: rgba(255, 107, 0, 0.8);
-}
-
-.border-goku-primary\/40 {
-  border-color: rgba(255, 107, 0, 0.4);
-}
-
-.text-saitama-primary {
-  color: #F9C22E;
-}
-
-.bg-saitama-primary {
-  background-color: #F9C22E;
-}
-
-.bg-saitama-primary\/10 {
-  background-color: rgba(249, 194, 46, 0.1);
-}
-
-.bg-saitama-primary\/20 {
-  background-color: rgba(249, 194, 46, 0.2);
-}
-
-.hover\:bg-saitama-primary\/80:hover {
-  background-color: rgba(249, 194, 46, 0.8);
-}
-
-.border-saitama-primary\/40 {
-  border-color: rgba(249, 194, 46, 0.4);
-}
-
-.text-jin-woo-primary {
-  color: #8B5CF6;
-}
-
-.bg-jin-woo-primary {
-  background-color: #8B5CF6;
-}
-
-.bg-jin-woo-primary\/10 {
-  background-color: rgba(139, 92, 246, 0.1);
-}
-
-.bg-jin-woo-primary\/20 {
-  background-color: rgba(139, 92, 246, 0.2);
-}
-
-.hover\:bg-jin-woo-primary\/80:hover {
-  background-color: rgba(139, 92, 246, 0.8);
-}
-
-.border-jin-woo-primary\/40 {
-  border-color: rgba(139, 92, 246, 0.4);
-}
-
-/* Warning notification styles */
-.notification-badge {
-  position: relative;
-  display: inline-flex;
-}
-
-.notification-badge::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
+/* Style scrollbars to match the theme */
+::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-  background-color: #f43f5e;
-  border-radius: 50%;
-  transform: translate(25%, -25%);
 }
 
-/* Rank images for leaderboard */
-.rank-image {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
 }
 
-/* Fix mobile responsiveness for store items */
-@media (max-width: 768px) {
-  .animated-border:hover {
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .store-item-container {
-    padding-bottom: 6rem; /* Add extra padding at bottom for mobile */
-    overflow-x: hidden;
-  }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
-/* Responsive styles for better visibility on mobile */
-@media (max-width: 640px) {
-  .admin-grid {
-    grid-template-columns: 1fr;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-/* Apply to specific elements as needed */
-.store-item-card {
-  transition: transform 0.3s ease;
+/* Add CSS Utility Classes */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Prevent hover effects on mobile that may cause layout issues */
-@media (hover: hover) {
-  .store-item-card:hover {
-    transform: translateY(-5px);
-  }
-}
-
-@media (hover: none) {
-  .store-item-card:hover {
-    transform: none;
-  }
+.backdrop-blur {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
