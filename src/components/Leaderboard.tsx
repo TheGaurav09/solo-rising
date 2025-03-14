@@ -79,7 +79,7 @@ const Leaderboard = () => {
 
   return (
     <div>
-      <style jsx global>
+      <style>
         {`
           .leaderboard-row:nth-child(1) {
             background: linear-gradient(90deg, rgba(255,215,0,0.2) 0%, rgba(255,215,0,0.05) 100%);
@@ -246,7 +246,9 @@ const Leaderboard = () => {
         )}
       </div>
       
-      <LeaderboardFooter userRank={userRank} />
+      {userRank !== null && (
+        <LeaderboardFooter onShowAll={() => {}} />
+      )}
     </div>
   );
 };

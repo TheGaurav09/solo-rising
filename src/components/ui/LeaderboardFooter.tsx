@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
 
 interface LeaderboardFooterProps {
   onShowAll: () => void;
+  userRank?: number | null;
 }
 
-const LeaderboardFooter = ({ onShowAll }: LeaderboardFooterProps) => {
+const LeaderboardFooter = ({ onShowAll, userRank }: LeaderboardFooterProps) => {
   return (
     <div className="flex justify-center mt-4">
       <motion.button
