@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Fire, ArrowUpDown, Search, Trophy } from 'lucide-react';
+import { Flame, ArrowUpDown, Search, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -30,7 +30,8 @@ const Leaderboard = () => {
   // Add LeaderboardStyles component directly in the Leaderboard component
   const LeaderboardStyles = () => {
     return (
-      <style jsx global>{`
+      <style>
+        {`
         .leaderboard-table {
           background: rgba(0, 0, 0, 0.5);
           border-radius: 12px;
@@ -170,7 +171,8 @@ const Leaderboard = () => {
             height: 32px;
           }
         }
-      `}</style>
+        `}
+      </style>
     );
   };
 
@@ -264,7 +266,7 @@ const Leaderboard = () => {
             onClick={() => setFilterType('streak')}
             className={filterType === 'streak' ? 'bg-white/20' : 'border-white/20 text-white'}
           >
-            <Fire size={16} className="mr-1" />
+            <Flame size={16} className="mr-1" />
             Streaks
           </Button>
         </div>
@@ -314,7 +316,7 @@ const Leaderboard = () => {
                   <td className="text-right">
                     {user.streak > 0 ? (
                       <span className="streak-badge">
-                        <Fire size={12} />
+                        <Flame size={12} />
                         {user.streak}
                       </span>
                     ) : (

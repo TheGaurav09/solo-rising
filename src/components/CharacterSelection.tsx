@@ -14,6 +14,8 @@ import HowToUseCarousel from './ui/HowToUseCarousel';
 import FeaturesCarousel from './ui/FeaturesCarousel';
 import CharacterCard from './CharacterCard';
 import CharacterCreationForm from './CharacterCreationForm';
+// Import the CharacterSelectionStep component that we'll be using
+import CharacterSelectionStep from './CharacterSelectionStep';
 
 interface CharacterSelectionProps {
   onLoginClick: () => void;
