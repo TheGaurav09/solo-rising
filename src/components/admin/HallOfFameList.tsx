@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -53,16 +52,6 @@ const HallOfFameList = () => {
             .eq('name', 'Son Goku');
           
           console.log("Son Goku entry deleted");
-          
-          // Set character counts to 0
-          const { error: countError } = await supabase
-            .from('character_counts')
-            .update({ count: 0 })
-            .eq('character_type', 'goku');
-            
-          if (countError) {
-            console.error("Error updating character count:", countError);
-          }
         }
       } catch (error) {
         console.error("Error deleting Son Goku:", error);
