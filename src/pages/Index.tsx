@@ -6,15 +6,102 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AuthModal from '@/components/AuthModal';
 import { toast } from '@/components/ui/use-toast';
+import SupportPopup from '@/components/modals/SupportPopup';
 
 const Index = () => {
-  const { hasSelectedCharacter, setUserData } = useUser();
+  const { hasSelectedCharacter, setUserData, character } = useUser();
   const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialCheckComplete, setInitialCheckComplete] = useState(false);
+  const [showSupportPopup, setShowSupportPopup] = useState(false);
+
+  // Check if we should show the support popup (once per day)
+  useEffect(() => {
+    const checkSupportPopup = () => {
+      if (!currentUserId) return;
+      
+      const today = new Date().toDateString();
+      const lastShown = localStorage.getItem('support_popup_last_shown');
+      
+      if (lastShown !== today) {
+        // Only show after a small delay to allow the app to load
+        setTimeout(() => {
+          setShowSupportPopup(true);
+          localStorage.setItem('support_popup_last_shown', today);
+        }, 2000);
+      }
+    };
+    
+    checkSupportPopup();
+  }, [currentUserId]);
+
+  // Check for missed days and update streak
+  useEffect(() => {
+    const checkStreakAndPoints = async () => {
+      if (!currentUserId) return;
+      
+      try {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('last_workout_date, streak, points')
+          .eq('id', currentUserId)
+          .single();
+          
+        if (error) {
+          console.error("Error checking streak:", error);
+          return;
+        }
+        
+        if (!userData) return;
+        
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        if (userData.last_workout_date) {
+          const lastWorkout = new Date(userData.last_workout_date);
+          const lastWorkoutDay = new Date(lastWorkout.getFullYear(), lastWorkout.getMonth(), lastWorkout.getDate());
+          
+          // Calculate the difference in days
+          const timeDiff = today.getTime() - lastWorkoutDay.getTime();
+          const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+          
+          if (daysDiff > 1) {
+            // User missed at least one day
+            const newStreak = 0;
+            const deduction = 50;
+            const newPoints = Math.max(0, userData.points - deduction);
+            
+            // Update the database
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ 
+                streak: newStreak,
+                points: newPoints
+              })
+              .eq('id', currentUserId);
+              
+            if (updateError) {
+              console.error("Error updating streak:", updateError);
+            } else if (userData.streak > 0) {
+              // Only show the streak reset notification if they had a streak before
+              toast({
+                title: "Streak Reset",
+                description: `You missed a workout day! Your streak has been reset to 0 and you lost 50 points.`,
+                variant: "destructive",
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error in streak check:", err);
+      }
+    };
+    
+    checkStreakAndPoints();
+  }, [currentUserId]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -36,8 +123,9 @@ const Index = () => {
               // If we have character info too, set user data
               if (userData.warrior_name && userData.character_type) {
                 // Ensure character_type is a valid CharacterType
-                const characterType = userData.character_type as CharacterType;
-                if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                const characterTypeStr = userData.character_type;
+                if (characterTypeStr === 'goku' || characterTypeStr === 'saitama' || characterTypeStr === 'jin-woo') {
+                  const characterType = characterTypeStr as CharacterType;
                   setUserData(
                     userData.warrior_name,
                     characterType,
@@ -102,8 +190,9 @@ const Index = () => {
                 // Set user data in context
                 if (userData.warrior_name && userData.character_type) {
                   // Ensure character_type is a valid CharacterType
-                  const characterType = userData.character_type as CharacterType;
-                  if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                  const characterTypeStr = userData.character_type;
+                  if (characterTypeStr === 'goku' || characterTypeStr === 'saitama' || characterTypeStr === 'jin-woo') {
+                    const characterType = characterTypeStr as CharacterType;
                     setUserData(
                       userData.warrior_name,
                       characterType,
@@ -186,8 +275,9 @@ const Index = () => {
               // Set user data in context
               if (userData.warrior_name && userData.character_type) {
                 // Ensure character_type is a valid CharacterType
-                const characterType = userData.character_type as CharacterType;
-                if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                const characterTypeStr = userData.character_type;
+                if (characterTypeStr === 'goku' || characterTypeStr === 'saitama' || characterTypeStr === 'jin-woo') {
+                  const characterType = characterTypeStr as CharacterType;
                   setUserData(
                     userData.warrior_name,
                     characterType,
@@ -261,6 +351,14 @@ const Index = () => {
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)} 
           initialView={authView}
+        />
+      )}
+
+      {showSupportPopup && (
+        <SupportPopup 
+          isOpen={showSupportPopup}
+          onClose={() => setShowSupportPopup(false)}
+          character={character}
         />
       )}
     </div>
