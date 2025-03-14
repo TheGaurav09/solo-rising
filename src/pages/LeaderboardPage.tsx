@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import Leaderboard from '@/components/Leaderboard';
-import LeaderboardStyles from '@/components/LeaderboardStyles';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LeaderboardPage = () => {
@@ -20,8 +19,6 @@ const LeaderboardPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <LeaderboardStyles />
-      
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Leaderboard</h1>
         <p className="text-white/70">
