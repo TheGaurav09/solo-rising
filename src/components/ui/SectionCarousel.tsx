@@ -6,19 +6,13 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 interface SectionCarouselProps {
   children: ReactNode[];
   title?: string;
-  description?: string;
-  imageSrc?: string;
-  color?: string;
   itemsPerView?: number;
   gap?: number;
 }
 
 const SectionCarousel: React.FC<SectionCarouselProps> = ({ 
   children, 
-  title,
-  description,
-  imageSrc,
-  color = 'text-white',
+  title, 
   itemsPerView = 3,
   gap = 16
 }) => {
@@ -86,21 +80,7 @@ const SectionCarousel: React.FC<SectionCarouselProps> = ({
   
   return (
     <div className="w-full">
-      {(title || description || imageSrc) && (
-        <div className="mb-6 flex items-center gap-4">
-          {imageSrc && (
-            <img 
-              src={imageSrc} 
-              alt={title || 'Section image'} 
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          )}
-          <div>
-            {title && <h3 className={`text-lg font-bold ${color}`}>{title}</h3>}
-            {description && <p className={`text-sm ${color === 'text-white' ? 'text-white/70' : 'text-gray-600'}`}>{description}</p>}
-          </div>
-        </div>
-      )}
+      {title && <h3 className="text-lg font-bold mb-4">{title}</h3>}
       
       <div className="relative group">
         <div 
