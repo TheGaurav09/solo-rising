@@ -11,7 +11,6 @@ import CoinDisplay from './ui/CoinDisplay';
 import { useAudio } from '@/context/AudioContext';
 import { LayoutDashboard } from 'lucide-react';
 import WarningNotification from './WarningNotification';
-import DailySupportPopup from './modals/DailySupportPopup';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,7 +21,6 @@ const Dashboard = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [showSupportPopup, setShowSupportPopup] = useState(false);
   const { togglePlay, isPlaying, setVolume } = useAudio();
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -38,6 +36,17 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
   }, [sidebarHidden]);
+
+  // Scroll to top when route changes
+  useEffect(() => {
+    if (contentRef.current) {
+      console.log("Scrolling to top on route change");
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: 'auto'
+      });
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const audio = document.querySelector('audio');
@@ -99,24 +108,6 @@ const Dashboard = () => {
     
     checkAuth();
   }, [navigate, hasSelectedCharacter]);
-  
-  useEffect(() => {
-    const checkSupportPopup = () => {
-      if (!userId) return;
-      
-      const today = new Date().toDateString();
-      const lastShown = localStorage.getItem('support_popup_last_shown');
-      
-      if (lastShown !== today) {
-        setTimeout(() => {
-          setShowSupportPopup(true);
-          localStorage.setItem('support_popup_last_shown', today);
-        }, 10000);
-      }
-    };
-    
-    checkSupportPopup();
-  }, [userId]);
   
   const getBackgroundClass = () => {
     switch(character) {
@@ -400,13 +391,6 @@ const Dashboard = () => {
           <ShareModal 
             onClose={() => setShowShareModal(false)}
             character={character}
-          />
-        )}
-        
-        {showSupportPopup && (
-          <DailySupportPopup
-            isOpen={showSupportPopup}
-            onClose={() => setShowSupportPopup(false)}
           />
         )}
       </AnimatePresence>
