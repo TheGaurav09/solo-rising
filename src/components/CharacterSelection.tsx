@@ -1,223 +1,306 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUser, CharacterType } from '@/context/UserContext';
-import { ArrowRight, Check, Info, Mail, Lock } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Trophy } from 'lucide-react';
-import InfoTooltip from './ui/InfoTooltip';
-import SectionCarousel from './ui/SectionCarousel';
+import AnimatedCard from './ui/AnimatedCard';
+import AnimatedButton from './ui/AnimatedButton';
+import { useUser } from '@/context/UserContext';
+import { Award, User, Users, Dumbbell, Trophy, ShieldCheck, Heart } from 'lucide-react';
+import UsersList from './UsersList';
+import { useNavigate } from 'react-router-dom';
+import Footer from './ui/Footer';
+import { useMediaQuery } from '@/hooks/use-mobile';
+import { toast } from '@/components/ui/use-toast';
 import HowToUseCarousel from './ui/HowToUseCarousel';
+import FAQs from './FAQs';
 import FeaturesCarousel from './ui/FeaturesCarousel';
-import CharacterCard from './CharacterCard';
-import CharacterCreationForm from './CharacterCreationForm';
-// Import the CharacterSelectionStep component that we'll be using
-import CharacterSelectionStep from './CharacterSelectionStep';
 
-interface CharacterSelectionProps {
-  onLoginClick: () => void;
-  onSignupClick: () => void;
-  userId: string | null;
-}
-
-const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: CharacterSelectionProps) => {
+const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
+  onLoginClick?: () => void;
+  onSignupClick?: () => void;
+  userId?: string | null;
+}) => {
   const { setCharacter } = useUser();
-  const navigate = useNavigate();
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterType | null>(null);
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState('');
-  const [country, setCountry] = useState('Global');
-  const [loading, setLoading] = useState(false);
-  const [characterCounts, setCharacterCounts] = useState<Record<string, number>>({
+  const [selectedCharacter, setSelectedCharacter] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
+  const [characterCounts, setCharacterCounts] = useState<{[key: string]: number}>({
     goku: 0,
     saitama: 0,
     'jin-woo': 0
   });
+  const [showUsersList, setShowUsersList] = useState<'goku' | 'saitama' | 'jin-woo' | null>(null);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCharacterCounts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('character_selection_counts')
-          .select('character_type, count');
-          
-        if (error) throw error;
+        const { data: gokuCount, error: gokuError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'goku');
         
-        const counts: Record<string, number> = {
-          goku: 0,
-          saitama: 0,
-          'jin-woo': 0
-        };
+        const { data: saitamaCount, error: saitamaError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'saitama');
         
-        if (data) {
-          data.forEach(item => {
-            if (item.character_type && counts.hasOwnProperty(item.character_type)) {
-              counts[item.character_type] = item.count || 0;
-            }
-          });
+        const { data: jinWooCount, error: jinWooError } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('character_type', 'jin-woo');
+        
+        if (gokuError || saitamaError || jinWooError) {
+          console.error("Error fetching character counts:", gokuError || saitamaError || jinWooError);
+          return;
         }
         
-        setCharacterCounts(counts);
+        setCharacterCounts({
+          goku: gokuCount?.length || 0,
+          saitama: saitamaCount?.length || 0,
+          'jin-woo': jinWooCount?.length || 0
+        });
       } catch (error) {
-        console.error('Error fetching character counts:', error);
+        console.error("Error in fetchCharacterCounts:", error);
       }
     };
     
     fetchCharacterCounts();
+    
+    const subscription = supabase
+      .channel('users_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'users'
+        }, 
+        () => {
+          fetchCharacterCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
-  const handleCharacterSelect = (character: CharacterType) => {
+  const handleCharacterClick = (character: 'goku' | 'saitama' | 'jin-woo') => {
     setSelectedCharacter(character);
-    
-    const audio = new Audio(`/${character}.mp3`);
-    audio.volume = 0.3;
-    audio.play().catch(error => console.error('Error playing audio:', error));
-    
-    setStep(2);
+    setCharacter(character);
   };
 
-  const incrementCharacterCount = async (character: CharacterType) => {
-    try {
-      const { data, error } = await supabase
-        .from('character_counts')
-        .select('count')
-        .eq('character_type', character)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking character count:', error);
-        return;
-      }
-      
-      if (data) {
-        const { error: updateError } = await supabase
-          .from('character_counts')
-          .update({ count: data.count + 1, updated_at: new Date().toISOString() })
-          .eq('character_type', character);
-          
-        if (updateError) {
-          console.error('Error updating character count:', updateError);
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('character_counts')
-          .insert({ character_type: character, count: 1 });
-          
-        if (insertError) {
-          console.error('Error inserting character count:', insertError);
-        }
-      }
-    } catch (error) {
-      console.error('Error incrementing character count:', error);
-    }
-  };
-
-  const handleContinue = async () => {
-    if (!selectedCharacter) return;
-    if (!name.trim()) {
+  const handleBeginJourney = () => {
+    if (!selectedCharacter) {
       toast({
-        title: "Name Required",
-        description: "Please enter your warrior name.",
+        title: "No Character Selected",
+        description: "Please select a character to begin your journey",
         variant: "destructive",
       });
       return;
     }
     
-    setLoading(true);
-    
-    try {
-      if (userId) {
-        const { error } = await supabase
-          .from('users')
-          .update({
-            warrior_name: name,
-            character_type: selectedCharacter,
-            country
-          })
-          .eq('id', userId);
-          
-        if (error) throw error;
-        
-        const userData = {
-          id: userId,
-          warrior_name: name,
-          character_type: selectedCharacter,
-          country,
-          points: 0,
-          streak: 0
-        };
-        localStorage.setItem('sb-auth-data', JSON.stringify(userData));
-        
-        await incrementCharacterCount(selectedCharacter);
-        
-        setCharacter(selectedCharacter);
-        navigate('/dashboard', { replace: true });
-      } else {
-        toast({
-          description: "Please sign up or log in to continue.",
-          variant: "default",
-        });
-        onSignupClick();
-      }
-    } catch (error) {
-      console.error('Error saving character selection:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your character selection. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (onSignupClick) {
+      onSignupClick();
     }
   };
 
+  const getCharacterLabel = (character: 'goku' | 'saitama' | 'jin-woo') => {
+    switch (character) {
+      case 'goku': return 'Saiyans';
+      case 'saitama': return 'Heroes';
+      case 'jin-woo': return 'Hunters';
+      default: return '';
+    }
+  };
+
+  const handleWarriorCountClick = (character: 'goku' | 'saitama' | 'jin-woo') => {
+    setShowUsersList(character);
+  };
+
   return (
-    <div className="container mx-auto px-4 py-12 max-w-6xl">
-      <div className="flex justify-between items-center mb-16">
-        <div>
-          <h1 className="text-5xl font-bold mb-2 text-gradient">SOLO RISING</h1>
-          <p className="text-white/60">Embark on your solo fitness journey</p>
+    <div className="min-h-screen flex flex-col">
+      <div className="container max-w-6xl mx-auto px-4 py-10 min-h-screen flex flex-col justify-center">
+        <div className="text-center mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-4xl font-bold mb-3 text-gradient goku-gradient">SOLO RISING</h1>
+          <p className="text-white/70 max-w-xl mx-auto">
+            Choose your character to begin your journey to the top of the global leaderboard
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <CharacterCard
+            name="Goku"
+            label="Saiyans"
+            description="Train like a Saiyan with incredible strength and endurance. Perfect for high-intensity workouts."
+            character="goku"
+            selected={selectedCharacter === 'goku'}
+            onClick={() => handleCharacterClick('goku')}
+            animationDelay="0.2s"
+            count={characterCounts.goku}
+            onCountClick={() => handleWarriorCountClick('goku')}
+            imagePath="/goku.jpeg"
+          />
+          
+          <CharacterCard
+            name="Saitama"
+            label="Heroes"
+            description="Follow the One Punch Man routine to achieve overwhelming power through consistent training."
+            character="saitama"
+            selected={selectedCharacter === 'saitama'}
+            onClick={() => handleCharacterClick('saitama')}
+            animationDelay="0.3s"
+            count={characterCounts.saitama}
+            onCountClick={() => handleWarriorCountClick('saitama')}
+            imagePath="/saitama.jpeg"
+          />
+          
+          <CharacterCard
+            name="Sung Jin-Woo"
+            label="Hunters"
+            description="Level up methodically like the Shadow Monarch, constantly pushing your limits to evolve."
+            character="jin-woo"
+            selected={selectedCharacter === 'jin-woo'}
+            onClick={() => handleCharacterClick('jin-woo')}
+            animationDelay="0.4s"
+            count={characterCounts['jin-woo']}
+            onCountClick={() => handleWarriorCountClick('jin-woo')}
+            imagePath="/jinwoo.jpeg"
+          />
+        </div>
+
+        <div className="max-w-md mx-auto w-full animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+          <AnimatedButton
+            onClick={handleBeginJourney}
+            disabled={!selectedCharacter}
+            character={selectedCharacter}
+            className="w-full py-3 hover:scale-105 transition-transform duration-300"
+          >
+            Begin Your Journey
+          </AnimatedButton>
+          
+          <div className="mt-4 text-center">
+            <button 
+              onClick={onLoginClick} 
+              className="text-white/70 hover:text-white transition-colors border-b-2 border-white/20 hover:border-white/70"
+            >
+              Already have an account? Login
+            </button>
+          </div>
+        </div>
+
+        <div className="py-8 mt-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-2">How to Use Solo Rising</h2>
+            <p className="text-white/70 max-w-xl mx-auto">
+              Follow these simple steps to get started on your anime-inspired fitness journey
+            </p>
+          </div>
+          
+          <HowToUseCarousel />
         </div>
         
-        <div className="flex gap-3">
-          <Button 
-            onClick={onLoginClick}
-            variant="outline" 
-            className="border-white/20 text-white hover:bg-white/10"
-          >
-            Log In
-          </Button>
-          <Button 
-            onClick={onSignupClick}
-            className="bg-white text-black hover:bg-white/90"
-          >
-            Sign Up
-          </Button>
-        </div>
+        <FAQs />
       </div>
-      
-      {step === 1 ? (
-        <CharacterSelectionStep 
-          characterCounts={characterCounts}
-          selectedCharacter={selectedCharacter}
-          onCharacterSelect={handleCharacterSelect}
-        />
-      ) : (
-        <CharacterCreationForm
-          selectedCharacter={selectedCharacter}
-          name={name}
-          setName={setName}
-          country={country}
-          setCountry={setCountry}
-          loading={loading}
-          onBack={() => setStep(1)}
-          onContinue={handleContinue}
-          userId={userId}
+
+      <Footer />
+
+      {showUsersList && (
+        <UsersList 
+          character={showUsersList} 
+          onClose={() => setShowUsersList(null)}
+          label={getCharacterLabel(showUsersList)}
         />
       )}
+    </div>
+  );
+};
+
+interface CharacterCardProps {
+  name: string;
+  label: string;
+  description: string;
+  character: 'goku' | 'saitama' | 'jin-woo';
+  selected: boolean;
+  onClick: () => void;
+  animationDelay: string;
+  count: number;
+  onCountClick: () => void;
+  imagePath: string;
+}
+
+const CharacterCard = ({
+  name,
+  label,
+  description,
+  character,
+  selected,
+  onClick,
+  animationDelay,
+  count,
+  onCountClick,
+  imagePath
+}: CharacterCardProps) => {
+  const gradientClass = `${character}-gradient`;
+
+  return (
+    <div className="animate-fade-in-up" style={{ animationDelay }}>
+      <AnimatedCard
+        active={selected}
+        onClick={onClick}
+        hoverEffect="glow"
+        className={`h-full transition-all duration-300 hover:border hover:border-white/30 animated-border ${selected ? 'ring-2 ring-offset-2 ring-offset-background' : ''}`}
+      >
+        <div className={`h-48 rounded-t-xl overflow-hidden flex items-center justify-center relative`}>
+          <img 
+            src={imagePath} 
+            alt={name} 
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className={`text-6xl font-bold text-gradient ${gradientClass}`}>
+              {name.charAt(0)}
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className={`text-xl font-bold text-gradient ${gradientClass}`}>{name}</h3>
+            <div 
+              className="flex items-center text-sm cursor-pointer hover:text-white transition-colors duration-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCountClick();
+              }}
+            >
+              <Users size={16} className="mr-1 text-white/60" />
+              <span>{count} {label}</span>
+            </div>
+          </div>
+          <p className="text-white/70 text-sm">{description}</p>
+          
+          <div className="mt-4 flex gap-2 flex-wrap">
+            {character === 'goku' && (
+              <>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-primary/20 text-goku-primary transition-colors duration-300 hover:bg-goku-primary/30 hover:scale-105">Strength</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-goku-secondary/20 text-goku-secondary transition-colors duration-300 hover:bg-goku-secondary/30 hover:scale-105">Endurance</span>
+              </>
+            )}
+            
+            {character === 'saitama' && (
+              <>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-primary/20 text-saitama-primary transition-colors duration-300 hover:bg-saitama-primary/30 hover:scale-105">Consistency</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-saitama-secondary/20 text-saitama-secondary transition-colors duration-300 hover:bg-saitama-secondary/30 hover:scale-105">Power</span>
+              </>
+            )}
+            
+            {character === 'jin-woo' && (
+              <>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-primary/20 text-jin-woo-primary transition-colors duration-300 hover:bg-jin-woo-primary/30 hover:scale-105">Leveling</span>
+                <span className="px-2 py-1 text-xs rounded-full bg-jin-woo-secondary/20 text-jin-woo-accent transition-colors duration-300 hover:bg-jin-woo-secondary/30 hover:scale-105">Progression</span>
+              </>
+            )}
+          </div>
+        </div>
+      </AnimatedCard>
     </div>
   );
 };

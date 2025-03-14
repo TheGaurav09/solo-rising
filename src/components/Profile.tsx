@@ -2,7 +2,7 @@
 import React from 'react';
 import AnimatedCard from './ui/AnimatedCard';
 import { useUser } from '@/context/UserContext';
-import { User, Medal, TrendingUp, Clock, Share2, Flame } from 'lucide-react';
+import { User, Medal, TrendingUp, Clock, Share2 } from 'lucide-react';
 import AnimatedButton from './ui/AnimatedButton';
 
 interface ProfileProps {
@@ -11,13 +11,12 @@ interface ProfileProps {
 }
 
 const Profile = ({ userData, isViewingOtherUser = false }: ProfileProps) => {
-  const { userName, character, points, streak } = useUser();
+  const { userName, character, points } = useUser();
 
   // Use the provided userData if available, otherwise use the context values
   const userDisplayName = userData?.warrior_name || userName;
   const userCharacter = userData?.character_type || character;
   const userPoints = userData?.points || points;
-  const userStreak = userData?.streak || streak || 0;
 
   const getCharacterTitle = () => {
     switch(userCharacter) {
@@ -94,14 +93,6 @@ const Profile = ({ userData, isViewingOtherUser = false }: ProfileProps) => {
               style={{ width: `${getProgressPercentage()}%` }}
             ></div>
           </div>
-        </div>
-        
-        <div className="flex justify-between items-center mt-4 p-3 bg-white/5 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Flame className="text-orange-500" size={20} />
-            <span className="font-medium">Workout Streak</span>
-          </div>
-          <div className="text-xl font-bold">{userStreak} {userStreak === 1 ? 'day' : 'days'}</div>
         </div>
         
         {!isViewingOtherUser && (
