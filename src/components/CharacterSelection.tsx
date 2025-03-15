@@ -126,7 +126,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           </p>
         </div>
 
-        <div className="space-y-4 mb-6">
+        <div className={`grid ${!isMobile ? 'grid-cols-3 gap-6' : 'grid-cols-1 gap-4'} mb-6`}>
           <CharacterCard
             name="Goku"
             description="Train like a Saiyan with incredible strength and endurance. Perfect for high-intensity workouts."
@@ -135,6 +135,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             onClick={() => handleCharacterClick('goku')}
             count={characterCounts.goku}
             onCountClick={() => handleWarriorCountClick('goku')}
+            isMobile={isMobile}
           />
           
           <CharacterCard
@@ -145,6 +146,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             onClick={() => handleCharacterClick('saitama')}
             count={characterCounts.saitama}
             onCountClick={() => handleWarriorCountClick('saitama')}
+            isMobile={isMobile}
           />
           
           <CharacterCard
@@ -155,6 +157,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             onClick={() => handleCharacterClick('jin-woo')}
             count={characterCounts['jin-woo']}
             onCountClick={() => handleWarriorCountClick('jin-woo')}
+            isMobile={isMobile}
           />
         </div>
 
@@ -178,35 +181,16 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-white/70 mb-4">
-            Follow these simple steps to get started on your anime-inspired fitness journey
-          </p>
-          
-          <div className="flex justify-center mb-6">
-            <div className="bg-black/30 p-4 rounded-full">
-              <User size={24} className="text-blue-400" />
-            </div>
-          </div>
-          
-          <p className="text-white/80 text-sm max-w-xs mx-auto">
-            Sign up with your email and password to start your fitness journey.
-          </p>
-          
-          <div className="flex justify-center mt-4">
-            <div className="flex space-x-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <div 
-                  key={i} 
-                  className={`h-1.5 w-1.5 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/30'}`}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="mt-10">
+          <FeaturesCarousel />
+        </div>
+
+        <div className="mt-10">
+          <h2 className="text-2xl font-bold text-white mb-4">How To Use</h2>
+          <HowToUseCarousel />
         </div>
         
         <div className="mt-10">
-          <h2 className="text-2xl font-bold text-white mb-4">Frequently Asked Questions</h2>
           <FAQs />
         </div>
       </div>
@@ -232,6 +216,7 @@ interface CharacterCardProps {
   onClick: () => void;
   count: number;
   onCountClick: () => void;
+  isMobile: boolean;
 }
 
 const CharacterCard = ({
@@ -241,7 +226,8 @@ const CharacterCard = ({
   selected,
   onClick,
   count,
-  onCountClick
+  onCountClick,
+  isMobile
 }: CharacterCardProps) => {
   const getCharacterGradient = () => {
     switch (character) {
@@ -265,46 +251,97 @@ const CharacterCard = ({
     }
   };
 
-  const getCharacterLetter = () => {
-    if (character === 'jin-woo') return 'S';
-    return name.charAt(0);
-  };
+  if (isMobile) {
+    // Mobile character card design
+    return (
+      <div 
+        className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300 animate-fade-in`}
+        onClick={onClick}
+      >
+        <div className="flex">
+          <div className={`w-20 h-20 flex items-center justify-center bg-gradient-to-br ${getCharacterGradient()} relative overflow-hidden`}>
+            <img 
+              src={`/${character}.jpeg`} 
+              alt={name} 
+              className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+            />
+            <span className="text-4xl font-bold text-white relative z-10">{name.charAt(0)}</span>
+          </div>
+          <div className="p-3 flex-1">
+            <div className="flex justify-between">
+              <h3 className="font-bold text-white">{name}</h3>
+              <div 
+                className="text-xs text-white/60 flex items-center cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCountClick();
+                }}
+              >
+                <Users size={12} className="mr-1" />
+                <span>{count}</span>
+              </div>
+            </div>
+            <p className="text-xs text-white/70 mt-1">{description}</p>
+            <div className="flex space-x-2 mt-2">
+              <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-orange-500/20 text-orange-400' : character === 'saitama' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                {character === 'goku' ? 'Strength' : character === 'saitama' ? 'Consistency' : 'Progression'}
+              </button>
+              <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-blue-500/20 text-blue-400' : character === 'saitama' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+                {character === 'goku' ? 'Power' : character === 'saitama' ? 'Power' : 'Leveling'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  // Desktop/tablet character card design (bigger cards)
   return (
-    <div 
-      className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300`}
+    <AnimatedCard 
+      className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300 cursor-pointer h-full hover:scale-[1.02]`}
       onClick={onClick}
     >
-      <div className="flex">
-        <div className={`w-20 h-20 flex items-center justify-center bg-gradient-to-br ${getCharacterGradient()}`}>
-          <span className="text-4xl font-bold text-white">{getCharacterLetter()}</span>
+      <div className="p-0">
+        <div className={`h-40 relative overflow-hidden bg-gradient-to-br ${getCharacterGradient()}`}>
+          <img 
+            src={`/${character}.jpeg`} 
+            alt={name} 
+            className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-overlay"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-6xl font-bold text-white drop-shadow-lg">{name.charAt(0)}</span>
+          </div>
         </div>
-        <div className="p-3 flex-1">
-          <div className="flex justify-between">
-            <h3 className="font-bold text-white">{name}</h3>
+        
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xl font-bold text-white">{name}</h3>
             <div 
-              className="text-xs text-white/60 flex items-center cursor-pointer"
+              className="text-sm text-white/70 flex items-center cursor-pointer hover:text-white transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 onCountClick();
               }}
             >
-              <Users size={12} className="mr-1" />
+              <Users size={14} className="mr-1" />
               <span>{count}</span>
             </div>
           </div>
-          <p className="text-xs text-white/70 mt-1">{description}</p>
-          <div className="flex space-x-2 mt-2">
-            <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-orange-500/20 text-orange-400' : character === 'saitama' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'}`}>
+          
+          <p className="text-sm text-white/70 mb-4">{description}</p>
+          
+          <div className="flex space-x-2">
+            <span className={`text-xs px-3 py-1 rounded-full ${character === 'goku' ? 'bg-orange-500/20 text-orange-400' : character === 'saitama' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-purple-500/20 text-purple-400'}`}>
               {character === 'goku' ? 'Strength' : character === 'saitama' ? 'Consistency' : 'Progression'}
-            </button>
-            <button className={`text-xs px-2 py-0.5 rounded-full ${character === 'goku' ? 'bg-blue-500/20 text-blue-400' : character === 'saitama' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+            </span>
+            <span className={`text-xs px-3 py-1 rounded-full ${character === 'goku' ? 'bg-blue-500/20 text-blue-400' : character === 'saitama' ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
               {character === 'goku' ? 'Power' : character === 'saitama' ? 'Power' : 'Leveling'}
-            </button>
+            </span>
           </div>
         </div>
       </div>
-    </div>
+    </AnimatedCard>
   );
 };
 

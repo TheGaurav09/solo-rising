@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import AnimatedCard from './ui/AnimatedCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const FAQs = () => {
   const [openItem, setOpenItem] = useState<string | null>(null);
@@ -53,31 +53,43 @@ const FAQs = () => {
   };
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+    <div className="space-y-3 border border-white/10 rounded-xl p-4 backdrop-blur-sm bg-black/20">
+      <h2 className="text-xl font-bold text-white mb-4">FAQ</h2>
       
       {faqs.map((faq) => (
         <div 
           key={faq.id}
-          className={`border border-white/10 rounded-lg overflow-hidden transition-all duration-300 ${openItem === faq.id ? 'bg-black/30' : 'bg-black/20 hover:bg-black/25'}`}
+          className="border-b border-white/10 last:border-none"
         >
-          <button
-            className="w-full px-4 py-3 text-left flex justify-between items-center"
+          <motion.button
+            className="w-full py-3 text-left flex justify-between items-center"
             onClick={() => toggleItem(faq.id)}
+            whileHover={{ x: 2 }}
           >
             <span className="font-medium text-white">{faq.question}</span>
-            {openItem === faq.id ? (
-              <ChevronUp size={18} className="text-white/60" />
-            ) : (
+            <motion.div
+              animate={{ rotate: openItem === faq.id ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <ChevronDown size={18} className="text-white/60" />
-            )}
-          </button>
+            </motion.div>
+          </motion.button>
           
-          {openItem === faq.id && (
-            <div className="px-4 pb-3 pt-0 text-white/70 text-sm">
-              {faq.answer}
-            </div>
-          )}
+          <AnimatePresence>
+            {openItem === faq.id && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="pb-3 text-white/70 text-sm">
+                  {faq.answer}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       ))}
     </div>

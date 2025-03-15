@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Twitter, Facebook, Youtube, Github } from 'lucide-react';
+import { Instagram, Twitter, Facebook, Youtube, Github, Coffee } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -15,21 +16,46 @@ const Footer = () => {
         </div>
         
         <div className="flex justify-center space-x-4 mb-6">
-          <a href="#" className="text-white/60 hover:text-white transition-colors">
+          <motion.a 
+            href="#" 
+            className="text-white/60 hover:text-white transition-colors"
+            whileHover={{ scale: 1.2, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Instagram size={18} />
-          </a>
-          <a href="#" className="text-white/60 hover:text-white transition-colors">
+          </motion.a>
+          <motion.a 
+            href="#" 
+            className="text-white/60 hover:text-white transition-colors"
+            whileHover={{ scale: 1.2, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Twitter size={18} />
-          </a>
-          <a href="#" className="text-white/60 hover:text-white transition-colors">
+          </motion.a>
+          <motion.a 
+            href="#" 
+            className="text-white/60 hover:text-white transition-colors"
+            whileHover={{ scale: 1.2, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Facebook size={18} />
-          </a>
-          <a href="#" className="text-white/60 hover:text-white transition-colors">
+          </motion.a>
+          <motion.a 
+            href="#" 
+            className="text-white/60 hover:text-white transition-colors"
+            whileHover={{ scale: 1.2, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Youtube size={18} />
-          </a>
-          <a href="#" className="text-white/60 hover:text-white transition-colors">
+          </motion.a>
+          <motion.a 
+            href="#" 
+            className="text-white/60 hover:text-white transition-colors"
+            whileHover={{ scale: 1.2, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Github size={18} />
-          </a>
+          </motion.a>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm mb-6">
@@ -70,13 +96,24 @@ const Footer = () => {
         
         <div className="text-center text-xs text-white/40">
           <p>© {currentYear} Solo Rising. All rights reserved.</p>
-          <div className="mt-2">
-            <Link 
-              to="#" 
-              className="inline-block bg-yellow-500 text-black text-xs px-3 py-1 rounded-full font-bold hover:bg-yellow-400 transition-colors"
+          <div className="mt-2 flex flex-col items-center">
+            <motion.a 
+              href="https://www.buymeacoffee.com/" 
+              target="_blank"
+              className="inline-flex gap-2 items-center bg-yellow-500 text-black text-xs px-3 py-1.5 rounded-full font-bold hover:bg-yellow-400 transition-colors mb-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Buy me a coffee
-            </Link>
+              <Coffee size={14} />
+              <span>Buy me a coffee</span>
+            </motion.a>
+            <a 
+              href="https://github.com/username" 
+              target="_blank" 
+              className="text-white/60 hover:text-white transition-colors text-xs"
+            >
+              Visit our GitHub repository
+            </a>
           </div>
         </div>
       </div>

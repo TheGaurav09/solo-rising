@@ -2,8 +2,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Send, User, Bot, MoreVertical, Sparkles, Brain, Target } from 'lucide-react';
+import { Send, User, Bot, MoreVertical, Sparkles, Brain, Target, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { motion } from 'framer-motion';
 
 interface Message {
   id: string;
@@ -23,6 +24,7 @@ const AIChatPage: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   
@@ -75,6 +77,7 @@ const AIChatPage: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
+    setShowSuggestions(false);
     
     try {
       console.log("Sending message to AI chat function");
@@ -178,125 +181,179 @@ const AIChatPage: React.FC = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-0 w-full h-full">
-      <div className="max-w-5xl mx-auto w-full h-[calc(100vh-120px)]">
-        <AnimatedCard className="relative h-full p-0 overflow-hidden w-full border border-white/10">
+    <div className="container mx-auto px-4 py-6 w-full h-full">
+      <div className="max-w-4xl mx-auto w-full h-[calc(100vh-140px)]">
+        <AnimatedCard className="relative h-full p-0 overflow-hidden w-full border border-white/10 bg-black/40 backdrop-blur-xl">
           <div className={`p-4 border-b border-white/10 ${character === 'goku' ? 'bg-goku-primary/10' : character === 'saitama' ? 'bg-saitama-primary/10' : character === 'jin-woo' ? 'bg-jin-woo-primary/10' : 'bg-primary/10'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getCharacterColor()}`}>
+                <motion.div 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${getCharacterColor()}`}
+                  initial={{ rotateY: 0 }}
+                  animate={{ rotateY: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
                   <Bot size={20} />
-                </div>
+                </motion.div>
                 <div>
                   <h2 className="font-bold text-lg">{character === 'goku' ? 'Saiyan AI' : character === 'saitama' ? 'Hero AI' : character === 'jin-woo' ? 'Shadow AI' : 'Training AI'}</h2>
                   <p className="text-sm text-white/60">Your personal training assistant</p>
                 </div>
               </div>
-              <button className="p-2 rounded-full hover:bg-white/10">
-                <MoreVertical size={20} className="text-white/60" />
-              </button>
+              {showSuggestions && messages.length <= 1 && (
+                <button 
+                  className="p-2 rounded-full hover:bg-white/10"
+                  onClick={() => setShowSuggestions(false)}
+                >
+                  <X size={20} className="text-white/60" />
+                </button>
+              )}
+              {(!showSuggestions || messages.length > 1) && (
+                <button className="p-2 rounded-full hover:bg-white/10">
+                  <MoreVertical size={20} className="text-white/60" />
+                </button>
+              )}
             </div>
           </div>
           
           <div 
             ref={messagesContainerRef}
-            className="p-4 overflow-y-auto h-[calc(100%-220px)]" 
+            className="p-4 overflow-y-auto h-[calc(100%-170px)]" 
             style={{ scrollBehavior: 'smooth' }}
           >
-            {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-[80%] ${message.role === 'user' ? 'order-1' : 'order-2'}`}>
-                  <div className="flex items-start gap-3">
-                    {message.role === 'assistant' && (
+            {showSuggestions && messages.length <= 1 ? (
+              <div className="flex flex-col space-y-4">
+                <div className="mb-4 flex justify-start">
+                  <div className="max-w-[80%]">
+                    <div className="flex items-start gap-3">
                       <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${getCharacterColor()}`}>
                         <Bot size={16} />
                       </div>
-                    )}
-                    <div>
-                      <div 
-                        className={`p-3 rounded-lg ${
-                          message.role === 'user' 
-                            ? `${character === 'goku' ? 'bg-goku-primary/20' : character === 'saitama' ? 'bg-saitama-primary/20' : character === 'jin-woo' ? 'bg-jin-woo-primary/20' : 'bg-primary/20'}`
-                            : 'bg-white/10'
-                        }`}
-                      >
-                        <p className="text-white">{message.content}</p>
-                      </div>
-                      <div className="mt-1 text-xs text-white/50">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-white/20">
-                        <User size={16} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {loading && (
-              <div className="flex justify-start mb-4">
-                <div className="max-w-[80%]">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${getCharacterColor()}`}>
-                      <Bot size={16} />
-                    </div>
-                    <div className="p-3 bg-white/10 rounded-lg">
-                      <div className="flex space-x-2 items-center">
-                        <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 rounded-full bg-white/60 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-          
-          {messages.length <= 1 && (
-            <div className="px-4 pb-4 border-t border-white/10 bg-black/30">
-              <h3 className="text-white/70 text-sm mt-3 mb-2">Suggested Topics:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {suggestionTopics.map((topic, index) => (
-                  <div 
-                    key={index}
-                    className="bg-white/5 p-3 rounded-lg border border-white/10 hover:border-white/30 cursor-pointer transition-all hover-lift animated-border"
-                    onClick={() => handleSuggestionClick(topic.title)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${character === 'goku' ? 'bg-goku-primary/20' : character === 'saitama' ? 'bg-saitama-primary/20' : character === 'jin-woo' ? 'bg-jin-woo-primary/20' : 'bg-primary/20'}`}>
-                        {topic.icon}
-                      </div>
                       <div>
-                        <div className="font-medium">{topic.title}</div>
-                        <div className="text-xs text-white/60">{topic.subtitle}</div>
+                        <div className="p-3 rounded-lg bg-white/10 border border-white/5">
+                          <p className="text-white">{messages[0]?.content}</p>
+                        </div>
+                        <div className="mt-1 text-xs text-white/50">
+                          {messages[0]?.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <h3 className="text-white/70 text-sm mb-3">Suggested Topics:</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {suggestionTopics.map((topic, index) => (
+                      <motion.div 
+                        key={index}
+                        className="bg-white/5 p-3 rounded-lg border border-white/10 hover:border-white/30 cursor-pointer transition-all"
+                        onClick={() => handleSuggestionClick(topic.title)}
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${character === 'goku' ? 'bg-goku-primary/20' : character === 'saitama' ? 'bg-saitama-primary/20' : character === 'jin-woo' ? 'bg-jin-woo-primary/20' : 'bg-primary/20'}`}>
+                            {topic.icon}
+                          </div>
+                          <div>
+                            <div className="font-medium">{topic.title}</div>
+                            <div className="text-xs text-white/60">{topic.subtitle}</div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`mb-4 flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] ${message.role === 'user' ? 'order-1' : 'order-2'}`}>
+                      <div className="flex items-start gap-3">
+                        {message.role === 'assistant' && (
+                          <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${getCharacterColor()}`}>
+                            <Bot size={16} />
+                          </div>
+                        )}
+                        <div>
+                          <motion.div 
+                            className={`p-3 rounded-lg ${
+                              message.role === 'user' 
+                                ? `${character === 'goku' ? 'bg-goku-primary/20' : character === 'saitama' ? 'bg-saitama-primary/20' : character === 'jin-woo' ? 'bg-jin-woo-primary/20' : 'bg-primary/20'} border border-white/10`
+                                : 'bg-white/10 border border-white/5'
+                            }`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <p className="text-white">{message.content}</p>
+                          </motion.div>
+                          <div className="mt-1 text-xs text-white/50">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                        {message.role === 'user' && (
+                          <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-white/20">
+                            <User size={16} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
+                
+                {loading && (
+                  <div className="flex justify-start mb-4">
+                    <div className="max-w-[80%]">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${getCharacterColor()}`}>
+                          <Bot size={16} />
+                        </div>
+                        <div className="p-3 bg-white/10 rounded-lg border border-white/5">
+                          <div className="flex space-x-2 items-center">
+                            <motion.div 
+                              className="w-2 h-2 rounded-full bg-white/60"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity }}
+                            />
+                            <motion.div 
+                              className="w-2 h-2 rounded-full bg-white/60"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                            />
+                            <motion.div 
+                              className="w-2 h-2 rounded-full bg-white/60"
+                              animate={{ y: [0, -5, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
           
           <div className="border-t border-white/10 p-4 bg-black/20 absolute bottom-0 w-full">
             <div className="flex items-center gap-2">
               <textarea
                 id="chat-input"
-                className="flex-1 bg-white/5 border border-white/20 rounded-lg p-3 resize-none focus:outline-none focus:ring-1 focus:ring-white/30 min-h-[50px] max-h-[150px]"
+                className="flex-1 bg-white/5 border border-white/20 rounded-lg p-3 resize-none focus:outline-none focus:ring-1 focus:ring-white/30 min-h-[50px] max-h-[100px]"
                 placeholder="Ask your training assistant..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                rows={2}
+                rows={1}
               />
-              <button
+              <motion.button
                 className={`p-3 rounded-full ${
                   character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80' :
                   character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
@@ -305,9 +362,11 @@ const AIChatPage: React.FC = () => {
                 } disabled:opacity-50 disabled:cursor-not-allowed border border-white/10`}
                 onClick={handleSendMessage}
                 disabled={loading || !input.trim()}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Send size={20} className="text-white" />
-              </button>
+              </motion.button>
             </div>
             <div className="mt-2 text-xs text-white/40 text-center">
               Powered by {character === 'goku' ? 'Saiyan' : character === 'saitama' ? 'Hero' : character === 'jin-woo' ? 'Shadow' : 'Training'} AI Assistant

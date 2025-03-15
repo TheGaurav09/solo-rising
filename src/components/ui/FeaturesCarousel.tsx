@@ -140,7 +140,7 @@ const FeaturesCarousel = () => {
   return (
     <div className="w-full py-4 relative">
       <div 
-        className="relative overflow-hidden px-4"
+        className="relative overflow-hidden px-4 border border-white/10 rounded-xl p-4 backdrop-blur-sm bg-black/20"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -149,32 +149,28 @@ const FeaturesCarousel = () => {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Features</h3>
           <div className="flex space-x-2">
-            <button 
+            <motion.button 
               onClick={handlePrev}
-              className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
+              className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors border border-white/10"
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.1 }}
               aria-label="Previous features"
             >
-              <motion.div whileTap={{ scale: 0.9 }}>
-                <motion.div animate={{ x: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                  <motion.div>
-                    <ChevronLeft size={20} className="text-white/80" />
-                  </motion.div>
-                </motion.div>
+              <motion.div animate={{ x: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                <ChevronLeft size={20} className="text-white/80" />
               </motion.div>
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
               onClick={handleNext}
-              className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
+              className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors border border-white/10"
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.1 }}
               aria-label="Next features"
             >
-              <motion.div whileTap={{ scale: 0.9 }}>
-                <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
-                  <motion.div>
-                    <ChevronRight size={20} className="text-white/80" />
-                  </motion.div>
-                </motion.div>
+              <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                <ChevronRight size={20} className="text-white/80" />
               </motion.div>
-            </button>
+            </motion.button>
           </div>
         </div>
 
@@ -194,7 +190,7 @@ const FeaturesCarousel = () => {
               >
                 <AnimatedCard className="h-full p-6 bg-black/40 backdrop-blur-md border border-white/10 transition-all hover:border-white/30">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-3 rounded-full bg-white/10 mb-4">
+                    <div className="p-3 rounded-full bg-white/10 mb-4 border border-white/10">
                       {feature.icon}
                     </div>
                     <h3 className="text-lg font-bold mb-2 text-white">{feature.title}</h3>
@@ -207,16 +203,18 @@ const FeaturesCarousel = () => {
         </div>
 
         <div className="flex justify-center mt-4">
-          <div className="flex space-x-1">
+          <div className="flex space-x-1.5">
             {Array.from({ length: Math.ceil(features.length / visibleItems) }).map((_, index) => {
               const isActive = index === Math.floor(currentIndex / visibleItems);
               return (
-                <button 
+                <motion.button 
                   key={index} 
                   onClick={() => setCurrentIndex(index * visibleItems)}
                   className={`h-1.5 rounded-full transition-all ${
-                    isActive ? 'bg-white w-4' : 'bg-white/30 w-1.5'
+                    isActive ? 'bg-white w-6' : 'bg-white/30 w-1.5'
                   }`}
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
                   aria-label={`Go to page ${index + 1}`}
                 />
               );
@@ -228,18 +226,6 @@ const FeaturesCarousel = () => {
           Swipe left or right to explore more features
         </div>
       </div>
-      
-      <style>
-        {`
-          .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}
-      </style>
     </div>
   );
 };
