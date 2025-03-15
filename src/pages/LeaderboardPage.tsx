@@ -10,8 +10,8 @@ import Profile from '@/components/Profile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
-// Import country list
-import { countries } from '@/components/Countries';
+// Import country list - update to use typed countries
+import { countries, Country } from '@/components/Countries';
 
 interface ProfileModalProps {
   userId: string;
@@ -145,11 +145,11 @@ const LeaderboardPage = () => {
                 </button>
                 {countries.map((country) => (
                   <button
-                    key={country}
+                    key={country.name}
                     className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-md transition-colors"
-                    onClick={() => handleCountrySelect(country)}
+                    onClick={() => handleCountrySelect(country.name)}
                   >
-                    {country}
+                    {country.flag} {country.name}
                   </button>
                 ))}
               </div>

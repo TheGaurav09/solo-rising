@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AnimatedCard from './ui/AnimatedCard';
@@ -12,6 +11,7 @@ import { useMediaQuery } from '@/hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 import HowToUseCarousel from './ui/HowToUseCarousel';
 import FAQs from './FAQs';
+import FeaturesCarousel from './ui/FeaturesCarousel';
 
 const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: { 
   onLoginClick?: () => void;
@@ -252,7 +252,6 @@ const CharacterCard = ({
   };
 
   if (isMobile) {
-    // Mobile character card design
     return (
       <div 
         className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300 animate-fade-in`}
@@ -296,7 +295,6 @@ const CharacterCard = ({
     );
   }
 
-  // Desktop/tablet character card design (bigger cards)
   return (
     <AnimatedCard 
       className={`rounded-xl overflow-hidden border ${selected ? 'border-white' : 'border-white/20'} transition-all duration-300 cursor-pointer h-full hover:scale-[1.02]`}
