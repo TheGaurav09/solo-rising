@@ -23,7 +23,12 @@ interface ProfileUser {
   last_workout_date?: string;
 }
 
-const Leaderboard = () => {
+interface LeaderboardProps {
+  countryFilter?: string;
+  onViewProfile?: (userId: string) => void;
+}
+
+const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
   const { userId, character } = useUser();
   const [leaderboardData, setLeaderboardData] = useState<ProfileUser[]>([]);
   const [filter, setFilter] = useState<'global' | 'character'>('global');
@@ -36,7 +41,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeaderboardData();
-  }, [filter, period, character]);
+  }, [filter, period, character, countryFilter]);
 
   const fetchLeaderboardData = async () => {
     setLoading(true);
@@ -49,6 +54,10 @@ const Leaderboard = () => {
       
       if (filter === 'character' && character) {
         query = query.eq('character_type', character);
+      }
+      
+      if (countryFilter && countryFilter !== 'Global') {
+        query = query.eq('country', countryFilter);
       }
       
       // For now, we're ignoring the period filter as we don't have time-based filtering
@@ -260,7 +269,11 @@ const Leaderboard = () => {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      openProfileModal(user);
+                      if (onViewProfile) {
+                        onViewProfile(user.id);
+                      } else {
+                        openProfileModal(user);
+                      }
                     }} 
                     className="flex items-center text-sm text-white/70 hover:text-white transition-colors px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20"
                   >
