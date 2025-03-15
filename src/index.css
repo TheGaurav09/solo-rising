@@ -72,6 +72,15 @@
   animation: border-pulse 3s infinite;
 }
 
+@keyframes border-pulse {
+  0%, 100% {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
 /* Animate grid for background */
 .animated-grid {
   background-size: 100px 100px;
@@ -139,4 +148,120 @@ button:active {
 .backdrop-blur {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* Fix for overlapping and expanded items in store page */
+.store-items-container {
+  margin-bottom: 3rem;
+  overflow: visible;
+}
+
+.store-item {
+  max-height: max-content;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.store-item-expanded {
+  z-index: 2;
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+}
+
+/* Better focus states for accessibility */
+:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+/* Add glow effect for important buttons */
+.glow-button {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.glow-button:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Improve dialog backdrop for better focus */
+[role="dialog"] {
+  z-index: 50;
+}
+
+/* Add card visual enhancements */
+.card-highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 20%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  animation: card-shine 3s infinite;
+}
+
+@keyframes card-shine {
+  0% {
+    left: -50%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* Fix for overflowing content */
+.overflow-fix {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Add responsive padding on mobile */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .mobile-p-fix {
+    padding: 1rem !important;
+  }
+}
+
+/* Ensure footer doesn't obscure content */
+.footer-spacer {
+  height: 100px;
+}
+
+/* Enhanced loading spinner */
+.spinner {
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: white;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
 }

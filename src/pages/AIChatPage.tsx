@@ -180,7 +180,7 @@ const AIChatPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-0 w-full h-full">
       <div className="max-w-5xl mx-auto w-full h-[calc(100vh-120px)]">
-        <AnimatedCard className="relative h-full p-0 overflow-hidden w-full">
+        <AnimatedCard className="relative h-full p-0 overflow-hidden w-full border border-white/10">
           <div className={`p-4 border-b border-white/10 ${character === 'goku' ? 'bg-goku-primary/10' : character === 'saitama' ? 'bg-saitama-primary/10' : character === 'jin-woo' ? 'bg-jin-woo-primary/10' : 'bg-primary/10'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -200,7 +200,7 @@ const AIChatPage: React.FC = () => {
           
           <div 
             ref={messagesContainerRef}
-            className="p-4 overflow-y-auto h-[calc(100%-160px)]" 
+            className="p-4 overflow-y-auto h-[calc(100%-220px)]" 
             style={{ scrollBehavior: 'smooth' }}
           >
             {messages.map((message) => (
@@ -261,8 +261,8 @@ const AIChatPage: React.FC = () => {
           </div>
           
           {messages.length <= 1 && (
-            <div className="px-4 pb-4">
-              <h3 className="text-white/70 text-sm mb-3">Suggested Topics:</h3>
+            <div className="px-4 pb-4 border-t border-white/10 bg-black/30">
+              <h3 className="text-white/70 text-sm mt-3 mb-2">Suggested Topics:</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {suggestionTopics.map((topic, index) => (
                   <div 
@@ -302,7 +302,7 @@ const AIChatPage: React.FC = () => {
                   character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
                   character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80' :
                   'bg-primary hover:bg-primary/80'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                } disabled:opacity-50 disabled:cursor-not-allowed border border-white/10`}
                 onClick={handleSendMessage}
                 disabled={loading || !input.trim()}
               >
