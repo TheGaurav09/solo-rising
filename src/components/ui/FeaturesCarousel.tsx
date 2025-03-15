@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
-import { LayoutDashboard, Dumbbell, Trophy, ShoppingBag, MessageCircle, Activity, Flame, TrendingDown, User, Calendar, Gift, Target } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Trophy, ShoppingBag, MessageCircle, Activity, Flame, TrendingDown, User, Calendar, Gift, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import AnimatedCard from './AnimatedCard';
 import { motion } from 'framer-motion';
 
