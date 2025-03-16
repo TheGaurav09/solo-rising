@@ -11,7 +11,12 @@ import WorkoutConfirmDialog from './modals/WorkoutConfirmDialog';
 import { useMediaQuery } from '@/hooks/use-mobile';
 import { WorkoutLoggerProps } from './WorkoutLoggerProps';
 
-const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonStyle, className, refreshWorkouts }) => {
+const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ 
+  onWorkoutLogged, 
+  buttonStyle, 
+  className, 
+  refreshWorkouts 
+}) => {
   const { userId, character } = useUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -33,7 +38,6 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
     try {
       setLoading(true);
       // Since there's no 'exercises' table, we'll use a hardcoded list
-      // This is a temporary solution - ideally you would have an exercises table in your database
       const exercises = [
         "Push-ups", "Pull-ups", "Squats", "Lunges", "Plank", 
         "Deadlifts", "Bench Press", "Shoulder Press",
@@ -89,16 +93,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
       // Log the workout - match the field names with what the database expects
       const { error: logError } = await supabase
         .from('workouts')
-        .insert([
-          {
-            user_id: userId,
-            exercise_type: selectedExercise,
-            duration: duration,
-            reps: 0, // Add a default value for reps since it's required
-            points: points,
-            created_at: now
-          }
-        ]);
+        .insert({
+          user_id: userId,
+          exercise_type: selectedExercise,
+          duration: duration,
+          reps: 0, // Add a default value for reps since it's required
+          points: points,
+          created_at: now
+        });
         
       if (logError) {
         console.error('Error logging workout:', logError);
@@ -197,10 +199,13 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className={cn("bg-gradient-to-b from-gray-900 to-black border border-indigo-600/20 p-0 overflow-hidden max-w-lg w-full", isMobile && "w-[95%] max-w-[95%]")}>
-          <DialogHeader className="bg-gradient-to-r from-indigo-600/20 to-blue-600/20 p-4 border-b border-indigo-600/20">
+        <DialogContent className={cn(
+          "bg-black border border-white/10 p-0 overflow-hidden",
+          isMobile ? "w-[95vw] max-w-none mx-auto" : "max-w-lg w-full"
+        )}>
+          <DialogHeader className="bg-black p-4 border-b border-white/10">
             <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <Dumbbell className="w-5 h-5 text-indigo-400" />
+              <Dumbbell className="w-5 h-5 text-white" />
               Log Workout
             </DialogTitle>
           </DialogHeader>
@@ -208,22 +213,22 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
           <div className="p-4">
             {loading ? (
               <div className="flex justify-center items-center py-10">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+                <Loader2 className="w-8 h-8 animate-spin text-white" />
               </div>
             ) : (
               <>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-1">Exercise Type</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto pr-1">
+                    <label className="block text-sm font-medium text-white mb-1">Exercise Type</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
                       {exerciseList.map((exercise) => (
                         <button
                           key={exercise}
                           type="button"
-                          className={`p-2 rounded-md text-left border ${
+                          className={`p-2 rounded text-left border ${
                             selectedExercise === exercise
-                              ? 'bg-indigo-600/30 border-indigo-500'
-                              : 'bg-gray-800/50 border-gray-700 hover:bg-gray-800'
+                              ? 'bg-blue-900/50 border-blue-700 text-white'
+                              : 'bg-black border-gray-800 hover:bg-gray-900 text-white/80'
                           } transition-colors`}
                           onClick={() => setSelectedExercise(exercise)}
                         >
@@ -234,14 +239,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-1">Intensity</label>
+                    <label className="block text-sm font-medium text-white mb-1">Intensity</label>
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
-                        className={`p-2 rounded-md text-center ${
+                        className={`p-2 rounded text-center ${
                           intensity === 'low'
-                            ? 'bg-green-600/30 border border-green-500'
-                            : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                            ? 'bg-green-900/50 border border-green-700 text-white'
+                            : 'bg-black border border-gray-800 hover:bg-gray-900 text-white/80'
                         }`}
                         onClick={() => setIntensity('low')}
                       >
@@ -249,10 +254,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                       </button>
                       <button
                         type="button"
-                        className={`p-2 rounded-md text-center ${
+                        className={`p-2 rounded text-center ${
                           intensity === 'medium'
-                            ? 'bg-yellow-600/30 border border-yellow-500'
-                            : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                            ? 'bg-yellow-900/50 border border-yellow-700 text-white'
+                            : 'bg-black border border-gray-800 hover:bg-gray-900 text-white/80'
                         }`}
                         onClick={() => setIntensity('medium')}
                       >
@@ -260,10 +265,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                       </button>
                       <button
                         type="button"
-                        className={`p-2 rounded-md text-center ${
+                        className={`p-2 rounded text-center ${
                           intensity === 'high'
-                            ? 'bg-red-600/30 border border-red-500'
-                            : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                            ? 'bg-red-900/50 border border-red-700 text-white'
+                            : 'bg-black border border-gray-800 hover:bg-gray-900 text-white/80'
                         }`}
                         onClick={() => setIntensity('high')}
                       >
@@ -273,16 +278,16 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-1">Duration (minutes)</label>
+                    <label className="block text-sm font-medium text-white mb-1">Duration (minutes)</label>
                     <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
                       {[5, 10, 15, 20, 30, 45, 60].map((mins) => (
                         <button
                           key={mins}
                           type="button"
-                          className={`p-2 rounded-md text-center ${
+                          className={`p-2 rounded text-center ${
                             duration === mins
-                              ? 'bg-blue-600/30 border border-blue-500'
-                              : 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800'
+                              ? 'bg-blue-900/50 border border-blue-700 text-white'
+                              : 'bg-black border border-gray-800 hover:bg-gray-900 text-white/80'
                           }`}
                           onClick={() => setDuration(mins as 5 | 10 | 15 | 20 | 30 | 45 | 60)}
                         >
@@ -296,7 +301,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                 <div className="mt-6 flex justify-between">
                   <Button
                     variant="outline"
-                    className="bg-transparent border border-gray-600 text-white hover:bg-gray-800"
+                    className="bg-transparent border border-gray-800 text-white hover:bg-gray-900"
                     onClick={handleCloseDialog}
                   >
                     Cancel
@@ -304,7 +309,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
                   
                   <Button
                     onClick={handleConfirm}
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-none hover:from-indigo-700 hover:to-blue-700"
+                    className="bg-blue-600 text-white hover:bg-blue-700"
                     disabled={!selectedExercise}
                   >
                     Confirm Workout

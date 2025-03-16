@@ -63,7 +63,7 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center text-sm mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 text-center text-sm mb-6">
           <div>
             <h3 className="font-medium text-white mb-2">Workouts</h3>
             <ul className="space-y-1 text-white/60">
@@ -79,14 +79,6 @@ const Footer = () => {
             <ul className="space-y-1 text-white/60">
               <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-medium text-white mb-2">Help & Support</h3>
-            <ul className="space-y-1 text-white/60">
-              <li><Link to="#" className="hover:text-white transition-colors">Contact Us</Link></li>
-              <li><Link to="#" className="hover:text-white transition-colors">Support Center</Link></li>
             </ul>
           </div>
         </div>
