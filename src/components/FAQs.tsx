@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FAQs = () => {
@@ -61,10 +61,9 @@ const FAQs = () => {
           key={faq.id}
           className="border-b border-white/10 last:border-none"
         >
-          <motion.button
+          <button
             className="w-full py-3 text-left flex justify-between items-center"
             onClick={() => toggleItem(faq.id)}
-            whileHover={{ x: 2 }}
           >
             <span className="font-medium text-white">{faq.question}</span>
             <motion.div
@@ -73,7 +72,7 @@ const FAQs = () => {
             >
               <ChevronDown size={18} className="text-white/60" />
             </motion.div>
-          </motion.button>
+          </button>
           
           <AnimatePresence>
             {openItem === faq.id && (

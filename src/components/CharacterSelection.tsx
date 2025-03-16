@@ -133,8 +133,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             character="goku"
             selected={selectedCharacter === 'goku'}
             onClick={() => handleCharacterClick('goku')}
-            count={characterCounts.goku}
-            onCountClick={() => handleWarriorCountClick('goku')}
+            onViewUsers={() => handleWarriorCountClick('goku')}
             isMobile={isMobile}
           />
           
@@ -144,8 +143,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             character="saitama"
             selected={selectedCharacter === 'saitama'}
             onClick={() => handleCharacterClick('saitama')}
-            count={characterCounts.saitama}
-            onCountClick={() => handleWarriorCountClick('saitama')}
+            onViewUsers={() => handleWarriorCountClick('saitama')}
             isMobile={isMobile}
           />
           
@@ -155,8 +153,7 @@ const CharacterSelection = ({ onLoginClick, onSignupClick, userId }: {
             character="jin-woo"
             selected={selectedCharacter === 'jin-woo'}
             onClick={() => handleCharacterClick('jin-woo')}
-            count={characterCounts['jin-woo']}
-            onCountClick={() => handleWarriorCountClick('jin-woo')}
+            onViewUsers={() => handleWarriorCountClick('jin-woo')}
             isMobile={isMobile}
           />
         </div>
@@ -214,8 +211,7 @@ interface CharacterCardProps {
   character: 'goku' | 'saitama' | 'jin-woo';
   selected: boolean;
   onClick: () => void;
-  count: number;
-  onCountClick: () => void;
+  onViewUsers: () => void;
   isMobile: boolean;
 }
 
@@ -225,8 +221,7 @@ const CharacterCard = ({
   character,
   selected,
   onClick,
-  count,
-  onCountClick,
+  onViewUsers,
   isMobile
 }: CharacterCardProps) => {
   const getCharacterGradient = () => {
@@ -270,14 +265,13 @@ const CharacterCard = ({
             <div className="flex justify-between">
               <h3 className="font-bold text-white">{name}</h3>
               <div 
-                className="text-xs text-white/60 flex items-center cursor-pointer"
+                className="text-xs text-white/60 flex items-center cursor-pointer hover:text-white transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCountClick();
+                  onViewUsers();
                 }}
               >
-                <Users size={12} className="mr-1" />
-                <span>{count}</span>
+                <Users size={14} />
               </div>
             </div>
             <p className="text-xs text-white/70 mt-1">{description}</p>
@@ -319,11 +313,10 @@ const CharacterCard = ({
               className="text-sm text-white/70 flex items-center cursor-pointer hover:text-white transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
-                onCountClick();
+                onViewUsers();
               }}
             >
-              <Users size={14} className="mr-1" />
-              <span>{count}</span>
+              <Users size={14} />
             </div>
           </div>
           

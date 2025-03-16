@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/context/UserContext';
 import { Link } from 'react-router-dom';
-import { Trophy, Users, Globe, MapPin, User, Flame, ExternalLink, ChevronDown, ChevronUp, Info, X, Award, Calendar, Star, Zap } from 'lucide-react';
+import { Trophy, Users, Globe, MapPin, User, Flame, ExternalLink, Info, X, Award, Calendar, Star, Zap } from 'lucide-react';
 import InfoTooltip from './ui/InfoTooltip';
 import AnimatedCard from './ui/AnimatedCard';
 import LeaderboardFooter from './ui/LeaderboardFooter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
+import { Button } from './ui/button';
 
 interface ProfileUser {
   id: string;
@@ -32,16 +33,16 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
   const { userId, character } = useUser();
   const [leaderboardData, setLeaderboardData] = useState<ProfileUser[]>([]);
   const [filter, setFilter] = useState<'global' | 'character'>('global');
-  const [period, setPeriod] = useState<'all-time' | 'monthly' | 'weekly'>('all-time');
   const [loading, setLoading] = useState(true);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ProfileUser | null>(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
 
   useEffect(() => {
     fetchLeaderboardData();
-  }, [filter, period, character, countryFilter]);
+  }, [filter, character, countryFilter]);
 
   const fetchLeaderboardData = async () => {
     setLoading(true);
@@ -49,8 +50,7 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
       let query = supabase
         .from('users')
         .select('id, warrior_name, character_type, points, streak, country, level, xp, coins, last_workout_date')
-        .order('points', { ascending: false })
-        .limit(50);
+        .order('points', { ascending: false });
       
       if (filter === 'character' && character) {
         query = query.eq('character_type', character);
@@ -60,10 +60,8 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
         query = query.eq('country', countryFilter);
       }
       
-      // For now, we're ignoring the period filter as we don't have time-based filtering
-      // This would require additional database structure
-      
-      const { data, error } = await query;
+      // Limit to 20 users initially
+      let { data, error } = await query.limit(20);
       
       if (error) {
         console.error("Error fetching leaderboard:", error);
@@ -77,10 +75,58 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
         if (userId) {
           const userRankIndex = data.findIndex(user => user.id === userId);
           setUserRank(userRankIndex !== -1 ? userRankIndex + 1 : null);
+          
+          // If user not in top 20, fetch their rank separately
+          if (userRankIndex === -1) {
+            const { data: allUsersData } = await supabase
+              .from('users')
+              .select('id')
+              .order('points', { ascending: false });
+              
+            if (allUsersData) {
+              const fullRankIndex = allUsersData.findIndex(user => user.id === userId);
+              setUserRank(fullRankIndex !== -1 ? fullRankIndex + 1 : null);
+            }
+          }
         }
       }
     } catch (error) {
       console.error("Error in fetchLeaderboardData:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchAllUsers = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('users')
+        .select('id, warrior_name, character_type, points, streak, country, level, xp, coins, last_workout_date')
+        .order('points', { ascending: false });
+      
+      if (filter === 'character' && character) {
+        query = query.eq('character_type', character);
+      }
+      
+      if (countryFilter && countryFilter !== 'Global') {
+        query = query.eq('country', countryFilter);
+      }
+      
+      // No limit to get all users
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error fetching all users:", error);
+        return;
+      }
+      
+      if (data) {
+        setLeaderboardData(data);
+        setShowAllUsers(true);
+      }
+    } catch (error) {
+      console.error("Error in fetchAllUsers:", error);
     } finally {
       setLoading(false);
     }
@@ -124,31 +170,11 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
 
   return (
     <div>
-      <style>
-        {`
-          .leaderboard-row:nth-child(1) {
-            background: linear-gradient(90deg, rgba(255,215,0,0.2) 0%, rgba(255,215,0,0.05) 100%);
-            border-color: rgba(255,215,0,0.3);
-          }
-          .leaderboard-row:nth-child(2) {
-            background: linear-gradient(90deg, rgba(192,192,192,0.2) 0%, rgba(192,192,192,0.05) 100%);
-            border-color: rgba(192,192,192,0.3);
-          }
-          .leaderboard-row:nth-child(3) {
-            background: linear-gradient(90deg, rgba(205,127,50,0.2) 0%, rgba(205,127,50,0.05) 100%);
-            border-color: rgba(205,127,50,0.3);
-          }
-          .streak-badge {
-            background: linear-gradient(90deg, #ff4d4d 0%, #f9cb28 100%);
-          }
-        `}
-      </style>
-
       <div className="flex justify-between mb-6">
         <div className="space-x-2">
           <button
             onClick={() => setFilter('global')}
-            className={`px-3 py-1.5 rounded-full text-sm ${filter === 'global' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+            className={`px-3 py-1.5 rounded-full text-sm z-10 ${filter === 'global' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
           >
             <Globe size={14} className="inline mr-1.5" /> Global
           </button>
@@ -161,36 +187,13 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
             <User size={14} className="inline mr-1.5" /> My Faction
           </button>
         </div>
-        
-        <div className="space-x-2">
-          <button
-            onClick={() => setPeriod('all-time')}
-            className={`px-3 py-1.5 rounded-full text-sm ${period === 'all-time' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-          >
-            All-time
-          </button>
-          
-          <button
-            onClick={() => setPeriod('monthly')}
-            className={`px-3 py-1.5 rounded-full text-sm ${period === 'monthly' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-          >
-            Monthly
-          </button>
-          
-          <button
-            onClick={() => setPeriod('weekly')}
-            className={`px-3 py-1.5 rounded-full text-sm ${period === 'weekly' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
-          >
-            Weekly
-          </button>
-        </div>
       </div>
       
       <div className="space-y-2">
         {leaderboardData.map((user, index) => (
           <div 
             key={user.id}
-            className={`relative rounded-lg border border-white/10 leaderboard-row overflow-hidden transition-all duration-200 ${user.id === userId ? 'bg-white/10 border-white/30' : 'bg-black/20 hover:bg-black/30'}`}
+            className={`relative rounded-lg border ${user.id === userId ? 'border-white/30 bg-white/10' : 'border-white/10 bg-black/20 hover:bg-black/30'} overflow-hidden transition-all duration-200`}
           >
             <div 
               className="flex items-center p-3 cursor-pointer"
@@ -211,7 +214,7 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
                   </span>
                   
                   {user.streak >= 3 && (
-                    <div className="ml-2 streak-badge px-1.5 rounded-full flex items-center">
+                    <div className="ml-2 px-1.5 rounded-full flex items-center bg-gradient-to-r from-red-500 to-yellow-500">
                       <Flame size={12} className="text-white mr-0.5" />
                       <span className="text-xs text-white">{user.streak}</span>
                     </div>
@@ -240,14 +243,6 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
               <div className="text-right">
                 <div className="font-bold text-white">{user.points.toLocaleString()}</div>
                 <div className="text-xs text-white/60">points</div>
-              </div>
-              
-              <div className="ml-3">
-                {expandedUser === user.id ? (
-                  <ChevronUp size={16} className="text-white/60" />
-                ) : (
-                  <ChevronDown size={16} className="text-white/60" />
-                )}
               </div>
             </div>
             
@@ -294,8 +289,38 @@ const Leaderboard = ({ countryFilter, onViewProfile }: LeaderboardProps) => {
         )}
       </div>
       
-      {userRank !== null && (
-        <LeaderboardFooter onShowAll={() => {}} userRank={userRank} />
+      {/* Show All Button instead of Footer */}
+      {leaderboardData.length > 0 && !showAllUsers && (
+        <div className="mt-6 text-center">
+          <Button
+            onClick={fetchAllUsers}
+            variant="outline"
+            className="bg-black/30 hover:bg-black/50 border border-white/20 text-white"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="flex items-center">
+                <motion.span 
+                  className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full mr-2"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                Loading...
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <Users size={16} className="mr-2" />
+                Show All Warriors
+              </span>
+            )}
+          </Button>
+          
+          {userRank !== null && userRank > 20 && (
+            <div className="mt-3 text-sm text-white/70">
+              Your rank: <span className="font-bold text-white">#{userRank}</span>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Profile Modal */}

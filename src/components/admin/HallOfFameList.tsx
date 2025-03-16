@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { Trophy, Trash2, Search, Loader2 } from 'lucide-react';
+import { Trophy, Trash2, Search, Loader2, Coffee } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { 
@@ -14,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { motion } from 'framer-motion';
 
 interface DonorEntry {
   id: string;
@@ -37,28 +39,33 @@ const HallOfFameList = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const deleteSonGoku = async () => {
+    // Remove fake users
+    const removeFakeUsers = async () => {
       try {
-        const { data } = await supabase
-          .from('hall_of_fame')
-          .select('*')
-          .eq('name', 'Son Goku');
-
-        if (data && data.length > 0) {
-          console.log("Found Son Goku entry, deleting...");
-          await supabase
+        const fakeNames = ['Son Goku', 'Saitama', 'Sung Jin-Woo', 'Test User', 'Demo User'];
+        
+        for (const fakeName of fakeNames) {
+          const { data } = await supabase
             .from('hall_of_fame')
-            .delete()
-            .eq('name', 'Son Goku');
-          
-          console.log("Son Goku entry deleted");
+            .select('*')
+            .eq('name', fakeName);
+
+          if (data && data.length > 0) {
+            console.log(`Found fake user entry for ${fakeName}, deleting...`);
+            await supabase
+              .from('hall_of_fame')
+              .delete()
+              .eq('name', fakeName);
+            
+            console.log(`${fakeName} entry deleted`);
+          }
         }
       } catch (error) {
-        console.error("Error deleting Son Goku:", error);
+        console.error("Error deleting fake users:", error);
       }
     };
 
-    deleteSonGoku();
+    removeFakeUsers();
     fetchDonors();
   }, []);
 
@@ -187,16 +194,30 @@ const HallOfFameList = () => {
 
   return (
     <div className="space-y-4 bg-black/20 p-4 rounded-lg border border-white/10">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h3 className="text-xl font-bold">Hall of Fame</h3>
-        <div className="relative w-64">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
-          <Input 
-            placeholder="Search donors..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 bg-black/20 border-white/20 text-white"
-          />
+        
+        <div className="flex flex-col gap-3 w-full md:w-auto">
+          <motion.a 
+            href="https://www.buymeacoffee.com/" 
+            target="_blank"
+            className="flex justify-center items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-full font-bold hover:bg-yellow-400 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Coffee size={18} />
+            <span>Buy me a coffee</span>
+          </motion.a>
+          
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+            <Input 
+              placeholder="Search donors..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 bg-black/20 border-white/20 text-white"
+            />
+          </div>
         </div>
       </div>
 

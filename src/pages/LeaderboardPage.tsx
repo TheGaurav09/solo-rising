@@ -10,8 +10,8 @@ import Profile from '@/components/Profile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
-// Import country list - update to use typed countries
-import { countries, Country } from '@/components/Countries';
+// Import country list
+import { countries } from '@/components/Countries';
 
 interface ProfileModalProps {
   userId: string;
@@ -118,7 +118,7 @@ const LeaderboardPage = () => {
         </div>
       </div>
       
-      <div className="relative z-10 mb-4">
+      <div className="relative mb-4" style={{ zIndex: 5 }}>
         <Button
           variant="outline"
           className="w-full sm:w-auto flex justify-between items-center gap-2 border border-white/10 bg-black/20"
@@ -159,10 +159,12 @@ const LeaderboardPage = () => {
       </div>
       
       <AnimatedCard className="border border-white/10 backdrop-blur-md">
-        <Leaderboard 
-          countryFilter={selectedCountry === "Global" ? undefined : selectedCountry}
-          onViewProfile={handleViewProfile}
-        />
+        <div className="p-4">
+          <Leaderboard 
+            countryFilter={selectedCountry === "Global" ? undefined : selectedCountry}
+            onViewProfile={handleViewProfile}
+          />
+        </div>
       </AnimatedCard>
 
       <AnimatePresence>
