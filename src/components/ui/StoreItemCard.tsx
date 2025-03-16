@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Coins, ShoppingCart, PackageOpen } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
@@ -38,7 +39,7 @@ const StoreItemCard: React.FC<StoreItemCardProps> = ({
   };
   
   return (
-    <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:scale-[1.02] transition-all duration-300 h-full flex flex-col">
+    <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden transition-all duration-300 h-full flex flex-col">
       <div className="relative h-40 overflow-hidden bg-black/20">
         <img 
           src={item.icon || '/placeholder.svg'} 

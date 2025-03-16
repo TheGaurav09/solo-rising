@@ -11,6 +11,7 @@ import CoinDisplay from './ui/CoinDisplay';
 import { useAudio } from '@/context/AudioContext';
 import { LayoutDashboard } from 'lucide-react';
 import WarningNotification from './WarningNotification';
+import VideoBackground from '@/components/ui/VideoBackground';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +22,10 @@ const Dashboard = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [videoBackgroundEnabled, setVideoBackgroundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('video-background-enabled');
+    return saved ? saved === 'true' : false;
+  });
   const { togglePlay, isPlaying, setVolume } = useAudio();
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -36,17 +41,6 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
   }, [sidebarHidden]);
-
-  // Scroll to top when route changes
-  useEffect(() => {
-    if (contentRef.current) {
-      console.log("Scrolling to top on route change");
-      contentRef.current.scrollTo({
-        top: 0,
-        behavior: 'auto'
-      });
-    }
-  }, [location.pathname]);
 
   useEffect(() => {
     const audio = document.querySelector('audio');
@@ -300,6 +294,8 @@ const Dashboard = () => {
       className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}
       onClick={handleClickOutside}
     >
+      <VideoBackground enabled={videoBackgroundEnabled} />
+      
       <div className="flex flex-1 overflow-hidden">
         <motion.div 
           className="sidebar fixed h-full z-10 w-64 bg-black/60 backdrop-blur-md border-r border-white/10"

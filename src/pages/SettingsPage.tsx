@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnimatedCard from '@/components/ui/AnimatedCard';
 import AnimatedButton from '@/components/ui/AnimatedButton';
@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Music, VolumeX, Volume1, Volume2, Play, Pause, LogOut } from 'lucide-react';
+import { Music, VolumeX, Volume1, Volume2, Play, Pause, LogOut, Video } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Footer from '@/components/ui/Footer';
+import VideoBackgroundToggle from '@/components/ui/VideoBackgroundToggle';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -22,6 +23,14 @@ const SettingsPage = () => {
   
   const [newName, setNewName] = useState(userName);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [videoBackgroundEnabled, setVideoBackgroundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('video-background-enabled');
+    return saved ? saved === 'true' : false;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('video-background-enabled', videoBackgroundEnabled.toString());
+  }, [videoBackgroundEnabled]);
   
   const handleUpdateName = async () => {
     if (!newName.trim() || newName === userName) return;
@@ -104,7 +113,7 @@ const SettingsPage = () => {
         <AnimatedCard className="p-6 h-auto">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Music size={20} />
-            Music Settings
+            Audio & Visual Settings
           </h2>
           
           <div className="space-y-6">
@@ -145,6 +154,7 @@ const SettingsPage = () => {
                 max={100} 
                 step={1}
                 onValueChange={(value) => setVolume(value[0] / 100)} 
+                className="[&>.absolute]:bg-blue-600"
               />
             </div>
             
@@ -153,6 +163,18 @@ const SettingsPage = () => {
               <Switch 
                 checked={isLooping}
                 onCheckedChange={toggleLoop}
+              />
+            </div>
+            
+            <div className="pt-4 border-t border-white/10">
+              <h3 className="text-md font-medium mb-4 flex items-center gap-2">
+                <Video size={18} />
+                Visual Settings
+              </h3>
+              
+              <VideoBackgroundToggle 
+                enabled={videoBackgroundEnabled}
+                onChange={setVideoBackgroundEnabled}
               />
             </div>
           </div>
