@@ -10,10 +10,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useUser } from '@/context/UserContext';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-interface WorkoutConfirmDialogProps {
+export interface WorkoutConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;

@@ -11,7 +11,7 @@ import WorkoutConfirmDialog from './modals/WorkoutConfirmDialog';
 import { useMediaQuery } from '@/hooks/use-mobile';
 import { WorkoutLoggerProps } from './WorkoutLoggerProps';
 
-const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonStyle, className }) => {
+const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonStyle, className, refreshWorkouts }) => {
   const { userId, character } = useUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -32,23 +32,21 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
   const fetchExercises = async () => {
     try {
       setLoading(true);
-      const { data: exercisesData, error } = await supabase
-        .from('exercises')
-        .select('name')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching exercises:', error);
-        return;
+      // Since there's no 'exercises' table, we'll use a hardcoded list
+      // This is a temporary solution - ideally you would have an exercises table in your database
+      const exercises = [
+        "Push-ups", "Pull-ups", "Squats", "Lunges", "Plank", 
+        "Deadlifts", "Bench Press", "Shoulder Press",
+        "Bicep Curls", "Tricep Extensions", "Crunches",
+        "Jumping Jacks", "Running", "Cycling", "Swimming",
+        "Yoga", "Pilates", "HIIT", "Kickboxing"
+      ];
+      
+      setExerciseList(exercises);
+      if (exercises.length > 0) {
+        setSelectedExercise(exercises[0]);
       }
-
-      if (exercisesData) {
-        const exercises = exercisesData.map(ex => ex.name);
-        setExerciseList(exercises);
-        if (exercises.length > 0) {
-          setSelectedExercise(exercises[0]);
-        }
-      }
+      
     } catch (error) {
       console.error('Error in fetchExercises:', error);
     } finally {
@@ -88,17 +86,17 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
       const points = calculatePoints();
       const now = new Date().toISOString();
       
-      // Log the workout
+      // Log the workout - match the field names with what the database expects
       const { error: logError } = await supabase
         .from('workouts')
         .insert([
           {
             user_id: userId,
-            exercise_name: selectedExercise,
+            exercise_type: selectedExercise,
             duration: duration,
-            intensity: intensity,
+            reps: 0, // Add a default value for reps since it's required
             points: points,
-            completed_at: now
+            created_at: now
           }
         ]);
         
@@ -170,6 +168,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
           points,
           completedAt: now
         });
+      }
+      
+      if (refreshWorkouts) {
+        await refreshWorkouts();
       }
       
     } catch (error) {
@@ -315,15 +317,10 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ onWorkoutLogged, buttonSt
       </Dialog>
 
       <WorkoutConfirmDialog
-        open={confirmDialogOpen}
-        onOpenChange={setConfirmDialogOpen}
+        isOpen={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
         onConfirm={handleLogWorkout}
-        onCancel={() => setConfirmDialogOpen(false)}
-        exerciseName={selectedExercise || ''}
-        duration={duration}
-        intensity={intensity}
-        points={calculatePoints()}
-        loading={loading}
+        character={character}
       />
     </>
   );
