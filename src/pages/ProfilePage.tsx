@@ -671,6 +671,7 @@ const ProfilePage = () => {
 
       {showLogoutConfirm && (
         <LogoutConfirmModal
+          isOpen={showLogoutConfirm}
           onConfirm={async () => {
             try {
               await supabase.auth.signOut();
