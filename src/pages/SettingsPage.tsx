@@ -135,7 +135,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 max={1}
                 step={0.01}
                 onValueChange={handleVolumeChange}
-                className="[&>[role=slider]]:bg-white [&>.slider-track]:bg-white/20"
               />
             </div>
           </div>

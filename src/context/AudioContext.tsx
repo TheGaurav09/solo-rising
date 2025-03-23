@@ -6,11 +6,9 @@ type AudioContextType = {
   isPlaying: boolean;
   volume: number;
   isLooping: boolean;
-  isMuted: boolean;
   togglePlay: () => void;
   setVolume: (volume: number) => void;
   toggleLoop: () => void;
-  toggleMute: (muted?: boolean) => void;
   playAudio: () => void;
   pauseAudio: () => void;
 };
@@ -22,8 +20,6 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolumeState] = useState(0.3); // Default to a lower volume
   const [isLooping, setIsLooping] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [previousVolume, setPreviousVolume] = useState(0.3);
   const { character } = useUser();
 
   // Set the audio source based on character
@@ -57,29 +53,26 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const savedVolume = localStorage.getItem('audio-volume');
     const savedIsLooping = localStorage.getItem('audio-looping');
     const savedIsPlaying = localStorage.getItem('audio-playing');
-    const savedIsMuted = localStorage.getItem('audio-muted');
 
     if (savedVolume) setVolumeState(parseFloat(savedVolume));
     if (savedIsLooping) setIsLooping(savedIsLooping === 'true');
-    if (savedIsMuted) setIsMuted(savedIsMuted === 'true');
     if (savedIsPlaying) {
       const shouldPlay = savedIsPlaying === 'true';
       setIsPlaying(shouldPlay);
-      if (shouldPlay && !savedIsMuted) audio.play().catch(e => console.error("Audio playback error:", e));
+      if (shouldPlay) audio.play().catch(e => console.error("Audio playback error:", e));
     }
   }, [audio]);
 
   // Update audio settings when state changes
   useEffect(() => {
-    audio.volume = isMuted ? 0 : volume;
+    audio.volume = volume;
     audio.loop = isLooping;
     
     localStorage.setItem('audio-volume', volume.toString());
     localStorage.setItem('audio-looping', isLooping.toString());
     localStorage.setItem('audio-playing', isPlaying.toString());
-    localStorage.setItem('audio-muted', isMuted.toString());
     
-    if (isPlaying && !isMuted) {
+    if (isPlaying) {
       audio.play().catch(e => console.error("Audio playback error:", e));
     } else {
       audio.pause();
@@ -88,7 +81,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       audio.pause();
     };
-  }, [isPlaying, volume, isLooping, isMuted, audio]);
+  }, [isPlaying, volume, isLooping, audio]);
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
@@ -104,21 +97,10 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setVolume = (newVolume: number) => {
     setVolumeState(newVolume);
-    if (isMuted) setIsMuted(false);
   };
 
   const toggleLoop = () => {
     setIsLooping(!isLooping);
-  };
-
-  const toggleMute = (muted?: boolean) => {
-    const newMutedState = muted !== undefined ? muted : !isMuted;
-    
-    if (newMutedState) {
-      setPreviousVolume(volume);
-    }
-    
-    setIsMuted(newMutedState);
   };
 
   return (
@@ -127,11 +109,9 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isPlaying,
         volume,
         isLooping,
-        isMuted,
         togglePlay,
         setVolume,
         toggleLoop,
-        toggleMute,
         playAudio,
         pauseAudio,
       }}

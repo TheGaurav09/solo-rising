@@ -5,25 +5,18 @@ import AnimatedCard from '../ui/AnimatedCard';
 import AnimatedButton from '../ui/AnimatedButton';
 
 interface LogoutConfirmModalProps {
-  isOpen: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-  onClose?: () => void;
   character?: 'goku' | 'saitama' | 'jin-woo';
 }
 
-const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, onClose, character }: LogoutConfirmModalProps) => {
-  if (!isOpen) return null;
-
-  // Use onClose if provided, otherwise use onCancel
-  const handleClose = onClose || onCancel;
-  
+const LogoutConfirmModal = ({ onConfirm, onCancel, character }: LogoutConfirmModalProps) => {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
       <AnimatedCard className="w-full max-w-md">
         <div className="p-6">
           <button 
-            onClick={handleClose}
+            onClick={onCancel}
             className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors duration-300"
           >
             <X size={20} />
@@ -43,7 +36,7 @@ const LogoutConfirmModal = ({ isOpen, onConfirm, onCancel, onClose, character }:
           
           <div className="grid grid-cols-2 gap-4">
             <AnimatedButton
-              onClick={handleClose}
+              onClick={onCancel}
               character={character}
               variant="outline"
             >
