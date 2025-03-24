@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useAudio } from '@/context/AudioContext';
 import VideoBackgroundToggle from '@/components/ui/VideoBackgroundToggle';
 import Footer from '@/components/ui/Footer';
+import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
 
 interface SettingsPageProps {
   videoBackgroundEnabled: boolean;
@@ -23,14 +24,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const { volume, setVolume, toggleMute, isMuted } = useAudio();
   const navigate = useNavigate();
-  const { userId } = useUser();
+  const { userId, character } = useUser();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = async () => {
     try {
-      setIsLoggingOut(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -45,8 +45,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
         description: "There was an error logging you out. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
@@ -161,8 +159,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               <Button 
                 variant="outline" 
                 className="w-full flex justify-between items-center border-white/10 bg-transparent hover:bg-white/5"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
+                onClick={() => setShowLogoutModal(true)}
               >
                 <span>Logout</span>
                 <LogOut size={16} />
@@ -221,6 +218,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
       
       <Footer />
+
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        character={character}
+      />
     </div>
   );
 };
