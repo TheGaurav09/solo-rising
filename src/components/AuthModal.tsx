@@ -87,44 +87,36 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
       
       if (data.user) {
         console.log("User created, creating profile:", data.user.id);
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: email,
+            warrior_name: warriorName,
+            character_type: character,
+            country: country,
+            points: 0,
+            streak: 0,
+            coins: 100,
+            xp: 0,
+            level: 1,
+            password: '******'
+          });
         
-        // Wait a moment to ensure the auth record is fully created
-        setTimeout(async () => {
-          try {
-            const { error: profileError } = await supabase
-              .from('users')
-              .insert({
-                id: data.user.id,
-                email: email,
-                warrior_name: warriorName,
-                character_type: character,
-                country: country,
-                points: 0,
-                streak: 0,
-                coins: 100,
-                xp: 0,
-                level: 1,
-                password: '******'
-              });
-            
-            if (profileError) {
-              console.error("Profile creation error:", profileError);
-              throw profileError;
-            }
-            
-            setUserData(warriorName, character, 0, 0, 100, country, 0, 1);
-            
-            toast({
-              title: "Account created!",
-              description: "Welcome to Solo Rising. Your journey begins now!",
-            });
-            
-            onClose();
-            navigate('/profile-workout');
-          } catch (innerError) {
-            console.error("Error in delayed profile creation:", innerError);
-          }
-        }, 1000);
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          throw profileError;
+        }
+        
+        setUserData(warriorName, character, 0, 0, 100, country, 0, 1);
+        
+        toast({
+          title: "Account created!",
+          description: "Welcome to Solo Rising. Your journey begins now!",
+        });
+        
+        onClose();
+        navigate('/profile-workout');
       }
     } catch (error: any) {
       console.error('Sign up error', error);
@@ -159,52 +151,43 @@ const AuthModal = ({ isOpen, onClose, initialView = 'login' }: AuthModalProps) =
       
       if (data.user) {
         console.log("User logged in, fetching profile:", data.user.id);
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', data.user.id)
+          .maybeSingle();
         
-        // Wait a moment to ensure the session is fully established
-        setTimeout(async () => {
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', data.user.id)
-              .maybeSingle();
-            
-            if (userError) {
-              console.error("User data fetch error:", userError);
-              throw userError;
-            }
-            
-            if (userData) {
-              console.log("User profile found:", userData);
-              localStorage.setItem('sb-auth-token', 'true'); // Set token in localStorage for faster auth checks
-              localStorage.setItem('sb-auth-data', JSON.stringify(userData)); // Cache user data
-              
-              setUserData(
-                userData.warrior_name,
-                userData.character_type as CharacterType,
-                userData.points || 0,
-                userData.streak || 0,
-                userData.coins || 0,
-                userData.country || 'Global',
-                userData.xp || 0,
-                userData.level || 1
-              );
-              
-              toast({
-                title: "Welcome back!",
-                description: `Logged in as ${userData.warrior_name}`,
-              });
-              
-              onClose();
-              navigate('/dashboard');
-            } else {
-              console.error("No user profile found despite successful login");
-              setLoginError("User profile not found. Please contact support.");
-            }
-          } catch (innerError) {
-            console.error("Error in delayed profile fetch:", innerError);
-          }
-        }, 500);
+        if (userError) {
+          console.error("User data fetch error:", userError);
+          throw userError;
+        }
+        
+        if (userData) {
+          console.log("User profile found:", userData);
+          localStorage.setItem('sb-auth-token', 'true'); // Set token in localStorage for faster auth checks
+          
+          setUserData(
+            userData.warrior_name,
+            userData.character_type as CharacterType,
+            userData.points,
+            userData.streak || 0,
+            userData.coins || 0,
+            userData.country || 'Global',
+            userData.xp || 0,
+            userData.level || 1
+          );
+          
+          toast({
+            title: "Welcome back!",
+            description: `Logged in as ${userData.warrior_name}`,
+          });
+          
+          onClose();
+          navigate('/profile-workout');
+        } else {
+          console.error("No user profile found despite successful login");
+          setLoginError("User profile not found. Please contact support.");
+        }
       }
     } catch (error: any) {
       console.error('Login error', error);

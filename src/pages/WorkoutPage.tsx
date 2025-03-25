@@ -7,7 +7,6 @@ import { toast } from '@/components/ui/use-toast';
 import { Dumbbell, Timer, Repeat, CheckCircle2, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 import WorkoutConfirmModal from '@/components/modals/WorkoutConfirmModal';
-import SectionCard from '@/components/ui/SectionCard';
 
 const WorkoutPage = () => {
   const { character, userName, addPoints, streak, lastWorkoutDate } = useUser();
@@ -61,6 +60,7 @@ const WorkoutPage = () => {
       if (error) throw error;
       setWorkoutHistory(data || []);
       
+      // Check cooldown from the last workout
       if (data && data.length > 0) {
         const lastWorkout = new Date(data[0].created_at);
         setLastWorkoutTime(lastWorkout);
@@ -71,7 +71,8 @@ const WorkoutPage = () => {
         if (diffInMinutes < 30) {
           setCooldownRemaining(30 - diffInMinutes);
           
-          const interval = setInterval(updateCooldownTime, 60000);
+          // Set up interval to update the cooldown remaining time
+          const interval = setInterval(updateCooldownTime, 60000); // Update every minute
           setCooldownInterval(interval);
         }
       }
@@ -194,12 +195,14 @@ const WorkoutPage = () => {
 
       if (error) throw error;
       
+      // Set cooldown
       const now = new Date();
       setLastWorkoutTime(now);
       setCooldownRemaining(30);
       
+      // Start cooldown timer
       if (cooldownInterval) clearInterval(cooldownInterval);
-      const interval = setInterval(updateCooldownTime, 60000);
+      const interval = setInterval(updateCooldownTime, 60000); // Update every minute
       setCooldownInterval(interval);
       
       const { data: userData, error: userError } = await supabase
@@ -299,7 +302,7 @@ const WorkoutPage = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <SectionCard className="p-6">
+          <AnimatedCard className="p-6">
             <h2 className="text-xl font-bold mb-4">Add Workout</h2>
             
             {success ? (
@@ -428,11 +431,11 @@ const WorkoutPage = () => {
                 </AnimatedButton>
               </>
             )}
-          </SectionCard>
+          </AnimatedCard>
         </div>
         
         <div>
-          <SectionCard className="p-6">
+          <AnimatedCard className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Workout History</h2>
               <History size={20} className="text-white/60" />
@@ -466,7 +469,7 @@ const WorkoutPage = () => {
                 ))}
               </div>
             )}
-          </SectionCard>
+          </AnimatedCard>
         </div>
       </div>
 
