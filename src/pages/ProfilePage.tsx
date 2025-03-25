@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
@@ -16,7 +17,7 @@ import SectionCarousel from '@/components/ui/SectionCarousel';
 const ProfilePage = () => {
   const { userId: routeUserId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { userId: currentUserId, warriorName, character, points, streak, coins, country, xp, level, setUserData } = useUser();
+  const { userId: currentUserId, userName, character, points, streak, coins, country, xp, level, setUserData } = useUser();
   const [profile, setProfile] = useState<{
     id: string;
     email: string;

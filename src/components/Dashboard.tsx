@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Home,
@@ -55,7 +56,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ videoBackgroundEnabled, setVideoBackgroundEnabled }) => {
-  const { warriorName, character, logout, country } = useUser();
+  const { userName, character, country } = useUser();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -74,7 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({ videoBackgroundEnabled, setVideoB
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await supabase.auth.signOut();
       navigate('/', { replace: true });
     } catch (error) {
       console.error('Logout failed', error);
@@ -135,12 +136,12 @@ const Dashboard: React.FC<DashboardProps> = ({ videoBackgroundEnabled, setVideoB
                 <DropdownMenuTrigger className="w-full flex items-center justify-between rounded-md text-sm font-medium hover:bg-white/5 transition-colors">
                   <div className="flex items-center">
                     <Avatar className="mr-2 h-8 w-8">
-                      <AvatarImage src={`/${character}.jpeg`} alt={warriorName} />
-                      <AvatarFallback>{warriorName?.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarImage src={`/${character}.jpeg`} alt={userName} />
+                      <AvatarFallback>{userName?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <span>{warriorName}</span>
+                    <span>{userName}</span>
                   </div>
-                  <MoreVerticalIcon className="h-4 w-4 text-white/60" />
+                  <MoreVerticalIcon size={18} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-black border border-white/10">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -171,7 +172,7 @@ const Dashboard: React.FC<DashboardProps> = ({ videoBackgroundEnabled, setVideoB
                 onClick={() => toggleMute()}
                 className="p-2 rounded-md hover:bg-white/5 transition-colors"
               >
-                {isMuted ? <SpeakerOffIcon className="h-5 w-5" /> : <SpeakerOnIcon className="h-5 w-5" />}
+                {isMuted ? <SpeakerOffIcon size={18} /> : <SpeakerOnIcon size={18} />}
               </button>
               
               <span className="text-sm text-white/60">{country}</span>
