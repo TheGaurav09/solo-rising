@@ -9,12 +9,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import WorkoutConfirmDialog from './modals/WorkoutConfirmDialog';
 import { useMediaQuery } from '@/hooks/use-mobile';
-import { WorkoutLoggerProps, WorkoutLoggedData } from './WorkoutLoggerProps';
+import { WorkoutLoggerProps } from './WorkoutLoggerProps';
 
 const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({ 
   onWorkoutLogged, 
   buttonStyle, 
-  className,
+  className, 
   refreshWorkouts 
 }) => {
   const { userId, character } = useUser();
@@ -37,7 +37,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   const fetchExercises = async () => {
     try {
       setLoading(true);
-      // Hardcoded exercise list (no 'exercises' table in database)
+      // Since there's no 'exercises' table, we'll use a hardcoded list
       const exercises = [
         "Push-ups", "Pull-ups", "Squats", "Lunges", "Plank", 
         "Deadlifts", "Bench Press", "Shoulder Press",
@@ -50,6 +50,7 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       if (exercises.length > 0) {
         setSelectedExercise(exercises[0]);
       }
+      
     } catch (error) {
       console.error('Error in fetchExercises:', error);
     } finally {
@@ -89,14 +90,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       const points = calculatePoints();
       const now = new Date().toISOString();
       
-      // Insert workout with correct field names
+      // Log the workout - match the field names with what the database expects
       const { error: logError } = await supabase
         .from('workouts')
         .insert({
           user_id: userId,
           exercise_type: selectedExercise,
           duration: duration,
-          reps: 0, // Required field with default value
+          reps: 0, // Add a default value for reps since it's required
           points: points,
           created_at: now
         });
@@ -160,19 +161,17 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       setConfirmDialogOpen(false);
       handleCloseDialog();
       
-      // Call callback with workout data
+      // Refresh the page or call a callback
       if (onWorkoutLogged) {
-        const workoutData: WorkoutLoggedData = {
+        onWorkoutLogged({
           exerciseName: selectedExercise,
           duration,
           intensity,
           points,
           completedAt: now
-        };
-        onWorkoutLogged(workoutData);
+        });
       }
       
-      // Refresh workouts if callback provided
       if (refreshWorkouts) {
         await refreshWorkouts();
       }
@@ -204,14 +203,14 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
           "bg-black border border-white/10 p-0 overflow-hidden",
           isMobile ? "w-[95vw] max-w-none mx-auto" : "max-w-lg w-full"
         )}>
-          <DialogHeader className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 p-4 border-b border-white/10">
+          <DialogHeader className="bg-black p-4 border-b border-white/10">
             <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
               <Dumbbell className="w-5 h-5 text-white" />
               Log Workout
             </DialogTitle>
           </DialogHeader>
           
-          <div className="p-4 bg-black/90">
+          <div className="p-4">
             {loading ? (
               <div className="flex justify-center items-center py-10">
                 <Loader2 className="w-8 h-8 animate-spin text-white" />
@@ -327,7 +326,6 @@ const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         onClose={() => setConfirmDialogOpen(false)}
         onConfirm={handleLogWorkout}
         character={character}
-        loading={loading}
       />
     </>
   );

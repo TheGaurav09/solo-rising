@@ -1,230 +1,226 @@
 
-import React, { useState } from 'react';
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { Volume, VolumeX, Trash2, LogOut, HelpCircle } from "lucide-react";
-import { useUser } from '@/context/UserContext';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
+import AnimatedCard from '@/components/ui/AnimatedCard';
+import AnimatedButton from '@/components/ui/AnimatedButton';
+import { useUser } from '@/context/UserContext';
 import { useAudio } from '@/context/AudioContext';
-import VideoBackgroundToggle from '@/components/ui/VideoBackgroundToggle';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Music, VolumeX, Volume1, Volume2, Play, Pause, LogOut, Video } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Footer from '@/components/ui/Footer';
-import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
+import VideoBackgroundToggle from '@/components/ui/VideoBackgroundToggle';
 
-interface SettingsPageProps {
-  videoBackgroundEnabled: boolean;
-  setVideoBackgroundEnabled: (enabled: boolean) => void;
-}
-
-const SettingsPage: React.FC<SettingsPageProps> = ({ 
-  videoBackgroundEnabled, 
-  setVideoBackgroundEnabled 
-}) => {
-  const { volume, setVolume, toggleMute, isMuted } = useAudio();
+const SettingsPage = () => {
   const navigate = useNavigate();
-  const { userId, character } = useUser();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  const handleLogout = async () => {
+  const { userName, character, updateUserProfile } = useUser();
+  const { isPlaying, volume, isLooping, togglePlay, setVolume, toggleLoop } = useAudio();
+  
+  const [newName, setNewName] = useState(userName);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [videoBackgroundEnabled, setVideoBackgroundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('video-background-enabled');
+    return saved ? saved === 'true' : false;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('video-background-enabled', videoBackgroundEnabled.toString());
+  }, [videoBackgroundEnabled]);
+  
+  const handleUpdateName = async () => {
+    if (!newName.trim() || newName === userName) return;
+    
+    setIsUpdating(true);
+    
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      localStorage.removeItem('sb-auth-token');
-      localStorage.removeItem('sb-auth-data');
-      
-      navigate('/', { replace: true });
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast({
-        title: "Logout Failed",
-        description: "There was an error logging you out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmValue !== 'DELETE') {
-      toast({
-        title: "Confirmation Required",
-        description: "Please type DELETE in all caps to confirm account deletion.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      
-      if (!userId) {
-        throw new Error("Not logged in");
+      const success = await updateUserProfile(newName);
+      if (success) {
+        toast({
+          title: "Profile Updated",
+          description: "Your warrior name has been updated successfully.",
+        });
       }
-
-      // Call the admin edge function to delete the user
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-admin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          action: 'delete_user',
-          userId: userId,
-          password: 'admin-delete-pwd', // This would be replaced with actual secure verification
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to delete account");
-      }
-
-      toast({
-        title: "Account Deleted",
-        description: "Your account has been permanently deleted.",
-      });
-
-      // Log out and redirect to home
-      await supabase.auth.signOut();
-      navigate('/', { replace: true });
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error("Error updating profile:", error);
       toast({
-        title: "Deletion Failed",
-        description: error.message || "Failed to delete your account. Please try again later.",
+        title: "Update Failed",
+        description: "Failed to update your profile. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsDeleting(false);
-      setDeleteConfirmValue('');
+      setIsUpdating(false);
     }
   };
-
-  const handleVolumeChange = (value: number[]) => {
-    setVolume(value[0]);
+  
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout Failed",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
-
+  
+  const VolumeIcon = () => {
+    if (volume === 0) return <VolumeX size={20} />;
+    if (volume < 0.5) return <Volume1 size={20} />;
+    return <Volume2 size={20} />;
+  };
+  
   return (
-    <div className="container mx-auto px-4 py-8 pt-16 md:pt-8">
+    <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
-      <div className="grid gap-6 max-w-2xl">
-        {/* Audio Settings */}
-        <div className="bg-black/50 rounded-lg border border-white/10 p-4">
-          <h2 className="text-lg font-medium mb-4">Audio Settings</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AnimatedCard className="p-6 h-auto">
+          <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isMuted ? <VolumeX /> : <Volume />}
-                <span>Music Volume</span>
-              </div>
-              <Switch checked={!isMuted} onCheckedChange={(checked) => toggleMute(!checked)} />
-            </div>
-            
-            <div className={`${isMuted ? 'opacity-50 pointer-events-none' : ''}`}>
-              <Slider
-                value={[volume]}
-                max={1}
-                step={0.01}
-                onValueChange={handleVolumeChange}
+            <div className="space-y-2">
+              <Label htmlFor="warriorName">Warrior Name</Label>
+              <Input
+                id="warriorName"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="bg-white/5 border-white/10"
               />
             </div>
+            
+            <AnimatedButton
+              onClick={handleUpdateName}
+              disabled={isUpdating || !newName.trim() || newName === userName}
+              character={character || undefined}
+            >
+              {isUpdating ? 'Updating...' : 'Update Name'}
+            </AnimatedButton>
           </div>
-        </div>
+        </AnimatedCard>
         
-        {/* Visual Settings */}
-        <div className="bg-black/50 rounded-lg border border-white/10 p-4">
-          <h2 className="text-lg font-medium mb-4">Visual Settings</h2>
+        <AnimatedCard className="p-6 h-auto">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Music size={20} />
+            Audio & Visual Settings
+          </h2>
           
-          <div className="space-y-4">
-            <VideoBackgroundToggle 
-              enabled={videoBackgroundEnabled}
-              onChange={setVideoBackgroundEnabled}
-            />
-          </div>
-        </div>
-        
-        {/* Account Settings */}
-        <div className="bg-black/50 rounded-lg border border-white/10 p-4">
-          <h2 className="text-lg font-medium mb-4">Account Settings</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <Button 
-                variant="outline" 
-                className="w-full flex justify-between items-center border-white/10 bg-transparent hover:bg-white/5"
-                onClick={() => setShowLogoutModal(true)}
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <Label>Background Music</Label>
+              <AnimatedButton 
+                onClick={togglePlay} 
+                size="sm" 
+                character={character || undefined}
+                variant="outline"
+                className="w-24"
               >
-                <span>Logout</span>
-                <LogOut size={16} />
-              </Button>
+                {isPlaying ? (
+                  <div className="flex items-center gap-2">
+                    <Pause size={16} />
+                    <span>Pause</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Play size={16} />
+                    <span>Play</span>
+                  </div>
+                )}
+              </AnimatedButton>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="flex items-center gap-2">
+                  <VolumeIcon />
+                  Volume
+                </Label>
+                <span className="text-sm text-white/70">{Math.round(volume * 100)}%</span>
+              </div>
+              <Slider 
+                value={[volume * 100]} 
+                min={0} 
+                max={100} 
+                step={1}
+                onValueChange={(value) => setVolume(value[0] / 100)} 
+                className="[&>.absolute]:bg-blue-600"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label>Loop Music</Label>
+              <Switch 
+                checked={isLooping}
+                onCheckedChange={toggleLoop}
+              />
             </div>
             
             <div className="pt-4 border-t border-white/10">
-              <h3 className="text-red-500 font-medium mb-2">Danger Zone</h3>
-              <p className="text-sm text-white/60 mb-4">
-                Deleting your account is permanent. All data will be removed.
-              </p>
+              <h3 className="text-md font-medium mb-4 flex items-center gap-2">
+                <Video size={18} />
+                Visual Settings
+              </h3>
               
-              {!isDeleting ? (
-                <Button 
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => setIsDeleting(true)}
-                >
-                  Delete Account
-                </Button>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-red-400">
-                    Type <span className="font-bold">DELETE</span> to confirm account deletion:
-                  </p>
-                  <input
-                    type="text"
-                    value={deleteConfirmValue}
-                    onChange={(e) => setDeleteConfirmValue(e.target.value)}
-                    className="w-full p-2 bg-black/50 border border-red-500/50 rounded-md text-white"
-                    placeholder="DELETE"
-                  />
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                      onClick={() => setIsDeleting(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmValue !== 'DELETE'}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Confirm Delete
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <VideoBackgroundToggle 
+                enabled={videoBackgroundEnabled}
+                onChange={setVideoBackgroundEnabled}
+              />
             </div>
           </div>
-        </div>
+        </AnimatedCard>
+        
+        <AnimatedCard className="p-6 h-auto col-span-1 lg:col-span-2">
+          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">
+            <LogOut size={20} />
+            Account Settings
+          </h2>
+          
+          <div className="space-y-4">
+            <p className="text-white/70">Manage your account settings and session.</p>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <AnimatedButton
+                  variant="outline"
+                  className="bg-red-950/20 border-red-800/30 hover:bg-red-900/30 text-red-400"
+                >
+                  <div className="flex items-center gap-2">
+                    <LogOut size={16} />
+                    Logout
+                  </div>
+                </AnimatedButton>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will need to login again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700">
+                    Logout
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </AnimatedCard>
       </div>
       
       <Footer />
-
-      <LogoutConfirmModal
-        isOpen={showLogoutModal}
-        onConfirm={handleLogout}
-        onCancel={() => setShowLogoutModal(false)}
-        character={character}
-      />
     </div>
   );
 };

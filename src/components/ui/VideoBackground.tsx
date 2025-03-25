@@ -1,48 +1,59 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface VideoBackgroundProps {
   enabled: boolean;
 }
 
 const VideoBackground: React.FC<VideoBackgroundProps> = ({ enabled }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
   useEffect(() => {
-    if (enabled) {
-      // Add a small delay to allow for smooth transitions
-      const timeout = setTimeout(() => {
-        setIsVisible(true);
-      }, 100);
-      return () => clearTimeout(timeout);
+    // Check if video is in local storage
+    const cachedVideo = localStorage.getItem('background-video-cached');
+    
+    if (!enabled) return;
+    
+    if (!cachedVideo) {
+      // If not cached, we'll load the video and save a flag when it's available
+      const video = videoRef.current;
+      if (video) {
+        const handleCanPlay = () => {
+          setVideoLoaded(true);
+          localStorage.setItem('background-video-cached', 'true');
+        };
+        
+        video.addEventListener('canplaythrough', handleCanPlay);
+        
+        return () => {
+          video.removeEventListener('canplaythrough', handleCanPlay);
+        };
+      }
     } else {
-      setIsVisible(false);
+      // If already cached before, we can assume it will load quickly
+      setVideoLoaded(true);
     }
   }, [enabled]);
-
+  
   if (!enabled) return null;
-
+  
   return (
-    <div 
-      className={`fixed top-0 left-0 w-full h-full z-[-1] transition-opacity duration-700 ${
-        isVisible ? 'opacity-30' : 'opacity-0'
-      }`}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-black to-gray-900 z-10"></div>
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-black/80 z-20"></div>
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute min-w-full min-h-full object-cover"
-        >
-          <source src="/background-animation.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
-    </div>
+    <>
+      <video
+        ref={videoRef}
+        className={`video-background ${videoLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000`}
+        autoPlay
+        muted
+        loop
+        playsInline
+      >
+        <source src="/background.mp4" type="video/mp4" />
+      </video>
+      {!videoLoaded && (
+        <div className="fixed inset-0 bg-black z-[-1]"></div>
+      )}
+    </>
   );
 };
 

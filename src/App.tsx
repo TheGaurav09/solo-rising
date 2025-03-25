@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +20,6 @@ import AdminPage from "./pages/AdminPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import { supabase } from "@/integrations/supabase/client";
-import VideoBackground from "./components/ui/VideoBackground";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,13 +34,6 @@ const App = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCharacter, setHasCharacter] = useState(false);
-  const [videoBackgroundEnabled, setVideoBackgroundEnabled] = useState(() => {
-    return localStorage.getItem('video-background-enabled') === 'true';
-  });
-  
-  useEffect(() => {
-    localStorage.setItem('video-background-enabled', videoBackgroundEnabled.toString());
-  }, [videoBackgroundEnabled]);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -198,7 +189,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <VideoBackground enabled={videoBackgroundEnabled} />
             <BrowserRouter>
               <Routes>
                 {/* Redirect authenticated users with character directly to dashboard */}
@@ -215,7 +205,7 @@ const App = () => {
                 <Route path="/admin" element={<AdminPage />} />
                 
                 {/* Protected Dashboard Routes */}
-                <Route path="/" element={<Dashboard videoBackgroundEnabled={videoBackgroundEnabled} setVideoBackgroundEnabled={setVideoBackgroundEnabled} />}>
+                <Route path="/" element={<Dashboard />}>
                   <Route path="dashboard" element={<DashboardPage />} />
                   <Route path="profile-workout" element={<ProfileAndWorkoutPage />} />
                   {/* Fixed profile view route to properly pass userId parameter */}
@@ -224,7 +214,7 @@ const App = () => {
                   <Route path="store-achievements" element={<StoreAndAchievementsPage />} />
                   <Route path="ai-chat" element={<AIChatPage />} />
                   <Route path="hall-of-fame" element={<HallOfFamePage />} />
-                  <Route path="settings" element={<SettingsPage videoBackgroundEnabled={videoBackgroundEnabled} setVideoBackgroundEnabled={setVideoBackgroundEnabled} />} />
+                  <Route path="settings" element={<SettingsPage />} />
                   {/* Redirect missing paths to dashboard */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Route>
