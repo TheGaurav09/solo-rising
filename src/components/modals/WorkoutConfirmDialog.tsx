@@ -1,77 +1,77 @@
 
 import React from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CharacterType } from '@/context/UserContext';
+import { Loader2 } from 'lucide-react';
 
 export interface WorkoutConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  character: string | null;
+  character: CharacterType | null;
+  loading?: boolean;
 }
 
-const getMotivationalQuote = (character: string | null) => {
-  const quotes = {
-    goku: "Remember, training is not just about getting stronger, but becoming a better version of yourself.",
-    saitama: "True power comes from consistent effort, not shortcuts.",
-    'jin-woo': "The path to becoming the strongest requires honesty with yourself first.",
-    default: "Progress is built on consistency and honesty, not shortcuts."
+const WorkoutConfirmDialog: React.FC<WorkoutConfirmDialogProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  character,
+  loading = false
+}) => {
+  const characterMessages = {
+    'goku': "Training complete! Remember, a true Saiyan never stops pushing their limits.",
+    'saitama': "Just another workout in your journey to become the strongest hero!",
+    'jin-woo': "You've logged your training. Arise and become stronger!"
   };
-  
-  return quotes[character as keyof typeof quotes] || quotes.default;
-};
 
-const getCharacterAccentColor = (character: string | null) => {
-  switch (character) {
-    case 'goku': return 'bg-goku-primary text-white border-goku-primary';
-    case 'saitama': return 'bg-saitama-primary text-black border-saitama-primary';
-    case 'jin-woo': return 'bg-jin-woo-primary text-white border-jin-woo-primary';
-    default: return 'bg-purple-600 text-white border-purple-600';
-  }
-};
+  const message = character ? characterMessages[character] : "Great job completing your workout!";
 
-const WorkoutConfirmDialog = ({ isOpen, onClose, onConfirm, character }: WorkoutConfirmDialogProps) => {
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="bg-black/80 backdrop-blur-lg border border-white/10">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-white text-xl">Workout Confirmation</AlertDialogTitle>
-          <AlertDialogDescription className="text-white/80">
-            Did you really complete this workout? You won't gain anything by logging workouts you haven't done.
-            <p className="mt-2 text-sm italic text-white/60">"{getMotivationalQuote(character)}"</p>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex gap-3">
-          <AlertDialogCancel 
-            onClick={onClose} 
-            className="bg-gray-800 text-white hover:bg-gray-700 border-none flex items-center"
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-black border border-white/10 text-white rounded-lg">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Confirm Workout</DialogTitle>
+          <DialogDescription className="text-white/70">
+            Are you sure you want to log this workout?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+          <p>{message}</p>
+        </div>
+
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="bg-transparent border border-white/10 text-white hover:bg-white/5"
           >
-            <XCircle className="mr-2" size={16} />
-            No, I didn't
-          </AlertDialogCancel>
-          
-          <AlertDialogAction 
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }} 
-            className={`${getCharacterAccentColor(character)} hover:opacity-90 border-none flex items-center`}
+            Cancel
+          </Button>
+          <Button 
+            onClick={onConfirm}
+            disabled={loading}
+            className={`${
+              character === 'goku' ? 'bg-goku-primary hover:bg-goku-primary/80' :
+              character === 'saitama' ? 'bg-saitama-primary hover:bg-saitama-primary/80' :
+              character === 'jin-woo' ? 'bg-jin-woo-primary hover:bg-jin-woo-primary/80' :
+              'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            <CheckCircle className="mr-2" size={16} />
-            Yes, I completed it
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {loading ? (
+              <div className="flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Logging...</span>
+              </div>
+            ) : (
+              'Log Workout'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

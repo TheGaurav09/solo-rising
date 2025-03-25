@@ -1,399 +1,206 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
+import {
+  Home,
+  User,
+  LayoutDashboard,
+  ListChecks,
+  Trophy,
+  Settings,
+  MessageSquare,
+  LogOut,
+  ChevronsLeft,
+  ChevronsRight,
+  LucideIcon,
+  Gem,
+  Brain,
+} from 'lucide-react';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import { toast } from '@/components/ui/use-toast';
-import { User, ShoppingBag, MessageCircle, Maximize, Trophy, HeartHandshake, Settings, ChevronLeft, ChevronRight, Menu, X, Share2 } from 'lucide-react';
-import { getIconComponent } from '@/lib/iconUtils';
-import { AnimatePresence, motion } from 'framer-motion';
-import ShareModal from './modals/ShareModal';
-import CoinDisplay from './ui/CoinDisplay';
+import { supabase } from '@/integrations/supabase/client';
+import LogoutConfirmModal from '@/components/modals/LogoutConfirmModal';
 import { useAudio } from '@/context/AudioContext';
-import { LayoutDashboard } from 'lucide-react';
-import WarningNotification from './WarningNotification';
-import VideoBackground from '@/components/ui/VideoBackground';
 
-const Dashboard = () => {
-  const navigate = useNavigate();
+interface NavItemProps {
+  icon: LucideIcon;
+  label: string;
+  route: string;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, route }) => {
   const location = useLocation();
-  const { character, hasSelectedCharacter, userId } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [videoBackgroundEnabled, setVideoBackgroundEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('video-background-enabled');
-    return saved ? saved === 'true' : false;
-  });
-  const { togglePlay, isPlaying, setVolume } = useAudio();
-  const contentRef = useRef<HTMLDivElement>(null);
-  
-  const isAIChat = location.pathname.includes('/ai-chat');
-
-  useEffect(() => {
-    const savedSidebarHiddenState = localStorage.getItem('sidebar-hidden');
-    if (savedSidebarHiddenState) {
-      setSidebarHidden(savedSidebarHiddenState === 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('sidebar-hidden', sidebarHidden.toString());
-  }, [sidebarHidden]);
-
-  useEffect(() => {
-    const audio = document.querySelector('audio');
-    if (audio && character) {
-      let musicPath = '';
-      
-      switch (character) {
-        case 'goku':
-          musicPath = '/goku-bgm.mp3';
-          break;
-        case 'saitama':
-          musicPath = '/saitama.mp3';
-          break;
-        case 'jin-woo':
-          musicPath = '/jinwoo.mp3';
-          break;
-        default:
-          musicPath = '/background-music.mp3';
-          break;
-      }
-      
-      audio.src = musicPath;
-      
-      if (isPlaying) {
-        audio.play().catch(e => console.error("Audio playback error:", e));
-      }
-    }
-  }, [character, isPlaying]);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        
-        if (!data.user) {
-          navigate('/', { replace: true });
-          return;
-        }
-        
-        setIsAuthenticated(true);
-        
-        if (!hasSelectedCharacter) {
-          toast({
-            title: "Select Your Character",
-            description: "Please select a character to continue",
-            duration: 5000,
-          });
-          navigate('/', { replace: true });
-          return;
-        }
-        
-      } catch (error) {
-        console.error('Auth check error:', error);
-        navigate('/', { replace: true });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate, hasSelectedCharacter]);
-  
-  const getBackgroundClass = () => {
-    switch(character) {
-      case 'goku': return 'bg-goku';
-      case 'saitama': return 'bg-saitama';
-      case 'jin-woo': return 'bg-jin-woo';
-      default: return 'bg-black';
-    }
-  };
-  
-  useEffect(() => {
-    let title = 'Solo Prove';
-    
-    switch (location.pathname.split('/')[1]) {
-      case 'workout':
-        title = 'Solo Prove | Workout';
-        break;
-      case 'profile':
-        title = 'Solo Prove | Profile';
-        break;
-      case 'achievements':
-        title = 'Solo Prove | Achievements';
-        break;
-      case 'store':
-        title = 'Solo Prove | Store';
-        break;
-      case 'ai-chat':
-        title = 'Solo Prove | AI Chat';
-        break;
-      case 'settings':
-        title = 'Solo Prove | Settings';
-        break;
-      default:
-        title = 'Solo Prove';
-    }
-    
-    document.title = title;
-  }, [location]);
-  
-  const handleShareClick = () => {
-    setShowShareModal(true);
-  };
-  
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-  
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-  
-  useEffect(() => {
-    if (isAIChat && !document.fullscreenElement && document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    }
-  }, [isAIChat]);
-
-  const toggleSidebar = () => {
-    setSidebarHidden(!sidebarHidden);
-  };
-  
-  const navigationItems = [
-    {
-      href: '/dashboard',
-      icon: <LayoutDashboard size={20} />,
-      label: 'Dashboard'
-    },
-    {
-      href: '/profile-workout',
-      icon: <User size={20} />,
-      label: 'Profile & Workout'
-    },
-    {
-      href: '/leaderboard',
-      icon: <Trophy size={20} />,
-      label: 'Leaderboard'
-    },
-    {
-      href: '/store-achievements',
-      icon: <ShoppingBag size={20} />,
-      label: 'Store & Achievements'
-    },
-    {
-      href: '/ai-chat',
-      icon: <MessageCircle size={20} />,
-      label: 'AI Chat'
-    },
-    {
-      href: '/hall-of-fame',
-      icon: <HeartHandshake size={20} />,
-      label: 'Hall of Fame'
-    },
-    {
-      href: '/settings',
-      icon: <Settings size={20} />,
-      label: 'Settings'
-    }
-  ];
-  
-  const primaryActions = [
-    {
-      icon: <Maximize size={20} />,
-      label: 'Fullscreen',
-      onClick: toggleFullscreen
-    }
-  ];
-  
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex justify-center items-center ${getBackgroundClass()}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated || !hasSelectedCharacter) {
-    return null;
-  }
-  
-  const getSidebarAccentColor = () => {
-    switch(character) {
-      case 'goku': return 'bg-goku-primary text-white';
-      case 'saitama': return 'bg-saitama-primary text-white';
-      case 'jin-woo': return 'bg-jin-woo-primary text-white';
-      default: return 'bg-white text-black';
-    }
-  };
-  
-  const getBrandIconStyle = () => {
-    switch(character) {
-      case 'goku': return 'text-goku-primary/80';
-      case 'saitama': return 'text-saitama-primary/80';
-      case 'jin-woo': return 'text-jin-woo-primary/80';
-      default: return 'text-white/80';
-    }
-  };
-  
-  const handleClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (
-      !sidebarHidden && 
-      e.target instanceof HTMLElement && 
-      !e.target.closest('.sidebar') && 
-      !e.target.closest('.sidebar-toggle')
-    ) {
-      setSidebarHidden(true);
-    }
-  };
-  
-  const sidebarVariants = {
-    open: { 
-      x: 0,
-      transition: { 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30 
-      } 
-    },
-    closed: { 
-      x: "-100%",
-      transition: { 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 30 
-      } 
-    }
-  };
+  const isActive = location.pathname === route;
   
   return (
-    <div 
-      className={`min-h-screen flex flex-col ${getBackgroundClass()} animated-grid`}
-      onClick={handleClickOutside}
-    >
-      <VideoBackground enabled={videoBackgroundEnabled} />
-      
-      <div className="flex flex-1 overflow-hidden">
-        <motion.div 
-          className="sidebar fixed h-full z-10 w-64 bg-black/60 backdrop-blur-md border-r border-white/10"
-          initial={sidebarHidden ? "closed" : "open"}
-          animate={sidebarHidden ? "closed" : "open"}
-          variants={sidebarVariants}
-        >
-          <div className="h-full flex flex-col py-6">
-            <div className="px-5 flex items-center justify-between">
-              <div className={`${getBrandIconStyle()} mb-6 text-2xl font-bold flex items-center gap-2`}>
-                {getIconComponent('dumbbell', 24)}
-                <span>Solo Rising</span>
-              </div>
-              <button 
-                onClick={toggleSidebar}
-                className="text-white/80 hover:text-white mb-6"
-              >
-                <X size={20} />
+    <li className="mb-1">
+      <Link
+        to={route}
+        className={`flex items-center p-2 rounded-md text-sm font-medium hover:bg-white/5 transition-colors ${
+          isActive ? 'bg-white/5' : 'text-white/60'
+        }`}
+      >
+        <Icon className="mr-2 h-4 w-4" />
+        {label}
+      </Link>
+    </li>
+  );
+};
+
+interface DashboardProps {
+  videoBackgroundEnabled: boolean;
+  setVideoBackgroundEnabled: (enabled: boolean) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ videoBackgroundEnabled, setVideoBackgroundEnabled }) => {
+  const { warriorName, character, logout, country } = useUser();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { toggleMute, isMuted } = useAudio();
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSidebarOpen(window.innerWidth >= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout failed', error);
+      toast({
+        title: "Logout Failed",
+        description: "There was an error logging you out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+  
+  const renderLogoutModal = () => {
+    if (!showLogoutModal) return null;
+    
+    return (
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        character={character}
+      />
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        {isSidebarOpen && (
+          <aside className="w-64 bg-black border-r border-white/10 flex flex-col">
+            <div className="p-4 flex items-center justify-between">
+              <Link to="/dashboard" className="text-lg font-bold">
+                SOLO RISING
+              </Link>
+              <button onClick={toggleSidebar} className="md:hidden text-white/60 hover:text-white">
+                <ChevronsLeft className="h-6 w-6" />
               </button>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={`flex items-center px-3 py-3 rounded-lg transition-colors ${
-                    location.pathname.split('/')[1] === item.href.split('/')[1]
-                      ? getSidebarAccentColor()
-                      : 'hover:bg-white/5 text-white/80'
-                  }`}
-                >
-                  {item.icon}
-                  <span className="ml-2">{item.label}</span>
-                </Link>
-              ))}
+            <nav className="flex-1 p-4">
+              <ul>
+                <NavItem icon={LayoutDashboard} label="Dashboard" route="/dashboard" />
+                <NavItem icon={User} label="Profile & Workout" route="/profile-workout" />
+                <NavItem icon={ListChecks} label="Leaderboard" route="/leaderboard" />
+                <NavItem icon={Gem} label="Store & Achievements" route="/store-achievements" />
+                <NavItem icon={Brain} label="AI Training Assistant" route="/ai-chat" />
+                <NavItem icon={Trophy} label="Hall of Fame" route="/hall-of-fame" />
+                <NavItem icon={Settings} label="Settings" route="/settings" />
+              </ul>
             </nav>
 
-            <div className="pt-6 px-3 space-y-1">
-              <button
-                onClick={handleShareClick}
-                className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
+            <div className="p-4 border-t border-white/10">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="w-full flex items-center justify-between rounded-md text-sm font-medium hover:bg-white/5 transition-colors">
+                  <div className="flex items-center">
+                    <Avatar className="mr-2 h-8 w-8">
+                      <AvatarImage src={`/${character}.jpeg`} alt={warriorName} />
+                      <AvatarFallback>{warriorName?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span>{warriorName}</span>
+                  </div>
+                  <MoreVerticalIcon className="h-4 w-4 text-white/60" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-black border border-white/10">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={() => navigate('/settings')} className="hover:bg-white/5">
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowLogoutModal(true)} className="hover:bg-white/5 text-red-500">
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="flex items-center justify-between p-4 border-b border-white/10">
+            {/* Hamburger menu for mobile */}
+            <button onClick={toggleSidebar} className="md:hidden text-white/60 hover:text-white">
+              <ChevronsRight className="h-6 w-6" />
+            </button>
+            
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => toggleMute()}
+                className="p-2 rounded-md hover:bg-white/5 transition-colors"
               >
-                <Share2 size={20} />
-                <span className="ml-2">Share SoloRising</span>
+                {isMuted ? <SpeakerOffIcon className="h-5 w-5" /> : <SpeakerOnIcon className="h-5 w-5" />}
               </button>
               
-              {primaryActions?.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={action.onClick}
-                  className="w-full flex items-center px-3 py-3 rounded-lg text-white/80 hover:bg-white/5 transition-colors"
-                >
-                  {action.icon}
-                  <span className="ml-2">{action.label}</span>
-                </button>
-              ))}
+              <span className="text-sm text-white/60">{country}</span>
             </div>
-          </div>
-        </motion.div>
-        
-        {sidebarHidden && (
-          <motion.button 
-            onClick={toggleSidebar}
-            className="sidebar-toggle fixed z-20 top-4 left-4 bg-black/30 hover:bg-black/50 transition-all p-2 rounded-md"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Menu size={20} className="text-white/80" />
-          </motion.button>
-        )}
-        
-        <main 
-          ref={contentRef} 
-          className="flex-1 overflow-y-auto pb-0 relative w-full transition-all"
-          style={{
-            scrollBehavior: 'smooth',
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
-          <div className="min-h-screen pt-4 px-4">
+          </header>
+
+          {/* Page Content */}
+          <div className="flex-1 p-4">
             <Outlet />
           </div>
         </main>
+        
+        {renderLogoutModal()}
       </div>
-
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareModal 
-            onClose={() => setShowShareModal(false)}
-            character={character}
-          />
-        )}
-      </AnimatePresence>
-      
-      {userId && <WarningNotification userId={userId} />}
     </div>
   );
 };
 
 export default Dashboard;
+
+// Icons
+const MoreVerticalIcon = ({ size = 18 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-more-vertical" width={size} height={size}><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+);
+
+const SpeakerOnIcon = ({ size = 18 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-speaker" width={size} height={size}><rect width="14" height="8" x="5" y="9" rx="2"/><path d="M12 2v2M12 20v2"/></svg>
+);
+
+const SpeakerOffIcon = ({ size = 18 }: { size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-speaker-off" width={size} height={size}><rect width="14" height="8" x="5" y="9" rx="2"/><path d="M2 2l20 20M12 2v2M12 20v2"/></svg>
+);
