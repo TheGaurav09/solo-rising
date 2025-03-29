@@ -121,6 +121,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const canAdd = checkWorkoutCooldown();
               setCanAddWorkout(canAdd);
             }
+            
+            // Check if user missed a day and should reset streak
+            checkAndResetStreak(profile.last_workout_date, profile.streak);
           }
         }
       } catch (error) {
@@ -132,7 +135,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchInitialData();
 
-    const authStateListener = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("UserContext: Auth state changed:", event);
 
       if (event === 'SIGNED_OUT') {
@@ -157,9 +160,67 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      authStateListener.subscription.unsubscribe();
+      data.subscription.unsubscribe();
     };
   }, []);
+
+  const checkAndResetStreak = async (lastWorkoutDate: string | null, currentStreak: number) => {
+    if (!lastWorkoutDate || currentStreak === 0) return;
+    
+    const lastWorkout = new Date(lastWorkoutDate);
+    const today = new Date();
+    
+    // Reset to midnight for accurate day comparison
+    lastWorkout.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    // Calculate days difference
+    const timeDiff = today.getTime() - lastWorkout.getTime();
+    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    
+    // If more than 1 day has passed, reset streak
+    if (daysDiff > 1) {
+      console.log(`UserContext: ${daysDiff} days since last workout, resetting streak`);
+      setStreak(0);
+      
+      // Update in database if we have userId
+      if (userId) {
+        try {
+          const { error } = await supabase
+            .from('users')
+            .update({ streak: 0 })
+            .eq('id', userId);
+            
+          if (error) {
+            console.error("UserContext: Error resetting streak in database:", error);
+          } else {
+            console.log("UserContext: Streak reset in database");
+            
+            // Update local storage
+            const cachedData = localStorage.getItem('user-data');
+            if (cachedData) {
+              try {
+                const userData = JSON.parse(cachedData);
+                userData.streak = 0;
+                localStorage.setItem('user-data', JSON.stringify(userData));
+              } catch (e) {
+                console.error("UserContext: Error updating local storage:", e);
+              }
+            }
+            
+            // Show toast notification
+            toast({
+              title: "Streak Reset",
+              description: "You missed a day of workout, your streak has been reset.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("UserContext: Exception in resetStreak:", error);
+        }
+      }
+    }
+  };
 
   const setUserData = (
     name: string, 
@@ -489,6 +550,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {
         console.error("Error updating local storage:", e);
       }
+    }
+    
+    // Update in database if we have userId
+    if (userId) {
+      supabase
+        .from('users')
+        .update({ streak: 0 })
+        .eq('id', userId)
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error resetting streak in database:", error);
+          } else {
+            console.log("Streak reset in database");
+          }
+        });
     }
   };
 

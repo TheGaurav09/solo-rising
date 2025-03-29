@@ -7,6 +7,9 @@ type AudioContextType = {
   setVolume: (volume: number) => void;
   currentTrack: string | null;
   setTrack: (track: string) => void;
+  volume: number;
+  isLooping: boolean;
+  toggleLoop: () => void;
 };
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -16,12 +19,14 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [volume, setVolumeState] = useState<number>(0.5);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
+  const [isLooping, setIsLooping] = useState<boolean>(true);
 
   useEffect(() => {
     // Check localStorage for audio preferences
     const savedVolume = localStorage.getItem('audio-volume');
     const savedPlaying = localStorage.getItem('audio-playing');
     const savedTrack = localStorage.getItem('audio-track');
+    const savedLooping = localStorage.getItem('audio-looping');
     
     if (savedVolume !== null) {
       setVolumeState(parseFloat(savedVolume));
@@ -31,9 +36,13 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentTrack(savedTrack);
     }
     
+    if (savedLooping !== null) {
+      setIsLooping(savedLooping === 'true');
+    }
+    
     // Create audio element
     const audio = new Audio();
-    audio.loop = true;
+    audio.loop = savedLooping === null ? true : savedLooping === 'true';
     audio.volume = savedVolume !== null ? parseFloat(savedVolume) : 0.5;
     
     if (savedTrack) {
@@ -75,6 +84,15 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsPlaying(true);
       localStorage.setItem('audio-playing', 'true');
     }
+  };
+
+  const toggleLoop = () => {
+    if (!audioElement) return;
+    
+    const newLoopState = !isLooping;
+    audioElement.loop = newLoopState;
+    setIsLooping(newLoopState);
+    localStorage.setItem('audio-looping', newLoopState.toString());
   };
 
   const setVolume = (newVolume: number) => {
@@ -122,7 +140,16 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <AudioContext.Provider value={{ isPlaying, togglePlay, setVolume, currentTrack, setTrack }}>
+    <AudioContext.Provider value={{ 
+      isPlaying, 
+      togglePlay, 
+      setVolume, 
+      currentTrack, 
+      setTrack,
+      volume,
+      isLooping,
+      toggleLoop
+    }}>
       {children}
     </AudioContext.Provider>
   );
