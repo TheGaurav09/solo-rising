@@ -51,29 +51,64 @@ const SettingsPage = () => {
       }
       
       // Delete user data from all relevant tables
-      const tables = [
-        'workouts',
-        'user_achievements',
-        'user_badges',
-        'user_items',
-        'user_showcase',
-        'users',
-      ];
+      // Instead of using a loop with strings, we'll explicitly delete from each table
       
-      for (const table of tables) {
-        const { error } = await supabase
-          .from(table)
-          .delete()
-          .eq('user_id', user.id);
-          
-        if (error) {
-          console.error(`Error deleting from ${table}:`, error);
-        }
-      }
+      // Delete workouts
+      await supabase
+        .from('workouts')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete user achievements
+      await supabase
+        .from('user_achievements')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete user badges  
+      await supabase
+        .from('user_badges')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete user items
+      await supabase
+        .from('user_items')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete user showcase
+      await supabase
+        .from('user_showcase')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete scheduled tasks
+      await supabase
+        .from('scheduled_tasks')
+        .delete()
+        .eq('user_id', user.id);
+      
+      // Delete user warnings
+      await supabase
+        .from('warnings')
+        .delete()
+        .eq('user_id', user.id);
+        
+      // Delete from users table (should be last)
+      await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id);
       
       // Finally delete the actual auth user
       // Note: This might require admin privileges or a serverless function in production
-      await supabase.auth.admin.deleteUser(user.id);
+      try {
+        await supabase.auth.admin.deleteUser(user.id);
+      } catch (err) {
+        console.error('Error deleting auth user:', err);
+        // Continue with logout even if admin delete fails
+      }
       
       // Clear any local storage items
       localStorage.clear();
