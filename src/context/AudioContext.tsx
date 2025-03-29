@@ -1,129 +1,136 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useUser } from '@/context/UserContext';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type AudioContextType = {
   isPlaying: boolean;
-  volume: number;
-  isLooping: boolean;
   togglePlay: () => void;
   setVolume: (volume: number) => void;
-  toggleLoop: () => void;
-  playAudio: () => void;
-  pauseAudio: () => void;
+  currentTrack: string | null;
+  setTrack: (track: string) => void;
 };
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [audio] = useState(new Audio());
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolumeState] = useState(0.3); // Default to a lower volume
-  const [isLooping, setIsLooping] = useState(false);
-  const { character } = useUser();
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [volume, setVolumeState] = useState<number>(0.5);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [currentTrack, setCurrentTrack] = useState<string | null>(null);
 
-  // Set the audio source based on character
   useEffect(() => {
-    if (character) {
-      switch (character) {
-        case 'goku':
-          audio.src = '/goku-bgm.mp3';
-          break;
-        case 'saitama':
-          audio.src = '/saitama.mp3';
-          break;
-        case 'jin-woo':
-          audio.src = '/jinwoo.mp3';
-          break;
-        default:
-          audio.src = '/background-music.mp3';
-          break;
-      }
-      
-      if (isPlaying) {
-        audio.play().catch(e => console.error("Audio playback error:", e));
-      }
+    // Check localStorage for audio preferences
+    const savedVolume = localStorage.getItem('audio-volume');
+    const savedPlaying = localStorage.getItem('audio-playing');
+    const savedTrack = localStorage.getItem('audio-track');
+    
+    if (savedVolume !== null) {
+      setVolumeState(parseFloat(savedVolume));
+    }
+    
+    if (savedTrack) {
+      setCurrentTrack(savedTrack);
+    }
+    
+    // Create audio element
+    const audio = new Audio();
+    audio.loop = true;
+    audio.volume = savedVolume !== null ? parseFloat(savedVolume) : 0.5;
+    
+    if (savedTrack) {
+      audio.src = savedTrack;
     } else {
       audio.src = '/background-music.mp3';
     }
-  }, [character, audio, isPlaying]);
-
-  // Load preferences from localStorage on mount
-  useEffect(() => {
-    const savedVolume = localStorage.getItem('audio-volume');
-    const savedIsLooping = localStorage.getItem('audio-looping');
-    const savedIsPlaying = localStorage.getItem('audio-playing');
-
-    if (savedVolume) setVolumeState(parseFloat(savedVolume));
-    if (savedIsLooping) setIsLooping(savedIsLooping === 'true');
-    if (savedIsPlaying) {
-      const shouldPlay = savedIsPlaying === 'true';
-      setIsPlaying(shouldPlay);
-      if (shouldPlay) audio.play().catch(e => console.error("Audio playback error:", e));
-    }
-  }, [audio]);
-
-  // Update audio settings when state changes
-  useEffect(() => {
-    audio.volume = volume;
-    audio.loop = isLooping;
     
-    localStorage.setItem('audio-volume', volume.toString());
-    localStorage.setItem('audio-looping', isLooping.toString());
-    localStorage.setItem('audio-playing', isPlaying.toString());
+    setAudioElement(audio);
     
-    if (isPlaying) {
-      audio.play().catch(e => console.error("Audio playback error:", e));
-    } else {
-      audio.pause();
+    // Start playing if it was playing before
+    if (savedPlaying === 'true') {
+      audio.play().catch(e => {
+        console.error("Error auto-playing audio:", e);
+        // Don't update isPlaying state here as browsers may block autoplay
+      });
+      setIsPlaying(true);
     }
-
+    
     return () => {
       audio.pause();
+      audio.src = '';
     };
-  }, [isPlaying, volume, isLooping, audio]);
+  }, []);
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const playAudio = () => {
-    setIsPlaying(true);
-  };
-
-  const pauseAudio = () => {
-    setIsPlaying(false);
+    if (!audioElement) return;
+    
+    if (isPlaying) {
+      audioElement.pause();
+      setIsPlaying(false);
+      localStorage.setItem('audio-playing', 'false');
+    } else {
+      audioElement.play().catch(e => {
+        console.error("Error playing audio:", e);
+        // Some browsers require user interaction before playing audio
+        toast("Click again to play music");
+      });
+      setIsPlaying(true);
+      localStorage.setItem('audio-playing', 'true');
+    }
   };
 
   const setVolume = (newVolume: number) => {
-    setVolumeState(newVolume);
+    if (!audioElement) return;
+    
+    const clampedVolume = Math.max(0, Math.min(1, newVolume));
+    audioElement.volume = clampedVolume;
+    setVolumeState(clampedVolume);
+    localStorage.setItem('audio-volume', clampedVolume.toString());
   };
 
-  const toggleLoop = () => {
-    setIsLooping(!isLooping);
+  const setTrack = (track: string) => {
+    if (!audioElement) return;
+    
+    const wasPlaying = isPlaying;
+    
+    // Save the current time if we're just changing tracks
+    const currentTime = audioElement.currentTime;
+    
+    // Pause before changing source
+    audioElement.pause();
+    
+    audioElement.src = track;
+    setCurrentTrack(track);
+    localStorage.setItem('audio-track', track);
+    
+    // Resume playback if it was playing before
+    if (wasPlaying) {
+      audioElement.play().catch(e => console.error("Error playing new track:", e));
+    }
+  };
+
+  const toast = (message: string) => {
+    const toastElement = document.createElement('div');
+    toastElement.className = 'fixed bottom-4 right-4 bg-black/70 text-white px-4 py-2 rounded-md z-50';
+    toastElement.textContent = message;
+    document.body.appendChild(toastElement);
+    
+    setTimeout(() => {
+      toastElement.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+      setTimeout(() => {
+        document.body.removeChild(toastElement);
+      }, 500);
+    }, 3000);
   };
 
   return (
-    <AudioContext.Provider
-      value={{
-        isPlaying,
-        volume,
-        isLooping,
-        togglePlay,
-        setVolume,
-        toggleLoop,
-        playAudio,
-        pauseAudio,
-      }}
-    >
+    <AudioContext.Provider value={{ isPlaying, togglePlay, setVolume, currentTrack, setTrack }}>
       {children}
     </AudioContext.Provider>
   );
 };
 
-export const useAudio = (): AudioContextType => {
+export const useAudio = () => {
   const context = useContext(AudioContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAudio must be used within an AudioProvider');
   }
   return context;

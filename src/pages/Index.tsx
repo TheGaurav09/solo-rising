@@ -22,13 +22,14 @@ const Index = () => {
         console.log("Index: Starting auth check");
         
         // First, check local storage for a faster initial check
-        const cachedAuth = localStorage.getItem('sb-auth-data');
+        const cachedAuth = localStorage.getItem('sb-auth-token');
+        const cachedUserData = localStorage.getItem('user-data');
         
-        if (cachedAuth) {
+        if (cachedAuth && cachedUserData) {
           console.log("Index: Found cached auth data");
           try {
             // Parse the cached user data
-            const userData = JSON.parse(cachedAuth);
+            const userData = JSON.parse(cachedUserData);
             if (userData && userData.id) {
               console.log("Index: Using cached auth data");
               setCurrentUserId(userData.id);
@@ -57,79 +58,71 @@ const Index = () => {
             }
           } catch (err) {
             console.error("Error parsing cached auth data:", err);
-            localStorage.removeItem('sb-auth-data');
+            localStorage.removeItem('user-data');
           }
         }
         
         // In parallel, do the proper auth check with Supabase
-        try {
-          const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Index: Auth check error:", error);
+          setLoading(false);
+          setInitialCheckComplete(true);
+          return;
+        }
+        
+        if (data.user) {
+          console.log("Index: User is authenticated:", data.user.id);
+          setCurrentUserId(data.user.id);
           
-          if (error) {
-            console.error("Index: Auth check error:", error);
+          // Check if this user has a record in the users table
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          
+          if (userError) {
+            console.error("Index: User data check error:", userError);
             setLoading(false);
             setInitialCheckComplete(true);
             return;
           }
           
-          if (data.user) {
-            console.log("Index: User is authenticated:", data.user.id);
-            setCurrentUserId(data.user.id);
+          // If user exists in DB and has selected a character, redirect to dashboard page
+          if (userData && userData.character_type) {
+            console.log("Index: User has character, redirecting to dashboard");
             
-            // Check if this user has a record in the users table
-            try {
-              const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', data.user.id)
-                .maybeSingle();
-              
-              if (userError) {
-                console.error("Index: User data check error:", userError);
-                setLoading(false);
-                setInitialCheckComplete(true);
-                return;
+            // Store user data in localStorage for faster loading on refresh
+            localStorage.setItem('user-data', JSON.stringify(userData));
+            localStorage.setItem('sb-auth-token', 'true');
+            
+            // Set user data in context
+            if (userData.warrior_name && userData.character_type) {
+              // Ensure character_type is a valid CharacterType
+              const characterType = userData.character_type as CharacterType;
+              if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                setUserData(
+                  userData.warrior_name,
+                  characterType,
+                  userData.points || 0,
+                  userData.streak || 0,
+                  userData.coins || 0,
+                  userData.country || 'Global',
+                  userData.xp || 0,
+                  userData.level || 1
+                );
               }
               
-              // If user exists in DB and has selected a character, redirect to dashboard page
-              if (userData && userData.character_type) {
-                console.log("Index: User has character, redirecting to dashboard");
-                
-                // Store user data in localStorage for faster loading on refresh
-                localStorage.setItem('sb-auth-data', JSON.stringify(userData));
-                localStorage.setItem('sb-auth-token', 'true');
-                
-                // Set user data in context
-                if (userData.warrior_name && userData.character_type) {
-                  // Ensure character_type is a valid CharacterType
-                  const characterType = userData.character_type as CharacterType;
-                  if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
-                    setUserData(
-                      userData.warrior_name,
-                      characterType,
-                      userData.points || 0,
-                      userData.streak || 0,
-                      userData.coins || 0,
-                      userData.country || 'Global',
-                      userData.xp || 0,
-                      userData.level || 1
-                    );
-                  }
-                  
-                  navigate('/dashboard', { replace: true });
-                  return;
-                }
-              } else {
-                console.log("Index: User has no character yet");
-              }
-            } catch (err) {
-              console.error("Index: Error checking user data:", err);
+              navigate('/dashboard', { replace: true });
+              return;
             }
           } else {
-            console.log("Index: No authenticated user found");
+            console.log("Index: User has no character yet");
           }
-        } catch (err) {
-          console.error("Index: Error during auth check:", err);
+        } else {
+          console.log("Index: No authenticated user found");
         }
         
         setLoading(false);
@@ -148,7 +141,7 @@ const Index = () => {
         setLoading(false);
         setInitialCheckComplete(true);
       }
-    }, 3000); // 3 seconds timeout
+    }, 6000); // 6 seconds timeout
     
     checkAuth();
 
@@ -163,56 +156,52 @@ const Index = () => {
         setCurrentUserId(session.user.id);
         
         // Check if the user has a character selected
-        const checkUserCharacter = async () => {
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-            
-            if (userError) {
-              console.error("Index: User data check error:", userError);
-              return;
-            }
-            
-            // If user exists in DB and has selected a character, redirect to dashboard page
-            if (userData && userData.character_type) {
-              console.log("Index: User has character after sign in, redirecting");
-              
-              // Store user data in localStorage for faster loading on refresh
-              localStorage.setItem('sb-auth-data', JSON.stringify(userData));
-              
-              // Set user data in context
-              if (userData.warrior_name && userData.character_type) {
-                // Ensure character_type is a valid CharacterType
-                const characterType = userData.character_type as CharacterType;
-                if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
-                  setUserData(
-                    userData.warrior_name,
-                    characterType,
-                    userData.points || 0,
-                    userData.streak || 0,
-                    userData.coins || 0,
-                    userData.country || 'Global',
-                    userData.xp || 0,
-                    userData.level || 1
-                  );
-                }
-                
-                navigate('/dashboard', { replace: true });
-              }
-            }
-          } catch (error) {
-            console.error("Index: Error checking user character:", error);
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (userError) {
+            console.error("Index: User data check error:", userError);
+            return;
           }
-        };
-        
-        checkUserCharacter();
+          
+          // If user exists in DB and has selected a character, redirect to dashboard page
+          if (userData && userData.character_type) {
+            console.log("Index: User has character after sign in, redirecting");
+            
+            // Store user data in localStorage for faster loading on refresh
+            localStorage.setItem('user-data', JSON.stringify(userData));
+            
+            // Set user data in context
+            if (userData.warrior_name && userData.character_type) {
+              // Ensure character_type is a valid CharacterType
+              const characterType = userData.character_type as CharacterType;
+              if (characterType === 'goku' || characterType === 'saitama' || characterType === 'jin-woo') {
+                setUserData(
+                  userData.warrior_name,
+                  characterType,
+                  userData.points || 0,
+                  userData.streak || 0,
+                  userData.coins || 0,
+                  userData.country || 'Global',
+                  userData.xp || 0,
+                  userData.level || 1
+                );
+              }
+              
+              navigate('/dashboard', { replace: true });
+            }
+          }
+        } catch (error) {
+          console.error("Index: Error checking user character:", error);
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log("Index: User signed out");
         localStorage.removeItem('sb-auth-token'); // Remove auth token from localStorage
-        localStorage.removeItem('sb-auth-data'); // Remove user data from localStorage
+        localStorage.removeItem('user-data'); // Remove user data from localStorage
         setCurrentUserId(null);
       }
     });

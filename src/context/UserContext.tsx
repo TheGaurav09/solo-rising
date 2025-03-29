@@ -48,48 +48,95 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [country, setCountry] = useState<string>('');
   const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null);
   const [canAddWorkout, setCanAddWorkout] = useState<boolean>(true);
+  const [isLoadingUserData, setIsLoadingUserData] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
+      console.log("UserContext: Fetching initial user data");
+      setIsLoadingUserData(true);
 
-        const { data: profile, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching user profile:", error);
-        } else if (profile) {
-          setUserName(profile.warrior_name || '');
-          if (profile.character_type) {
-            setCharacterType(profile.character_type as CharacterType);
-          }
-          setHasSelectedCharacter(!!profile.character_type);
-          setPoints(profile.points || 0);
-          setCoins(profile.coins || 0);
-          setStreak(profile.streak || 0);
-          setXp(profile.xp || 0);
-          setLevel(profile.level || 1);
-          setCountry(profile.country || '');
-          setLastWorkoutDate(profile.last_workout_date || null);
-          
-          // Check if user can add a workout
-          if (profile.last_workout_date) {
-            const canAdd = checkWorkoutCooldown();
-            setCanAddWorkout(canAdd);
+      try {
+        // Check local storage first for faster loading
+        const cachedUserData = localStorage.getItem('user-data');
+        if (cachedUserData) {
+          try {
+            const userData = JSON.parse(cachedUserData);
+            console.log("UserContext: Found cached user data:", userData);
+            if (userData && userData.id) {
+              setUserId(userData.id);
+              setUserName(userData.warrior_name || '');
+              if (userData.character_type) {
+                setCharacterType(userData.character_type as CharacterType);
+                setHasSelectedCharacter(true);
+              }
+              setPoints(userData.points || 0);
+              setCoins(userData.coins || 0);
+              setStreak(userData.streak || 0);
+              setXp(userData.xp || 0);
+              setLevel(userData.level || 1);
+              setCountry(userData.country || 'Global');
+              setLastWorkoutDate(userData.last_workout_date || null);
+              setCanAddWorkout(checkWorkoutCooldown());
+            }
+          } catch (error) {
+            console.error("UserContext: Error parsing cached user data:", error);
+            localStorage.removeItem('user-data');
           }
         }
+
+        // Fetch from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          console.log("UserContext: Got user from supabase:", user.id);
+          setUserId(user.id);
+
+          const { data: profile, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (error) {
+            console.error("UserContext: Error fetching user profile:", error);
+          } else if (profile) {
+            console.log("UserContext: Got user profile from supabase:", profile);
+            setUserName(profile.warrior_name || '');
+            if (profile.character_type) {
+              setCharacterType(profile.character_type as CharacterType);
+            }
+            setHasSelectedCharacter(!!profile.character_type);
+            setPoints(profile.points || 0);
+            setCoins(profile.coins || 0);
+            setStreak(profile.streak || 0);
+            setXp(profile.xp || 0);
+            setLevel(profile.level || 1);
+            setCountry(profile.country || '');
+            setLastWorkoutDate(profile.last_workout_date || null);
+            
+            // Store user data in localStorage for faster loading
+            localStorage.setItem('user-data', JSON.stringify(profile));
+            
+            // Check if user can add a workout
+            if (profile.last_workout_date) {
+              const canAdd = checkWorkoutCooldown();
+              setCanAddWorkout(canAdd);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("UserContext: Error in fetchInitialData:", error);
+      } finally {
+        setIsLoadingUserData(false);
       }
     };
 
     fetchInitialData();
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    const authStateListener = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("UserContext: Auth state changed:", event);
+
       if (event === 'SIGNED_OUT') {
+        console.log("UserContext: User signed out, clearing data");
         setUserId(null);
         setUserName('');
         setCharacterType(null);
@@ -102,10 +149,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCountry('');
         setLastWorkoutDate(null);
         setCanAddWorkout(true);
-      } else if (session?.user) {
+        localStorage.removeItem('user-data');
+      } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        console.log("UserContext: User signed in or token refreshed, fetching data");
         fetchInitialData();
       }
     });
+
+    return () => {
+      authStateListener.subscription.unsubscribe();
+    };
   }, []);
 
   const setUserData = (
@@ -127,6 +180,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCountry(cntry);
     setXp(xpValue);
     setLevel(lvl);
+
+    // Update localStorage
+    if (userId) {
+      const userData = {
+        id: userId,
+        warrior_name: name,
+        character_type: char,
+        points: pts,
+        streak: strk,
+        coins: cns,
+        country: cntry,
+        xp: xpValue,
+        level: lvl
+      };
+      localStorage.setItem('user-data', JSON.stringify(userData));
+    }
   };
 
   const setCharacter = (character: CharacterType) => {
@@ -137,59 +206,71 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserProfile = async (newName: string): Promise<boolean> => {
     if (!userId) return false;
 
-    const { error } = await supabase
-      .from('users')
-      .update({ warrior_name: newName })
-      .eq('id', userId);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ warrior_name: newName })
+        .eq('id', userId);
 
-    if (error) {
-      console.error("Error updating user profile:", error);
+      if (error) {
+        console.error("Error updating user profile:", error);
+        return false;
+      } else {
+        setUserName(newName);
+        
+        // Update localStorage
+        const cachedData = localStorage.getItem('user-data');
+        if (cachedData) {
+          try {
+            const userData = JSON.parse(cachedData);
+            userData.warrior_name = newName;
+            localStorage.setItem('user-data', JSON.stringify(userData));
+          } catch (e) {
+            console.error("Error updating local storage:", e);
+          }
+        }
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("Exception in updateUserProfile:", error);
       return false;
-    } else {
-      setUserName(newName);
-      return true;
     }
   };
 
   const updateCharacter = async (newCharacter: CharacterType): Promise<boolean> => {
     if (!userId) return false;
   
-    const { error } = await supabase
-      .from('users')
-      .update({ character_type: newCharacter })
-      .eq('id', userId);
-  
-    if (error) {
-      console.error("Error updating character:", error);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ character_type: newCharacter })
+        .eq('id', userId);
+    
+      if (error) {
+        console.error("Error updating character:", error);
+        return false;
+      } else {
+        setCharacterType(newCharacter);
+        
+        // Update localStorage
+        const cachedData = localStorage.getItem('user-data');
+        if (cachedData) {
+          try {
+            const userData = JSON.parse(cachedData);
+            userData.character_type = newCharacter;
+            localStorage.setItem('user-data', JSON.stringify(userData));
+          } catch (e) {
+            console.error("Error updating local storage:", e);
+          }
+        }
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("Exception in updateCharacter:", error);
       return false;
-    } else {
-      setCharacterType(newCharacter);
-      return true;
     }
-  };
-
-  const addPoints = (newPoints: number) => {
-    setPoints((prevPoints) => prevPoints + newPoints);
-  };
-
-  const usePoints = (pointsToUse: number) => {
-    setPoints((prevPoints) => prevPoints - pointsToUse);
-  };
-
-  const addCoins = (newCoins: number) => {
-    setCoins((prevCoins) => prevCoins + newCoins);
-  };
-
-  const useCoins = (coinsToUse: number) => {
-    setCoins((prevCoins) => prevCoins - coinsToUse);
-  };
-
-  const addStreak = (newStreak: number) => {
-    setStreak((prevStreak) => prevStreak + newStreak);
-  };
-
-  const resetStreak = () => {
-    setStreak(0);
   };
 
   const checkWorkoutCooldown = () => {
@@ -206,24 +287,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setLastWorkoutTime = async (date: string): Promise<boolean> => {
     if (!userId) return false;
     
-    const { error } = await supabase
-      .from('users')
-      .update({ last_workout_date: date })
-      .eq('id', userId);
-      
-    if (error) {
-      console.error("Error updating last workout time:", error);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ last_workout_date: date })
+        .eq('id', userId);
+        
+      if (error) {
+        console.error("Error updating last workout time:", error);
+        return false;
+      } else {
+        setLastWorkoutDate(date);
+        setCanAddWorkout(false);
+        
+        // Update localStorage
+        const cachedData = localStorage.getItem('user-data');
+        if (cachedData) {
+          try {
+            const userData = JSON.parse(cachedData);
+            userData.last_workout_date = date;
+            localStorage.setItem('user-data', JSON.stringify(userData));
+          } catch (e) {
+            console.error("Error updating local storage:", e);
+          }
+        }
+        
+        // Schedule the cooldown reset
+        setTimeout(() => {
+          setCanAddWorkout(true);
+        }, 3 * 60 * 60 * 1000); // 3 hours
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("Exception in setLastWorkoutTime:", error);
       return false;
-    } else {
-      setLastWorkoutDate(date);
-      setCanAddWorkout(false);
-      
-      // Schedule the cooldown reset
-      setTimeout(() => {
-        setCanAddWorkout(true);
-      }, 3 * 60 * 60 * 1000); // 3 hours
-      
-      return true;
     }
   };
 
@@ -234,12 +332,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (newXp >= level * 100) {
         levelUp();
       }
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.xp = newXp;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
       return newXp;
     });
   };
 
   const levelUp = () => {
-    setLevel(prevLevel => prevLevel + 1);
+    setLevel(prevLevel => {
+      const newLevel = prevLevel + 1;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.level = newLevel;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return newLevel;
+    });
     
     // Notify user of level up
     toast({
@@ -247,6 +374,122 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       description: `You've reached level ${level + 1}!`,
       variant: "default",
     });
+  };
+
+  const addPoints = (newPoints: number) => {
+    setPoints(prevPoints => {
+      const updatedPoints = prevPoints + newPoints;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.points = updatedPoints;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return updatedPoints;
+    });
+  };
+
+  const usePoints = (pointsToUse: number) => {
+    setPoints(prevPoints => {
+      const updatedPoints = prevPoints - pointsToUse;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.points = updatedPoints;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return updatedPoints;
+    });
+  };
+
+  const addCoins = (newCoins: number) => {
+    setCoins(prevCoins => {
+      const updatedCoins = prevCoins + newCoins;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.coins = updatedCoins;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return updatedCoins;
+    });
+  };
+
+  const useCoins = (coinsToUse: number) => {
+    setCoins(prevCoins => {
+      const updatedCoins = prevCoins - coinsToUse;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.coins = updatedCoins;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return updatedCoins;
+    });
+  };
+
+  const addStreak = (newStreak: number) => {
+    setStreak(prevStreak => {
+      const updatedStreak = prevStreak + newStreak;
+      
+      // Update localStorage
+      const cachedData = localStorage.getItem('user-data');
+      if (cachedData && userId) {
+        try {
+          const userData = JSON.parse(cachedData);
+          userData.streak = updatedStreak;
+          localStorage.setItem('user-data', JSON.stringify(userData));
+        } catch (e) {
+          console.error("Error updating local storage:", e);
+        }
+      }
+      
+      return updatedStreak;
+    });
+  };
+
+  const resetStreak = () => {
+    setStreak(0);
+    
+    // Update localStorage
+    const cachedData = localStorage.getItem('user-data');
+    if (cachedData && userId) {
+      try {
+        const userData = JSON.parse(cachedData);
+        userData.streak = 0;
+        localStorage.setItem('user-data', JSON.stringify(userData));
+      } catch (e) {
+        console.error("Error updating local storage:", e);
+      }
+    }
   };
 
   const value: UserContextType = {

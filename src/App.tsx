@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,12 +42,18 @@ const App = () => {
       const timeout = setTimeout(() => {
         console.log("Timeout triggered - forcing initialization");
         setIsInitialized(true);
-      }, 2000); // Reduced from 3 seconds to 2 seconds
+      }, 5000); // Increased from 2 seconds to 5 seconds for better network conditions
       
       try {
+        console.log("Checking authentication status...");
+        
         // First, check local storage for faster initial check
         const cachedAuth = localStorage.getItem('sb-auth-token');
         const initialAuth = !!cachedAuth;
+        
+        if (initialAuth) {
+          console.log("Found cached auth token, setting initial authenticated state");
+        }
         
         setIsAuthenticated(initialAuth);
         
@@ -61,11 +68,13 @@ const App = () => {
         }
         
         const isAuth = !!data.user;
+        console.log("Supabase auth check completed. User authenticated:", isAuth);
         setIsAuthenticated(isAuth);
 
         // If user is authenticated, check if they have selected a character
         if (isAuth && data.user) {
           try {
+            console.log("Fetching user character data for:", data.user.id);
             const { data: userData, error: userError } = await supabase
               .from('users')
               .select('character_type')
@@ -75,6 +84,7 @@ const App = () => {
             if (userError) {
               console.error("User data fetch error:", userError);
             } else {
+              console.log("User data received:", userData);
               setHasCharacter(!!userData?.character_type);
             }
           } catch (fetchError) {
@@ -107,6 +117,7 @@ const App = () => {
       // If user is authenticated, check if they have selected a character
       if (isAuth && session?.user) {
         try {
+          console.log("Fetching user data on auth change for:", session.user.id);
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('character_type')
@@ -116,6 +127,7 @@ const App = () => {
           if (userError) {
             console.error("User data fetch error on auth change:", userError);
           } else {
+            console.log("User data received on auth change:", userData);
             setHasCharacter(!!userData?.character_type);
           }
         } catch (fetchError) {
@@ -134,34 +146,39 @@ const App = () => {
   // Function to assign default coins to new users
   useEffect(() => {
     const setupNewUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Check if the user already has a coins record
-        const { data: userData, error: fetchError } = await supabase
-          .from('users')
-          .select('coins')
-          .eq('id', user.id)
-          .maybeSingle();
-          
-        if (fetchError) {
-          console.error("Error fetching user coins data:", fetchError);
-          return;
-        }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
         
-        // If no coins value or coins are 0, update to give 10 coins
-        if (!userData || userData.coins === 0 || userData.coins === null) {
-          const { error: updateError } = await supabase
+        if (user) {
+          console.log("Setting up new user coins for:", user.id);
+          // Check if the user already has a coins record
+          const { data: userData, error: fetchError } = await supabase
             .from('users')
-            .update({ coins: 10 })
-            .eq('id', user.id);
+            .select('coins')
+            .eq('id', user.id)
+            .maybeSingle();
             
-          if (updateError) {
-            console.error("Error updating user coins:", updateError);
-          } else {
-            console.log("Assigned 10 default coins to user");
+          if (fetchError) {
+            console.error("Error fetching user coins data:", fetchError);
+            return;
+          }
+          
+          // If no coins value or coins are 0, update to give 10 coins
+          if (!userData || userData.coins === 0 || userData.coins === null) {
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ coins: 10 })
+              .eq('id', user.id);
+              
+            if (updateError) {
+              console.error("Error updating user coins:", updateError);
+            } else {
+              console.log("Assigned 10 default coins to user");
+            }
           }
         }
+      } catch (error) {
+        console.error("Error in setupNewUser:", error);
       }
     };
     
