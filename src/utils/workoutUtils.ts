@@ -1,122 +1,187 @@
-
+// Import necessary modules
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
-/**
- * Updates a user's streak when they log a workout
- * @param userId The ID of the user
- * @param workoutDate Optional date of the workout (defaults to now)
- */
-export async function updateUserStreak(userId: string, workoutDate = new Date()) {
+export interface WorkoutData {
+  exerciseType: string;
+  reps: number;
+  duration: number;
+}
+
+// Calculate points based on workout data
+export const calculatePoints = (workout: WorkoutData): number => {
+  const { exerciseType, reps, duration } = workout;
+  
+  // Base points for different exercise types
+  const basePoints = {
+    'push-ups': 0.5,
+    'pull-ups': 1,
+    'squats': 0.5,
+    'lunges': 0.5,
+    'sit-ups': 0.4,
+    'plank': 1.5, // Points per minute for plank
+    'running': 10, // Points per kilometer
+    'jumping-jacks': 0.2,
+    'burpees': 1.5,
+    'mountain-climbers': 0.4,
+    'cycling': 5, // Points per kilometer
+    'swimming': 15, // Points per kilometer
+    'weightlifting': 2, // Points per set
+    'yoga': 8, // Points per session
+    'hiit': 12, // Points per session
+    'boxing': 10, // Points per session
+    'calisthenics': 1, // Points per exercise
+    'other': 5 // Default points
+  };
+  
+  // Get base points for the exercise type, default to 'other' if not found
+  const pointsPerUnit = basePoints[exerciseType] || basePoints['other'];
+  
+  // Calculate total points based on exercise type
+  let totalPoints = 0;
+  
+  switch (exerciseType) {
+    case 'plank':
+      // For plank, points are based on duration in minutes
+      totalPoints = Math.round(pointsPerUnit * (duration / 60));
+      break;
+    case 'running':
+    case 'cycling':
+    case 'swimming':
+      // For distance-based exercises, assume duration is in kilometers
+      totalPoints = Math.round(pointsPerUnit * duration);
+      break;
+    case 'yoga':
+    case 'hiit':
+    case 'boxing':
+      // For session-based exercises, points are per session
+      totalPoints = Math.round(pointsPerUnit);
+      break;
+    case 'weightlifting':
+      // For weightlifting, points are per set
+      totalPoints = Math.round(pointsPerUnit * reps);
+      break;
+    default:
+      // For rep-based exercises, points are per rep
+      totalPoints = Math.round(pointsPerUnit * reps);
+  }
+  
+  // Add bonus points for longer workouts
+  if (duration > 30) {
+    totalPoints += Math.floor(duration / 30) * 5;
+  }
+  
+  return totalPoints;
+};
+
+// Save workout data to database
+export const saveWorkout = async (userId: string, workout: WorkoutData): Promise<boolean> => {
   try {
-    // First get the user's current data
-    const { data: user, error: userError } = await supabase
+    const points = calculatePoints(workout);
+    
+    // Save workout to database
+    const { error } = await supabase
+      .from('workouts')
+      .insert({
+        user_id: userId,
+        exercise_type: workout.exerciseType,
+        reps: workout.reps,
+        duration: workout.duration,
+        points: points
+      });
+      
+    if (error) {
+      console.error('Error saving workout:', error);
+      return false;
+    }
+    
+    // Update user's points using the increment_points function
+    const { data: newPoints, error: pointsError } = await supabase
+      .rpc('increment_points', {
+        user_id: userId,
+        amount: points
+      });
+    
+    if (pointsError) {
+      console.error('Error updating points:', pointsError);
+      return false;
+    }
+    
+    // Update user's last workout date
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        last_workout_date: new Date().toISOString(),
+        points: newPoints  // Use the returned value from increment_points
+      })
+      .eq('id', userId);
+      
+    if (updateError) {
+      console.error('Error updating last workout date:', updateError);
+      return false;
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('Exception in saveWorkout:', error);
+    return false;
+  }
+};
+
+// Update streak for user
+export const updateStreak = async (userId: string): Promise<number> => {
+  try {
+    // Get user's current streak and last workout date
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('streak, last_workout_date')
       .eq('id', userId)
       .single();
       
     if (userError) {
-      console.error('Error fetching user data for streak update:', userError);
-      return;
+      console.error('Error fetching user data:', userError);
+      return 0;
     }
     
-    // Format dates for comparison - strip time part
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const currentDate = new Date();
+    const lastWorkoutDate = userData.last_workout_date ? new Date(userData.last_workout_date) : null;
+    let newStreak = userData.streak || 0;
     
-    let newStreak = 1; // Default to 1 if no previous streak
-    let lastWorkoutDate = user?.last_workout_date ? new Date(user.last_workout_date) : null;
-    
-    if (lastWorkoutDate) {
-      lastWorkoutDate.setUTCHours(0, 0, 0, 0);
+    if (!lastWorkoutDate) {
+      // First workout ever
+      newStreak = 1;
+    } else {
+      // Calculate days difference
+      const diffTime = Math.abs(currentDate.getTime() - lastWorkoutDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       
-      // Calculate days between last workout and today
-      const timeDiff = today.getTime() - lastWorkoutDate.getTime();
-      const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
-      
-      if (daysDiff === 0) {
-        // Workout already logged today, don't change streak
-        newStreak = user.streak;
-      } else if (daysDiff === 1) {
-        // Consecutive day, increment streak
-        newStreak = (user.streak || 0) + 1;
+      if (diffDays === 0) {
+        // Already worked out today, keep streak the same
+      } else if (diffDays === 1) {
+        // Worked out yesterday, increment streak
+        newStreak += 1;
       } else {
-        // More than one day passed, reset streak to 1
+        // Missed a day, reset streak to 1
         newStreak = 1;
       }
     }
     
-    // Update the user's streak and last workout date
+    // Update user's streak
     const { error: updateError } = await supabase
       .from('users')
-      .update({
-        streak: newStreak,
-        last_workout_date: workoutDate.toISOString()
-      })
+      .update({ streak: newStreak })
       .eq('id', userId);
       
     if (updateError) {
-      console.error('Error updating user streak:', updateError);
+      console.error('Error updating streak:', updateError);
+      return 0;
     }
     
     return newStreak;
+    
   } catch (error) {
-    console.error('Unexpected error updating streak:', error);
-    return null;
+    console.error('Exception in updateStreak:', error);
+    return 0;
   }
-}
-
-/**
- * Logs a workout and updates user streak
- */
-export async function logWorkout(
-  userId: string, 
-  exerciseType: string, 
-  duration: number, 
-  reps: number,
-  points: number
-) {
-  try {
-    // Insert the workout record
-    const { data, error } = await supabase
-      .from('workouts')
-      .insert({
-        user_id: userId,
-        exercise_type: exerciseType,
-        duration: duration,
-        reps: reps,
-        points: points
-      })
-      .select()
-      .single();
-      
-    if (error) {
-      console.error('Error logging workout:', error);
-      return { success: false, error };
-    }
-    
-    // Update the user's streak
-    const newStreak = await updateUserStreak(userId);
-    
-    // Update user's total points
-    const { error: pointsError } = await supabase
-      .from('users')
-      .update({
-        points: supabase.rpc('increment_points', { amount: points })
-      })
-      .eq('id', userId);
-      
-    if (pointsError) {
-      console.error('Error updating user points:', pointsError);
-    }
-    
-    return { 
-      success: true, 
-      data, 
-      streak: newStreak 
-    };
-  } catch (error) {
-    console.error('Unexpected error logging workout:', error);
-    return { success: false, error };
-  }
-}
+};
